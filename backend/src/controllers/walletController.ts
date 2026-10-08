@@ -133,7 +133,9 @@ export class WalletController {
       const creditAmount = Number(amount.toFixed(2));
       const gstPercentage = settings.defaultGst || 18;
       const gstAmount = Number((creditAmount * (gstPercentage / 100)).toFixed(2));
-      const totalPayable = Number((creditAmount + gstAmount).toFixed(2));
+      const serviceFeePercentage = 2.0; // 2% Service Fee
+      const serviceFeeAmount = Number((creditAmount * (serviceFeePercentage / 100)).toFixed(2));
+      const totalPayable = Number((creditAmount + gstAmount + serviceFeeAmount).toFixed(2));
       const amountInPaise = Math.round(totalPayable * 100);
       const idempotencyKey = `idemp_${uuidv4()}`;
 
@@ -150,26 +152,28 @@ export class WalletController {
           email: req.user.email,
           creditAmount: creditAmount.toString(),
           gstAmount: gstAmount.toString(),
+          serviceFeeAmount: serviceFeeAmount.toString(),
           totalPayable: totalPayable.toString(),
           unlockedOtpRate: targetTier.otpPrice.toString(),
         }
       });
       const orderId = order.id;
 
-      // Record pending payment in payments table with separate tax records
+      // Record pending payment in payments table with separate tax & service fee records
       await pool.query(`
         INSERT INTO payments (
-          user_id, razorpay_order_id, amount, credit_amount, gst_amount,
+          user_id, razorpay_order_id, amount, credit_amount, gst_amount, service_fee_amount,
           currency, status, idempotency_key, raw_webhook_data
-        ) VALUES ($1, $2, $3, $4, $5, 'INR', 'PENDING', $6, $7)
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'INR', 'PENDING', $7, $8)
       `, [
         req.user.id,
         orderId,
         totalPayable,
         creditAmount,
         gstAmount,
+        serviceFeeAmount,
         idempotencyKey,
-        JSON.stringify({ creditAmount, gstAmount, totalPayable, unlockedRate: targetTier.otpPrice })
+        JSON.stringify({ creditAmount, gstAmount, serviceFeeAmount, totalPayable, unlockedRate: targetTier.otpPrice })
       ]);
 
       res.json({
@@ -177,6 +181,7 @@ export class WalletController {
         orderId,
         creditAmount,
         gstAmount,
+        serviceFeeAmount,
         totalPayable,
         amount: totalPayable,
         amountInPaise,
@@ -274,13 +279,14 @@ export class WalletController {
       const creditAmount = payment.credit_amount ? parseFloat(payment.credit_amount) : parseFloat(payment.amount);
       const totalPaid = parseFloat(payment.amount);
       const gstAmount = payment.gst_amount ? parseFloat(payment.gst_amount) : Number((creditAmount * 0.18).toFixed(2));
+      const serviceFee = payment.service_fee_amount ? parseFloat(payment.service_fee_amount) : Number((creditAmount * 0.02).toFixed(2));
 
       const creditResult = await WalletService.creditWalletFromPayment(
         req.user.id,
         creditAmount,
         razorpayPaymentId,
         razorpayOrderId,
-        `Wallet top-up: ₹${creditAmount.toFixed(2)} (Total paid: ₹${totalPaid.toFixed(2)} including 18% GST ₹${gstAmount.toFixed(2)})`
+        `Wallet top-up: ₹${creditAmount.toFixed(2)} (Total paid: ₹${totalPaid.toFixed(2)} including 18% GST ₹${gstAmount.toFixed(2)} & 2% service fee ₹${serviceFee.toFixed(2)})`
       );
 
       res.json({
@@ -328,7 +334,7 @@ export class WalletController {
           const paymentId = paymentEntity.id;
 
           const payRow = await pool.query(
-            'SELECT id, user_id, status, amount, credit_amount, gst_amount FROM payments WHERE razorpay_order_id = $1',
+            'SELECT id, user_id, status, amount, credit_amount, gst_amount, service_fee_amount FROM payments WHERE razorpay_order_id = $1',
             [orderId]
           );
 
@@ -338,6 +344,7 @@ export class WalletController {
             const creditAmount = payment.credit_amount ? parseFloat(payment.credit_amount) : parseFloat(payment.amount);
             const totalPaid = parseFloat(payment.amount);
             const gstAmount = payment.gst_amount ? parseFloat(payment.gst_amount) : Number((creditAmount * 0.18).toFixed(2));
+            const serviceFee = payment.service_fee_amount ? parseFloat(payment.service_fee_amount) : Number((creditAmount * 0.02).toFixed(2));
 
             await pool.query(`
               UPDATE payments 
@@ -350,7 +357,7 @@ export class WalletController {
               creditAmount,
               paymentId,
               orderId,
-              `Wallet top-up: ₹${creditAmount.toFixed(2)} (Total paid: ₹${totalPaid.toFixed(2)} including 18% GST ₹${gstAmount.toFixed(2)})`
+              `Wallet top-up: ₹${creditAmount.toFixed(2)} (Total paid: ₹${totalPaid.toFixed(2)} including 18% GST ₹${gstAmount.toFixed(2)} & 2% service fee ₹${serviceFee.toFixed(2)})`
             );
           }
         }

@@ -53,7 +53,8 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
   const finalAmount = customAmount ? (isNaN(parsedCustom) ? 0 : parsedCustom) : selectedAmount;
   const baseCredit = finalAmount > 0 ? finalAmount : 0;
   const gstAmount = Number((baseCredit * 0.18).toFixed(2));
-  const totalPayable = Number((baseCredit + gstAmount).toFixed(2));
+  const serviceFeeAmount = Number((baseCredit * 0.02).toFixed(2)); // 2% Service Fee
+  const totalPayable = Number((baseCredit + gstAmount + serviceFeeAmount).toFixed(2));
 
   // Dynamic Volume Tier lookup
   const getTier = (amt: number) => {
@@ -78,7 +79,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
       setLoading(true);
       setSuccessMessage(null);
 
-      // 1. Create order on backend server (checks min ₹100 & calculates 18% GST)
+      // 1. Create order on backend server (checks min ₹100 & calculates 18% GST + 2% service fee)
       const orderData = await ApiClient.createOrder(baseCredit);
 
       if (typeof window.Razorpay === 'undefined') {
@@ -86,13 +87,13 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
         return;
       }
 
-      // 2. Open standard Razorpay Checkout with total payable (topup + 18% GST)
+      // 2. Open standard Razorpay Checkout with total payable (topup + 18% GST + 2% service fee)
       const options = {
         key: orderData.keyId,
         amount: orderData.amountInPaise,
         currency: 'INR',
         name: 'NexusOTP Platform',
-        description: `Wallet Top-Up: ₹${baseCredit.toFixed(2)} (+18% GST ₹${gstAmount.toFixed(2)})`,
+        description: `Wallet Top-Up: ₹${baseCredit.toFixed(2)} (+18% GST ₹${gstAmount.toFixed(2)} + 2% Service Fee ₹${serviceFeeAmount.toFixed(2)})`,
         order_id: orderData.orderId,
         prefill: {
           name: userName || 'Customer',
@@ -448,6 +449,15 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                 </span>
               </div>
 
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  Service Fee (2% Platform Charge):
+                </span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  +₹{serviceFeeAmount.toFixed(2)}
+                </span>
+              </div>
+
               <div style={{
                 borderTop: '1px dashed var(--border-subtle)',
                 paddingTop: '10px',
@@ -460,7 +470,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                     Total Payable:
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Inclusive of all taxes
+                    Inclusive of 18% GST + 2% service fee
                   </div>
                 </div>
                 <div style={{
@@ -521,7 +531,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
             }}>
               <Info size={14} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                100% of your <strong>₹{baseCredit.toFixed(2)}</strong> top-up is credited directly to your wallet float. The 18% GST (₹{gstAmount.toFixed(2)}) is remitted separately to the government.
+                100% of your <strong>₹{baseCredit.toFixed(2)}</strong> top-up is credited directly to your wallet float. 18% GST (₹{gstAmount.toFixed(2)}) and 2% platform service fee (₹{serviceFeeAmount.toFixed(2)}) are remitted separately.
               </div>
             </div>
 

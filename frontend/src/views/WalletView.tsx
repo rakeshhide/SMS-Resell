@@ -198,7 +198,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
             Wallet Top-Up Volume Pricing
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            Pricing is determined by your top-up amount. The purchased amount is fully credited to your wallet float. All prices are exclusive of 18% GST.
+            Pricing is determined by your top-up amount. The purchased amount is fully credited to your wallet float. All prices are exclusive of 18% GST + 2% platform service fee.
           </p>
         </div>
 

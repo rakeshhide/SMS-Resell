@@ -89,6 +89,7 @@ export class ApiClient {
       orderId: string;
       creditAmount: number;
       gstAmount: number;
+      serviceFeeAmount?: number;
       totalPayable: number;
       amount: number;
       amountInPaise: number;
