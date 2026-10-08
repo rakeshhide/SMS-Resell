@@ -88,24 +88,20 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '32px' }}>
+    <div className="page-container">
       
       {/* Wallet Balance Hero Banner */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '32px',
-        border: '1px solid var(--border-subtle)',
+      <div className="surface-card" style={{
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '24px'
+        gap: '20px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{
-            width: '56px',
-            height: '56px',
+            width: '52px',
+            height: '52px',
             borderRadius: '16px',
             backgroundColor: '#eff6ff',
             color: '#3b82f6',
@@ -114,13 +110,13 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
             justifyContent: 'center',
             boxShadow: '0 4px 12px rgba(59, 130, 246, 0.15)'
           }}>
-            <Wallet size={28} />
+            <Wallet size={26} />
           </div>
           <div>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
               Available Wallet Balance
             </span>
-            <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px', letterSpacing: '-0.02em' }}>
+            <div style={{ fontSize: 'clamp(26px, 5vw, 32px)', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px', letterSpacing: '-0.02em' }}>
               ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
@@ -129,18 +125,19 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
         {/* Current Active Volume Rate Pill */}
         <div style={{
           backgroundColor: 'var(--bg-app)',
-          padding: '16px 24px',
+          padding: '12px 18px',
           borderRadius: '12px',
           border: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
-          gap: '16px'
+          gap: '14px',
+          flexWrap: 'wrap'
         }}>
           <div>
             <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
               Your Active OTP Rate
             </div>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: '#3b82f6', marginTop: '2px' }}>
+            <div style={{ fontSize: '18px', fontWeight: 800, color: '#3b82f6', marginTop: '2px' }}>
               ₹{otpRate.toFixed(2)} / OTP
             </div>
           </div>
@@ -156,7 +153,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             onClick={() => fetchWalletData()}
             style={{
@@ -180,7 +177,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
               gap: '8px',
               backgroundColor: '#3b82f6',
               color: '#ffffff',
-              padding: '12px 24px',
+              padding: '11px 20px',
               borderRadius: '10px',
               fontSize: '14px',
               fontWeight: 600,
@@ -195,13 +192,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
       </div>
 
       {/* Pricing Tiers Matrix */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '28px',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
+      <div className="surface-card">
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
             Wallet Top-Up Volume Pricing
@@ -211,8 +202,8 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
           </p>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+        <div className="table-responsive">
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', minWidth: '500px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>Top-up Bracket</th>
@@ -274,14 +265,8 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
       </div>
 
       {/* Immutable Financial Ledger Table */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '28px',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+      <div className="surface-card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
               Immutable Financial Ledger
@@ -306,8 +291,8 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
           </span>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div className="table-responsive">
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Timestamp</th>

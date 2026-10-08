@@ -107,7 +107,7 @@ echo $response;
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', padding: '32px' }}>
+    <div className="page-container">
       
       {/* Intro Header */}
       <div>
@@ -134,9 +134,11 @@ echo $response;
           justifyContent: 'space-between',
           padding: '12px 20px',
           backgroundColor: '#0b1120',
-          borderBottom: '1px solid #1e293b'
+          borderBottom: '1px solid #1e293b',
+          flexWrap: 'wrap',
+          gap: '8px'
         }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {(['curl', 'node', 'python', 'php'] as const).map((lang) => (
               <button
                 key={lang}
@@ -176,13 +178,14 @@ echo $response;
         </div>
 
         {/* Code Snippet */}
-        <div style={{ padding: '24px', overflowX: 'auto' }}>
+        <div style={{ padding: '20px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <pre style={{
             margin: 0,
             fontFamily: 'var(--font-mono)',
-            fontSize: '13px',
+            fontSize: '12px',
             color: '#e2e8f0',
-            lineHeight: 1.6
+            lineHeight: 1.6,
+            whiteSpace: 'pre'
           }}>
             {codeSnippets[activeTab]}
           </pre>
@@ -190,13 +193,7 @@ echo $response;
       </div>
 
       {/* Interactive API Playground */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '28px',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
+      <div className="surface-card">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
           <Sparkles size={20} color="#3b82f6" />
           <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>
@@ -346,16 +343,12 @@ echo $response;
       </div>
 
       {/* Response Specification Table */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '28px',
-        border: '1px solid var(--border-subtle)'
-      }}>
+      <div className="surface-card">
         <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '16px' }}>
           Standard HTTP Status Codes & Error Definitions
         </h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+        <div className="table-responsive">
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', minWidth: '500px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
               <th style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>Status Code</th>
@@ -391,6 +384,7 @@ echo $response;
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

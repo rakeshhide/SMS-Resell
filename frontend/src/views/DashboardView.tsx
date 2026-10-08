@@ -84,15 +84,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const activeTierName = walletInfo?.tierName || 'Starter Tier';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '32px' }}>
+    <div className="page-container">
       
       {/* Total Balance Hero Card (Reference: Flowa Top Balance Banner) */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '32px',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)',
+      <div className="surface-card" style={{
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
@@ -101,31 +96,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       }}>
         <div>
           <span style={{
-            fontSize: '13px',
+            fontSize: '12px',
             color: 'var(--text-muted)',
-            fontWeight: 600,
+            fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.04em'
           }}>
             Available Wallet Balance
           </span>
           <div style={{
-            fontSize: '36px',
+            fontSize: 'clamp(26px, 5vw, 36px)',
             fontWeight: 800,
             color: 'var(--text-main)',
             marginTop: '4px',
             letterSpacing: '-0.03em',
             display: 'flex',
             alignItems: 'baseline',
-            gap: '8px'
+            gap: '8px',
+            flexWrap: 'wrap'
           }}>
             <span>₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            <span style={{ fontSize: '14px', color: '#10b981', fontWeight: 600 }}>Active Float</span>
+            <span style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>Active Float</span>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             onClick={() => onNavigate('send-otp')}
             style={{
@@ -134,7 +130,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               gap: '8px',
               backgroundColor: '#3b82f6',
               color: '#ffffff',
-              padding: '10px 20px',
+              padding: '10px 18px',
               borderRadius: '10px',
               fontSize: '14px',
               fontWeight: 600,
@@ -154,7 +150,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               backgroundColor: 'var(--bg-app)',
               color: 'var(--text-main)',
               border: '1px solid var(--border-subtle)',
-              padding: '10px 18px',
+              padding: '10px 16px',
               borderRadius: '10px',
               fontSize: '14px',
               fontWeight: 600
@@ -173,7 +169,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               backgroundColor: 'var(--bg-app)',
               color: 'var(--text-main)',
               border: '1px solid var(--border-subtle)',
-              padding: '10px 18px',
+              padding: '10px 16px',
               borderRadius: '10px',
               fontSize: '14px',
               fontWeight: 600
@@ -186,12 +182,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Tier Pricing Progression Card */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '24px 32px',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)',
+      <div className="surface-card" style={{
         display: 'flex',
         flexDirection: 'column',
         gap: '16px'
@@ -261,7 +252,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Visual Progress Bar to Next Tier */}
         {walletInfo?.nextTier ? (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
               <span>
                 Top up <strong style={{ color: 'var(--text-main)' }}>₹{walletInfo.nextTier.amountRequired.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong> more to unlock the next pricing tier.
               </span>
@@ -295,16 +286,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* 3 Metric Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '20px'
-      }}>
+      <div className="grid-stats">
         {/* Card 1: Deliveries & Volume */}
         <div style={{
           backgroundColor: 'var(--bg-surface)',
           borderRadius: 'var(--radius-lg)',
-          padding: '24px',
+          padding: '22px',
           border: '1px solid var(--border-subtle)',
           boxShadow: 'var(--shadow-sm)'
         }}>
@@ -341,7 +328,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             fontSize: '28px',
             fontWeight: 800,
             color: 'var(--text-main)',
-            marginTop: '16px',
+            marginTop: '14px',
             letterSpacing: '-0.02em'
           }}>
             {analytics?.total_sent || '0'}
@@ -355,7 +342,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div style={{
           backgroundColor: 'var(--bg-surface)',
           borderRadius: 'var(--radius-lg)',
-          padding: '24px',
+          padding: '22px',
           border: '1px solid var(--border-subtle)',
           boxShadow: 'var(--shadow-sm)'
         }}>
@@ -392,7 +379,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             fontSize: '28px',
             fontWeight: 800,
             color: 'var(--text-main)',
-            marginTop: '16px',
+            marginTop: '14px',
             letterSpacing: '-0.02em'
           }}>
             {analytics?.delivered || '0'}
@@ -406,7 +393,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div style={{
           backgroundColor: 'var(--bg-surface)',
           borderRadius: 'var(--radius-lg)',
-          padding: '24px',
+          padding: '22px',
           border: '1px solid var(--border-subtle)',
           boxShadow: 'var(--shadow-sm)'
         }}>
@@ -443,7 +430,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             fontSize: '28px',
             fontWeight: 800,
             color: 'var(--text-main)',
-            marginTop: '16px',
+            marginTop: '14px',
             letterSpacing: '-0.02em'
           }}>
             ₹{activeOtpRate}
@@ -456,13 +443,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Transactions Section (Reference: Clean Flowa Table Style) */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '28px',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
+      <div className="surface-card">
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -496,8 +477,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Table Content */}
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div className="table-responsive">
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '580px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Recipient</th>

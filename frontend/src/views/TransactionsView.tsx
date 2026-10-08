@@ -40,14 +40,10 @@ export const TransactionsView: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '32px' }}>
+    <div className="page-container">
       
       {/* Top Filter & Search Bar */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '20px 24px',
-        border: '1px solid var(--border-subtle)',
+      <div className="surface-card" style={{
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
@@ -55,7 +51,7 @@ export const TransactionsView: React.FC = () => {
         gap: '16px'
       }}>
         {/* Search Form */}
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '300px' }}>
+        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 220px', minWidth: '200px' }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -148,15 +144,9 @@ export const TransactionsView: React.FC = () => {
       </div>
 
       {/* Main Table */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '24px',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div className="surface-card">
+        <div className="table-responsive">
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Recipient</th>
@@ -297,7 +287,7 @@ export const TransactionsView: React.FC = () => {
       {/* Transaction Inspection Modal */}
       {selectedTx && (
         <div className="modal-overlay" onClick={() => setSelectedTx(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: '28px' }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>Transaction Details</h3>
               <button onClick={() => setSelectedTx(null)} style={{ color: 'var(--text-muted)', fontSize: '18px', fontWeight: 700 }}>✕</button>

@@ -15,7 +15,9 @@ import {
   ChevronRight,
   Terminal,
   Copy,
-  Check
+  Check,
+  Menu,
+  X
 } from 'lucide-react';
 
 interface LandingPageViewProps {
@@ -30,6 +32,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   isLoggedIn,
 }) => {
   const [copiedCode, setCopiedCode] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const heroCode = `curl -X POST https://apinexusotp.vercel.app/api/v1/otp/send \\
   -H "Authorization: Bearer sk_live_9a8f4c21e7b..." \\
@@ -59,17 +62,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
     <div style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-main)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
       {/* Top Navbar */}
-      <header style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '20px 48px',
-        backgroundColor: 'var(--bg-surface)',
-        borderBottom: '1px solid var(--border-subtle)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-      }}>
+      <header className="landing-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
             width: '36px',
@@ -89,14 +82,16 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </span>
         </div>
 
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '32px', fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)' }}>
+        {/* Desktop Navigation */}
+        <nav className="landing-nav-desktop">
           <a href="#features" style={{ color: 'inherit', textDecoration: 'none' }}>Features</a>
           <a href="#how-it-works" style={{ color: 'inherit', textDecoration: 'none' }}>How It Works</a>
           <a href="#pricing" style={{ color: 'inherit', textDecoration: 'none' }}>Pricing</a>
           <a href="#developer" style={{ color: 'inherit', textDecoration: 'none' }}>Developer API</a>
         </nav>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Desktop Auth Buttons */}
+        <div className="landing-auth-desktop">
           {isLoggedIn ? (
             <button
               onClick={onGoToDashboard}
@@ -146,18 +141,115 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             </>
           )}
         </div>
+
+        {/* Mobile Hamburger Button */}
+        <button
+          className="landing-mobile-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle navigation menu"
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
       </header>
 
+      {/* Mobile Drawer Dropdown */}
+      {mobileMenuOpen && (
+        <div className="landing-mobile-drawer">
+          <a
+            href="#features"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 600, fontSize: '15px', padding: '6px 0' }}
+          >
+            Features
+          </a>
+          <a
+            href="#how-it-works"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 600, fontSize: '15px', padding: '6px 0' }}
+          >
+            How It Works
+          </a>
+          <a
+            href="#pricing"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 600, fontSize: '15px', padding: '6px 0' }}
+          >
+            Pricing
+          </a>
+          <a
+            href="#developer"
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 600, fontSize: '15px', padding: '6px 0' }}
+          >
+            Developer API
+          </a>
+          <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {isLoggedIn ? (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onGoToDashboard();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px',
+                  backgroundColor: '#3b82f6',
+                  color: '#ffffff',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  fontWeight: 600
+                }}
+              >
+                <span>Go to Dashboard</span>
+                <ArrowRight size={16} />
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenAuth(false);
+                  }}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border-subtle)',
+                    backgroundColor: 'var(--bg-app)',
+                    color: 'var(--text-main)',
+                    fontSize: '14px',
+                    fontWeight: 600
+                  }}
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenAuth(true);
+                  }}
+                  style={{
+                    padding: '12px',
+                    backgroundColor: '#3b82f6',
+                    color: '#ffffff',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)'
+                  }}
+                >
+                  Get Started
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
-      <section style={{
-        padding: '80px 48px',
-        maxWidth: '1280px',
-        margin: '0 auto',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-        gap: '48px',
-        alignItems: 'center'
-      }}>
+      <section className="landing-hero-section">
         <div>
           <div style={{
             display: 'inline-flex',
@@ -169,40 +261,41 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             color: '#1d4ed8',
             fontSize: '13px',
             fontWeight: 600,
-            marginBottom: '20px'
+            marginBottom: '18px'
           }}>
             <Zap size={14} />
             <span>Developer-First Communication Infrastructure</span>
           </div>
 
           <h1 style={{
-            fontSize: '48px',
+            fontSize: 'clamp(28px, 5.5vw, 46px)',
             fontWeight: 800,
-            lineHeight: 1.15,
+            lineHeight: 1.16,
             letterSpacing: '-0.03em',
             color: 'var(--text-main)',
-            marginBottom: '20px'
+            marginBottom: '18px'
           }}>
             Reliable OTP & Messaging APIs for Modern Applications
           </h1>
 
           <p style={{
-            fontSize: '18px',
+            fontSize: 'clamp(15px, 2.5vw, 17px)',
             color: 'var(--text-secondary)',
             lineHeight: 1.6,
-            marginBottom: '32px'
+            marginBottom: '28px'
           }}>
             Send OTPs and transactional messages through a fast, developer-friendly API built for modern applications. Scale from your first user to millions with transparent wallet billing and enterprise security.
           </p>
 
-          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <button
               onClick={() => onOpenAuth(true)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '8px',
-                padding: '14px 28px',
+                padding: '13px 24px',
                 backgroundColor: '#3b82f6',
                 color: '#ffffff',
                 borderRadius: '12px',
@@ -220,8 +313,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '8px',
-                padding: '14px 24px',
+                padding: '13px 22px',
                 backgroundColor: 'var(--bg-surface)',
                 color: 'var(--text-main)',
                 border: '1px solid var(--border-subtle)',
@@ -236,7 +330,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             </a>
           </div>
 
-          <div style={{ display: 'flex', gap: '24px', marginTop: '36px', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 500 }}>
+          <div style={{ display: 'flex', gap: '18px', marginTop: '32px', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 500, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <CheckCircle2 size={16} color="#10b981" />
               <span>Instant API Keys</span>
@@ -258,7 +352,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           borderRadius: 'var(--radius-xl)',
           overflow: 'hidden',
           border: '1px solid #1e293b',
-          boxShadow: 'var(--shadow-xl)'
+          boxShadow: 'var(--shadow-xl)',
+          width: '100%',
+          maxWidth: '100%'
         }}>
           <div style={{
             display: 'flex',
@@ -294,14 +390,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             </button>
           </div>
 
-          <div style={{ padding: '24px' }}>
+          <div style={{ padding: '20px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <pre style={{
               margin: 0,
               fontFamily: 'var(--font-mono)',
-              fontSize: '13px',
+              fontSize: '12px',
               color: '#38bdf8',
               lineHeight: 1.6,
-              overflowX: 'auto'
+              whiteSpace: 'pre'
             }}>
               {heroCode}
             </pre>
@@ -310,21 +406,21 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       </section>
 
       {/* Features Grid */}
-      <section id="features" style={{ padding: '80px 48px', backgroundColor: 'var(--bg-surface)' }}>
+      <section id="features" className="landing-section" style={{ backgroundColor: 'var(--bg-surface)' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 56px auto' }}>
-            <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 44px auto' }}>
+            <h2 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
               Built for High Performance & Unwavering Reliability
             </h2>
-            <p style={{ fontSize: '16px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+            <p style={{ fontSize: '15px', color: 'var(--text-secondary)', marginTop: '8px' }}>
               Everything your engineering team needs to power verification and notifications.
             </p>
           </div>
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: '28px'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+            gap: '24px'
           }}>
             {[
               { icon: Zap, title: 'Developer-Friendly REST API', desc: 'Predictable resource-oriented URLs, standard HTTP response codes, and clean JSON payloads.' },
@@ -337,17 +433,17 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               const Icon = f.icon;
               return (
                 <div key={i} style={{
-                  padding: '28px',
+                  padding: '24px',
                   borderRadius: 'var(--radius-lg)',
                   backgroundColor: 'var(--bg-app)',
                   border: '1px solid var(--border-subtle)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '14px'
+                  gap: '12px'
                 }}>
                   <div style={{
-                    width: '44px',
-                    height: '44px',
+                    width: '42px',
+                    height: '42px',
                     borderRadius: '12px',
                     backgroundColor: '#eff6ff',
                     color: '#3b82f6',
@@ -355,10 +451,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}>
-                    <Icon size={22} />
+                    <Icon size={20} />
                   </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>{f.title}</h3>
-                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{f.desc}</p>
+                  <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-main)' }}>{f.title}</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{f.desc}</p>
                 </div>
               );
             })}
@@ -367,21 +463,21 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       </section>
 
       {/* How It Works (6 Steps) */}
-      <section id="how-it-works" style={{ padding: '80px 48px' }}>
+      <section id="how-it-works" className="landing-section">
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 56px auto' }}>
-            <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 44px auto' }}>
+            <h2 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
               How It Works
             </h2>
-            <p style={{ fontSize: '16px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+            <p style={{ fontSize: '15px', color: 'var(--text-secondary)', marginTop: '8px' }}>
               From sign-up to dispatching your first production OTP in under 3 minutes.
             </p>
           </div>
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '20px'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))',
+            gap: '16px'
           }}>
             {[
               { step: '01', title: 'Create Account', desc: 'Sign up with instant email verification.' },
@@ -394,17 +490,17 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <div key={s.step} style={{
                 backgroundColor: 'var(--bg-surface)',
                 borderRadius: 'var(--radius-lg)',
-                padding: '24px 20px',
+                padding: '20px 16px',
                 border: '1px solid var(--border-subtle)',
                 position: 'relative'
               }}>
-                <div style={{ fontSize: '28px', fontWeight: 800, color: '#3b82f6', letterSpacing: '-0.03em' }}>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: '#3b82f6', letterSpacing: '-0.03em' }}>
                   {s.step}
                 </div>
-                <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-main)', marginTop: '10px' }}>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-main)', marginTop: '8px' }}>
                   {s.title}
                 </div>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '6px', lineHeight: 1.4 }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px', lineHeight: 1.4 }}>
                   {s.desc}
                 </div>
               </div>
@@ -414,32 +510,26 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       </section>
 
       {/* Transparent Pricing Section */}
-      <section id="pricing" style={{ padding: '80px 48px', backgroundColor: 'var(--bg-surface)' }}>
+      <section id="pricing" className="landing-section" style={{ backgroundColor: 'var(--bg-surface)' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <h2 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
               Transparent Wallet Top-Up Pricing
             </h2>
-            <p style={{ fontSize: '16px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+            <p style={{ fontSize: '15px', color: 'var(--text-secondary)', marginTop: '8px' }}>
               Simple, transparent pay-as-you-go pricing based on your top-up amount. No hidden fees or subscriptions.
             </p>
           </div>
 
-          <div style={{
-            backgroundColor: 'var(--bg-app)',
-            borderRadius: 'var(--radius-xl)',
-            padding: '32px',
-            border: '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-md)',
-          }}>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+          <div className="surface-card" style={{ backgroundColor: 'var(--bg-app)' }}>
+            <div className="table-responsive">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px', minWidth: '540px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '14px 20px', fontWeight: 600 }}>Top-Up Bracket</th>
-                    <th style={{ padding: '14px 20px', fontWeight: 600 }}>OTP Rate</th>
-                    <th style={{ padding: '14px 20px', fontWeight: 600 }}>Estimated Volume</th>
-                    <th style={{ padding: '14px 20px', fontWeight: 600 }}>Action</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 600 }}>Top-Up Bracket</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 600 }}>OTP Rate</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 600 }}>Estimated Volume</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 600 }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -456,7 +546,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                         borderBottom: idx < 4 ? '1px solid var(--border-subtle)' : 'none',
                       }}
                     >
-                      <td style={{ padding: '18px 20px', fontWeight: 700, color: 'var(--text-main)' }}>
+                      <td style={{ padding: '16px', fontWeight: 700, color: 'var(--text-main)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span>{row.bracket}</span>
                           <span style={{
@@ -471,13 +561,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                           </span>
                         </div>
                       </td>
-                      <td style={{ padding: '18px 20px', fontWeight: 800, color: '#3b82f6', fontSize: '16px' }}>
-                        {row.rate} <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted)' }}>/ OTP</span>
+                      <td style={{ padding: '16px', fontWeight: 800, color: '#3b82f6', fontSize: '15px' }}>
+                        {row.rate} <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>/ OTP</span>
                       </td>
-                      <td style={{ padding: '18px 20px', color: 'var(--text-secondary)' }}>
+                      <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>
                         {row.volume}
                       </td>
-                      <td style={{ padding: '18px 20px' }}>
+                      <td style={{ padding: '16px' }}>
                         <button
                           onClick={() => onOpenAuth(true)}
                           style={{
@@ -500,8 +590,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             </div>
 
             <div style={{
-              marginTop: '24px',
-              paddingTop: '20px',
+              marginTop: '20px',
+              paddingTop: '16px',
               borderTop: '1px solid var(--border-subtle)',
               display: 'flex',
               justifyContent: 'space-between',
@@ -524,12 +614,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       </section>
 
       {/* Developer Section Preview */}
-      <section id="developer" style={{ padding: '80px 48px' }}>
+      <section id="developer" className="landing-section">
         <div style={{ maxWidth: '1280px', margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 800, color: 'var(--text-main)', marginBottom: '16px' }}>
             Ready to integrate into your application?
           </h2>
-          <p style={{ fontSize: '16px', color: 'var(--text-secondary)', maxWidth: '580px', margin: '0 auto 32px auto' }}>
+          <p style={{ fontSize: '15px', color: 'var(--text-secondary)', maxWidth: '580px', margin: '0 auto 28px auto' }}>
             Create your account today, fund your wallet via Razorpay, and dispatch your first OTP in minutes.
           </p>
 
@@ -551,20 +641,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       </section>
 
       {/* Footer */}
-      <footer style={{
-        marginTop: 'auto',
-        backgroundColor: '#0f172a',
-        color: '#94a3b8',
-        padding: '56px 48px 32px 48px',
-        borderTop: '1px solid #1e293b'
-      }}>
+      <footer className="landing-footer">
         <div style={{
           maxWidth: '1280px',
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '40px',
-          marginBottom: '48px'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
+          gap: '36px',
+          marginBottom: '40px'
         }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ffffff', marginBottom: '12px' }}>
@@ -612,11 +696,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         <div style={{
           maxWidth: '1280px',
           margin: '0 auto',
-          paddingTop: '24px',
+          paddingTop: '20px',
           borderTop: '1px solid #1e293b',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
           fontSize: '12px',
           color: '#64748b'
         }}>
@@ -631,3 +717,4 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
     </div>
   );
 };
+

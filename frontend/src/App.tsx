@@ -25,6 +25,7 @@ export function App() {
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authModalIsSignUp, setAuthModalIsSignUp] = useState<boolean>(false);
   const [walletModalOpen, setWalletModalOpen] = useState<boolean>(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
     // Check initial user session
@@ -84,8 +85,8 @@ export function App() {
           isLoggedIn={!!user}
         />
       ) : (
-        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-          {/* Dark Contrast Sidebar */}
+        <div className="app-container">
+          {/* Dark Contrast Responsive Sidebar */}
           <Sidebar
             currentTab={currentTab}
             setCurrentTab={setCurrentTab}
@@ -94,14 +95,17 @@ export function App() {
             darkMode={darkMode}
             setDarkMode={setDarkMode}
             onViewLanding={() => setViewingLanding(true)}
+            mobileOpen={mobileSidebarOpen}
+            onCloseMobile={() => setMobileSidebarOpen(false)}
           />
 
           {/* Main Area */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          <div className="app-main-content">
             <Header
               title={getTabTitle(currentTab)}
               user={user}
               onOpenWalletModal={() => setWalletModalOpen(true)}
+              onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
             />
 
             <main style={{ flex: 1, overflowY: 'auto' }}>

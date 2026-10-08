@@ -12,7 +12,8 @@ import {
   Moon,
   Sun,
   Radio,
-  Globe
+  Globe,
+  X
 } from 'lucide-react';
 import { User } from '../types';
 
@@ -24,6 +25,8 @@ interface SidebarProps {
   darkMode: boolean;
   setDarkMode: (val: boolean) => void;
   onViewLanding: () => void;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -34,6 +37,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   darkMode,
   setDarkMode,
   onViewLanding,
+  mobileOpen = false,
+  onCloseMobile,
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -49,86 +54,112 @@ export const Sidebar: React.FC<SidebarProps> = ({
     navItems.push({ id: 'admin', label: 'Admin Center', icon: ShieldCheck });
   }
 
+  const handleTabClick = (tabId: string) => {
+    setCurrentTab(tabId);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
   return (
-    <aside style={{
-      width: '260px',
-      backgroundColor: 'var(--bg-sidebar)',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      padding: '24px 16px',
-      borderRight: '1px solid rgba(255, 255, 255, 0.05)',
-      flexShrink: 0,
-      userSelect: 'none'
-    }}>
-      <div>
-        {/* Brand Header */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          padding: '0 8px 28px 8px'
-        }}>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      <div
+        className={`sidebar-mobile-overlay ${mobileOpen ? 'active' : ''}`}
+        onClick={onCloseMobile}
+      />
+
+      <aside className={`app-sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
+        <div>
+          {/* Brand Header */}
           <div style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '10px',
-            backgroundColor: '#3b82f6',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            color: '#ffffff',
-            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+            justifyContent: 'space-between',
+            padding: '0 8px 24px 8px'
           }}>
-            <Radio size={22} />
-          </div>
-          <div>
-            <div style={{
-              fontSize: '18px',
-              fontWeight: 800,
-              color: '#ffffff',
-              letterSpacing: '-0.02em',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              NexusOTP
-            </div>
-            <div style={{
-              fontSize: '11px',
-              color: '#64748b',
-              fontWeight: 500,
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase'
-            }}>
-              Messaging API v2.4
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation List */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setCurrentTab(item.id)}
-                style={{
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                backgroundColor: '#3b82f6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+              }}>
+                <Radio size={22} />
+              </div>
+              <div>
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: 800,
+                  color: '#ffffff',
+                  letterSpacing: '-0.02em',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
-                  padding: '11px 14px',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  fontWeight: isActive ? 600 : 500,
-                  color: isActive ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)',
-                  backgroundColor: isActive ? 'var(--bg-sidebar-active)' : 'transparent',
-                  textAlign: 'left',
-                  width: '100%',
-                  transition: 'all 0.15s ease'
+                  gap: '6px'
+                }}>
+                  NexusOTP
+                </div>
+                <div style={{
+                  fontSize: '11px',
+                  color: '#64748b',
+                  fontWeight: 500,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase'
+                }}>
+                  Messaging API v2.4
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Close Button */}
+            {onCloseMobile && (
+              <button
+                onClick={onCloseMobile}
+                style={{
+                  display: mobileOpen ? 'flex' : 'none',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  color: '#94a3b8',
                 }}
+                title="Close Navigation"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
+
+          {/* Navigation List */}
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleTabClick(item.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '11px 14px',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: isActive ? 600 : 500,
+                    color: isActive ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)',
+                    backgroundColor: isActive ? 'var(--bg-sidebar-active)' : 'transparent',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'all 0.15s ease'
+                  }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
                     e.currentTarget.style.backgroundColor = 'var(--bg-sidebar-hover)';
@@ -229,5 +260,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
     </aside>
-  );
+  </>
+);
 };

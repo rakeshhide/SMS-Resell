@@ -67,17 +67,15 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '32px' }}>
+    <div className="page-container">
       
       {/* Banner */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '28px 32px',
-        border: '1px solid var(--border-subtle)',
+      <div className="surface-card" style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px'
       }}>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
@@ -89,16 +87,10 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '28px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '24px' }}>
         
         {/* Form Card */}
-        <div style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderRadius: 'var(--radius-xl)',
-          padding: '32px',
-          border: '1px solid var(--border-subtle)',
-          boxShadow: 'var(--shadow-sm)'
-        }}>
+        <div className="surface-card">
           <form onSubmit={handleSend} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div>
               <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>

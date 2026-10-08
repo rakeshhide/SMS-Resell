@@ -21,7 +21,7 @@ export const AnalyticsView: React.FC = () => {
     : '100%';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '32px' }}>
+    <div className="page-container">
       
       {/* Header */}
       <div>
@@ -36,44 +36,38 @@ export const AnalyticsView: React.FC = () => {
       {/* KPI Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '20px'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
+        gap: '16px'
       }}>
-        <div style={{ backgroundColor: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
+        <div style={{ backgroundColor: 'var(--bg-surface)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Month to Date Volume</div>
-          <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-main)', marginTop: '6px' }}>{stats?.month_sent || '0'}</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-main)', marginTop: '6px' }}>{stats?.month_sent || '0'}</div>
           <div style={{ fontSize: '12px', color: '#10b981', marginTop: '4px', fontWeight: 600 }}>Active accounting period</div>
         </div>
 
-        <div style={{ backgroundColor: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
+        <div style={{ backgroundColor: 'var(--bg-surface)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Success Rate</div>
-          <div style={{ fontSize: '32px', fontWeight: 800, color: '#10b981', marginTop: '6px' }}>{successRate}</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: '#10b981', marginTop: '6px' }}>{successRate}</div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Average across all mobile networks</div>
         </div>
 
-        <div style={{ backgroundColor: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
+        <div style={{ backgroundColor: 'var(--bg-surface)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Total Float Consumed</div>
-          <div style={{ fontSize: '32px', fontWeight: 800, color: '#3b82f6', marginTop: '6px' }}>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: '#3b82f6', marginTop: '6px' }}>
             ₹{stats?.total_spent ? parseFloat(stats.total_spent).toFixed(2) : '0.00'}
           </div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Deducted from float via active rate</div>
         </div>
 
-        <div style={{ backgroundColor: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
+        <div style={{ backgroundColor: 'var(--bg-surface)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Carrier Status</div>
-          <div style={{ fontSize: '32px', fontWeight: 800, color: '#10b981', marginTop: '6px' }}>Online</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: '#10b981', marginTop: '6px' }}>Online</div>
           <div style={{ fontSize: '12px', color: '#10b981', marginTop: '4px', fontWeight: 600 }}>Direct transactional bind</div>
         </div>
       </div>
 
       {/* 7-Day Usage Activity Bar Graph */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '28px',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
+      <div className="surface-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>Daily Dispatch Frequency</h3>

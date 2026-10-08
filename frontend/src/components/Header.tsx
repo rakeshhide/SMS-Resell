@@ -1,46 +1,41 @@
 import React from 'react';
-import { Search, Bell, Shield, User as UserIcon } from 'lucide-react';
+import { Search, Bell, Shield, User as UserIcon, Menu } from 'lucide-react';
 import { User } from '../types';
 
 interface HeaderProps {
   title: string;
   user: User | null;
   onOpenWalletModal: () => void;
+  onToggleMobileSidebar?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, user, onOpenWalletModal }) => {
+export const Header: React.FC<HeaderProps> = ({ title, user, onOpenWalletModal, onToggleMobileSidebar }) => {
   return (
-    <header style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '20px 32px',
-      backgroundColor: 'var(--bg-surface)',
-      borderBottom: '1px solid var(--border-subtle)',
-    }}>
-      <div>
+    <header className="app-header">
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {onToggleMobileSidebar && (
+          <button
+            className="mobile-menu-toggle"
+            onClick={onToggleMobileSidebar}
+            title="Open Navigation"
+          >
+            <Menu size={20} />
+          </button>
+        )}
         <h1 style={{
-          fontSize: '22px',
+          fontSize: 'clamp(17px, 3.5vw, 22px)',
           fontWeight: 700,
           color: 'var(--text-main)',
           letterSpacing: '-0.02em',
+          margin: 0
         }}>
           {title}
         </h1>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        {/* Search Bar */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          backgroundColor: 'var(--bg-app)',
-          padding: '8px 14px',
-          borderRadius: '10px',
-          border: '1px solid var(--border-subtle)',
-          width: '260px',
-        }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Search Bar - Hidden on tablet/mobile */}
+        <div className="header-search-bar">
           <Search size={16} color="var(--text-muted)" />
           <input
             type="text"
@@ -68,7 +63,8 @@ export const Header: React.FC<HeaderProps> = ({ title, user, onOpenWalletModal }
             alignItems: 'center',
             justifyContent: 'center',
             color: 'var(--text-secondary)',
-            position: 'relative'
+            position: 'relative',
+            flexShrink: 0
           }}
           title="Notifications"
         >
@@ -88,11 +84,12 @@ export const Header: React.FC<HeaderProps> = ({ title, user, onOpenWalletModal }
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
-          padding: '4px 10px 4px 4px',
+          gap: '8px',
+          padding: '4px 8px 4px 4px',
           borderRadius: '30px',
           backgroundColor: 'var(--bg-app)',
           border: '1px solid var(--border-subtle)',
+          flexShrink: 0
         }}>
           <div style={{
             width: '32px',
@@ -105,10 +102,11 @@ export const Header: React.FC<HeaderProps> = ({ title, user, onOpenWalletModal }
             justifyContent: 'center',
             fontSize: '13px',
             fontWeight: 700,
+            flexShrink: 0
           }}>
             {user?.fullName ? user.fullName.charAt(0).toUpperCase() : <UserIcon size={16} />}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="header-user-details">
             <span style={{
               fontSize: '13px',
               fontWeight: 600,

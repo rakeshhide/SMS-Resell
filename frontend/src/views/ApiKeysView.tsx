@@ -69,19 +69,15 @@ export const ApiKeysView: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '32px' }}>
+    <div className="page-container">
       
       {/* Header Banner */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '28px 32px',
-        border: '1px solid var(--border-subtle)',
+      <div className="surface-card" style={{
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '20px'
+        gap: '16px'
       }}>
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
@@ -104,7 +100,7 @@ export const ApiKeysView: React.FC = () => {
             gap: '8px',
             backgroundColor: '#3b82f6',
             color: '#ffffff',
-            padding: '10px 20px',
+            padding: '10px 18px',
             borderRadius: '10px',
             fontSize: '14px',
             fontWeight: 600,
@@ -117,15 +113,9 @@ export const ApiKeysView: React.FC = () => {
       </div>
 
       {/* Keys Table Card */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '24px',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div className="surface-card">
+        <div className="table-responsive">
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Key Label</th>
@@ -214,7 +204,7 @@ export const ApiKeysView: React.FC = () => {
       {/* Modal: Create Key */}
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => !createdKeySecret && setShowCreateModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: '28px' }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>
                 {createdKeySecret ? 'API Key Generated' : 'Generate New API Key'}
