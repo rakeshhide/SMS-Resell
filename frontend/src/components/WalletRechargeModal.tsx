@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { Wallet, ShieldCheck, CheckCircle2, ArrowRight } from 'lucide-react';
+import {
+  Wallet,
+  ShieldCheck,
+  CheckCircle2,
+  ArrowRight,
+  X,
+  Lock,
+  Info,
+  Sparkles,
+  Check
+} from 'lucide-react';
 import { ApiClient } from '../services/api';
 
 declare global {
@@ -30,8 +40,17 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
 
   if (!isOpen) return null;
 
-  const quickAmounts = [100, 500, 1000, 2000, 5000, 10000];
-  const finalAmount = customAmount ? parseFloat(customAmount) : selectedAmount;
+  const presets = [
+    { amt: 100, rate: 0.75, tier: 'Starter' },
+    { amt: 500, rate: 0.72, tier: 'Growth' },
+    { amt: 1000, rate: 0.72, tier: 'Growth', badge: 'POPULAR' },
+    { amt: 2000, rate: 0.68, tier: 'Scale' },
+    { amt: 5000, rate: 0.64, tier: 'Business', badge: 'BEST VALUE' },
+    { amt: 10000, rate: 0.60, tier: 'Enterprise', badge: 'MAX SAVINGS' },
+  ];
+
+  const parsedCustom = parseFloat(customAmount);
+  const finalAmount = customAmount ? (isNaN(parsedCustom) ? 0 : parsedCustom) : selectedAmount;
   const baseCredit = finalAmount > 0 ? finalAmount : 0;
   const gstAmount = Number((baseCredit * 0.18).toFixed(2));
   const totalPayable = Number((baseCredit + gstAmount).toFixed(2));
@@ -47,9 +66,10 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
 
   const unlockedTier = getTier(baseCredit);
   const estMessages = unlockedTier.rate > 0 ? Math.floor(baseCredit / unlockedTier.rate) : 0;
+  const isValidAmount = baseCredit >= 100;
 
   const handleTopup = async () => {
-    if (!baseCredit || baseCredit < 100) {
+    if (!isValidAmount) {
       alert('The minimum wallet top-up amount is ₹100.');
       return;
     }
@@ -112,99 +132,265 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div
+        className="modal-card"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          maxWidth: '520px',
+          padding: '28px',
+          borderRadius: '20px'
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '22px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
-              backgroundColor: '#eff6ff',
-              color: '#3b82f6',
+              width: '44px',
+              height: '44px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+              color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)'
             }}>
-              <Wallet size={20} />
+              <Wallet size={22} />
             </div>
             <div>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: 800,
+                color: 'var(--text-main)',
+                margin: 0,
+                letterSpacing: '-0.02em'
+              }}>
                 Wallet Top-Up
               </h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
-                Minimum top-up: ₹100
+              <p style={{
+                fontSize: '12px',
+                color: 'var(--text-muted)',
+                margin: '3px 0 0 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <span>Instant balance credit</span>
+                <span>•</span>
+                <span>Minimum ₹100</span>
               </p>
             </div>
           </div>
-          <button onClick={onClose} style={{ color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
+
+          <button
+            onClick={onClose}
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+              backgroundColor: 'var(--bg-app)',
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+            title="Close"
+            aria-label="Close modal"
+          >
+            <X size={16} />
+          </button>
         </div>
 
         {successMessage ? (
           <div style={{
-            padding: '24px',
+            padding: '36px 20px',
             backgroundColor: '#ecfdf5',
-            borderRadius: '12px',
+            borderRadius: '16px',
             border: '1px solid #a7f3d0',
             textAlign: 'center',
             color: '#065f46'
           }}>
-            <CheckCircle2 size={36} color="#10b981" style={{ margin: '0 auto 12px auto' }} />
-            <div style={{ fontSize: '16px', fontWeight: 700 }}>{successMessage}</div>
-            <div style={{ fontSize: '13px', marginTop: '4px' }}>Updating ledger balance...</div>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              backgroundColor: '#d1fae5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto'
+            }}>
+              <CheckCircle2 size={32} color="#10b981" />
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 800 }}>Payment Successful</div>
+            <div style={{ fontSize: '14px', marginTop: '6px', color: '#047857' }}>{successMessage}</div>
+            <div style={{ fontSize: '12px', marginTop: '12px', color: '#059669' }}>
+              Updating your real-time wallet ledger...
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Suggested Amounts */}
+            
+            {/* Presets Grid */}
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Suggested Top-Up Amounts
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '10px' }}>
-                {quickAmounts.map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => {
-                      setSelectedAmount(amt);
-                      setCustomAmount('');
-                    }}
-                    style={{
-                      padding: '12px',
-                      borderRadius: '10px',
-                      border: '1px solid',
-                      borderColor: selectedAmount === amt && !customAmount ? '#3b82f6' : 'var(--border-subtle)',
-                      backgroundColor: selectedAmount === amt && !customAmount ? '#eff6ff' : 'var(--bg-app)',
-                      color: selectedAmount === amt && !customAmount ? '#1d4ed8' : 'var(--text-main)',
-                      fontSize: '14px',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ₹{amt.toLocaleString('en-IN')}
-                  </button>
-                ))}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '10px'
+              }}>
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
+                  Select Top-Up Amount
+                </span>
+                <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: 600 }}>
+                  Larger top-ups unlock lower OTP rates
+                </span>
+              </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '10px'
+              }}>
+                {presets.map((preset) => {
+                  const isSelected = selectedAmount === preset.amt && !customAmount;
+                  return (
+                    <button
+                      key={preset.amt}
+                      type="button"
+                      onClick={() => {
+                        setSelectedAmount(preset.amt);
+                        setCustomAmount('');
+                      }}
+                      style={{
+                        position: 'relative',
+                        padding: '12px 10px',
+                        borderRadius: '12px',
+                        border: isSelected ? '2px solid #3b82f6' : '1px solid var(--border-subtle)',
+                        backgroundColor: isSelected
+                          ? 'rgba(59, 130, 246, 0.08)'
+                          : 'var(--bg-app)',
+                        color: isSelected ? '#3b82f6' : 'var(--text-main)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '3px',
+                        cursor: 'pointer',
+                        transition: 'all 0.18s ease',
+                        boxShadow: isSelected
+                          ? '0 4px 12px rgba(59, 130, 246, 0.18)'
+                          : 'none'
+                      }}
+                    >
+                      {preset.badge && (
+                        <span style={{
+                          position: 'absolute',
+                          top: '-8px',
+                          right: '8px',
+                          fontSize: '9px',
+                          fontWeight: 800,
+                          backgroundColor: preset.badge === 'POPULAR' ? '#3b82f6' : '#8b5cf6',
+                          color: '#ffffff',
+                          padding: '2px 6px',
+                          borderRadius: '8px',
+                          letterSpacing: '0.03em',
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)'
+                        }}>
+                          {preset.badge}
+                        </span>
+                      )}
+
+                      <span style={{
+                        fontSize: '16px',
+                        fontWeight: 800,
+                        color: isSelected ? '#3b82f6' : 'var(--text-main)'
+                      }}>
+                        ₹{preset.amt.toLocaleString('en-IN')}
+                      </span>
+
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: isSelected ? '#2563eb' : 'var(--text-muted)'
+                      }}>
+                        ₹{preset.rate.toFixed(2)} / OTP
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Custom Amount Input */}
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Or Custom Top-Up Amount (Min ₹100)
-              </label>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '6px'
+              }}>
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
+                  Or Custom Amount
+                </span>
+                {customAmount && (
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: isValidAmount ? '#10b981' : '#ef4444'
+                  }}>
+                    {isValidAmount
+                      ? `${unlockedTier.name} (₹${unlockedTier.rate.toFixed(2)}/OTP)`
+                      : 'Minimum ₹100 required'}
+                  </span>
+                )}
+              </div>
+
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                marginTop: '6px',
                 backgroundColor: 'var(--bg-app)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '8px',
-                padding: '10px 14px'
+                border: '1px solid',
+                borderColor: customAmount
+                  ? (isValidAmount ? '#3b82f6' : '#ef4444')
+                  : 'var(--border-subtle)',
+                borderRadius: '12px',
+                padding: '10px 14px',
+                gap: '8px',
+                transition: 'border-color 0.15s ease'
               }}>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-muted)' }}>₹</span>
+                <div style={{
+                  fontSize: '16px',
+                  fontWeight: 800,
+                  color: '#3b82f6',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}>
+                  ₹
+                </div>
                 <input
                   type="number"
-                  placeholder="Enter amount (min 100)"
+                  placeholder="Enter custom amount (min ₹100)"
                   min={100}
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
@@ -218,92 +404,171 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                     color: 'var(--text-main)'
                   }}
                 />
+                {customAmount && isValidAmount && (
+                  <div style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    backgroundColor: '#dbeafe',
+                    color: '#1d4ed8',
+                    padding: '2px 8px',
+                    borderRadius: '8px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    ₹{unlockedTier.rate.toFixed(2)}/OTP
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Breakdown Specified in Prompt */}
+            {/* Order Summary Card */}
             <div style={{
               backgroundColor: 'var(--bg-app)',
-              padding: '16px',
-              borderRadius: '12px',
+              padding: '16px 18px',
+              borderRadius: '14px',
               border: '1px solid var(--border-subtle)',
-              fontSize: '13px',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                <span>Wallet Top-up:</span>
-                <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>₹{baseCredit.toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                <span>GST (18%):</span>
-                <span style={{ fontWeight: 600 }}>+₹{gstAmount.toFixed(2)}</span>
-              </div>
-              <div style={{
-                borderTop: '1px solid var(--border-subtle)',
-                paddingTop: '8px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontWeight: 800,
-                fontSize: '14px',
-                color: 'var(--text-main)'
-              }}>
-                <span>Total Payable:</span>
-                <span style={{ color: '#10b981', fontSize: '15px' }}>₹{totalPayable.toFixed(2)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  Wallet Float Credit:
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>
+                  ₹{baseCredit.toFixed(2)}
+                </span>
               </div>
 
-              <div style={{ borderTop: '1px dashed var(--border-subtle)', paddingTop: '8px', marginTop: '2px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  <span>Applicable OTP Rate:</span>
-                  <span style={{ fontWeight: 700, color: '#3b82f6' }}>
-                    ₹{unlockedTier.rate.toFixed(2)} / OTP ({unlockedTier.name})
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  GST (18% Statutory Levy):
+                </span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  +₹{gstAmount.toFixed(2)}
+                </span>
+              </div>
+
+              <div style={{
+                borderTop: '1px dashed var(--border-subtle)',
+                paddingTop: '10px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)' }}>
+                    Total Payable:
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Inclusive of all taxes
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: '19px',
+                  fontWeight: 900,
+                  color: '#3b82f6',
+                  letterSpacing: '-0.02em'
+                }}>
+                  ₹{totalPayable.toFixed(2)}
+                </div>
+              </div>
+
+              {/* Dynamic Rate & Capacity Pill */}
+              <div style={{
+                marginTop: '4px',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(59, 130, 246, 0.06)',
+                border: '1px solid rgba(59, 130, 246, 0.18)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={14} color="#3b82f6" />
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#3b82f6' }}>
+                    {unlockedTier.name}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  <span>Message Capacity:</span>
-                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-                    ~{estMessages.toLocaleString('en-IN')} OTPs
-                  </span>
+                <div style={{
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: 'var(--text-main)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span>₹{unlockedTier.rate.toFixed(2)} / OTP</span>
+                  <span style={{ color: 'var(--text-muted)' }}>•</span>
+                  <span>~{estMessages.toLocaleString('en-IN')} OTPs</span>
                 </div>
               </div>
             </div>
 
+            {/* Transparency Note */}
             <div style={{
-              backgroundColor: 'rgba(59, 130, 246, 0.05)',
-              border: '1px solid rgba(59, 130, 246, 0.2)',
-              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '8px',
               padding: '10px 12px',
+              borderRadius: '10px',
+              backgroundColor: 'var(--bg-app)',
+              border: '1px solid var(--border-subtle)',
+              fontSize: '11px',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.45
+            }}>
+              <Info size={14} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                100% of your <strong>₹{baseCredit.toFixed(2)}</strong> top-up is credited directly to your wallet float. The 18% GST (₹{gstAmount.toFixed(2)}) is remitted separately to the government.
+              </div>
+            </div>
+
+            {/* Security Badge */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
               fontSize: '11px',
               color: 'var(--text-muted)'
             }}>
-              After successful payment, only <strong>₹{baseCredit.toFixed(2)}</strong> is credited to your wallet float. The GST amount (₹{gstAmount.toFixed(2)}) is remitted separately.
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
-              <ShieldCheck size={16} color="#10b981" />
+              <Lock size={12} color="#10b981" />
               <span>256-bit encrypted checkout via Razorpay Payment Gateway</span>
             </div>
 
+            {/* Submit Button */}
             <button
               onClick={handleTopup}
-              disabled={loading || baseCredit < 100}
+              disabled={loading || !isValidAmount}
               style={{
+                width: '100%',
                 padding: '14px',
-                backgroundColor: baseCredit < 100 ? '#9ca3af' : '#3b82f6',
+                background: !isValidAmount
+                  ? '#9ca3af'
+                  : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                 color: '#ffffff',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 fontSize: '15px',
-                fontWeight: 600,
+                fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                boxShadow: baseCredit < 100 ? 'none' : '0 4px 12px rgba(59, 130, 246, 0.25)',
-                cursor: loading || baseCredit < 100 ? 'not-allowed' : 'pointer'
+                boxShadow: !isValidAmount
+                  ? 'none'
+                  : '0 6px 20px rgba(59, 130, 246, 0.35)',
+                cursor: loading || !isValidAmount ? 'not-allowed' : 'pointer',
+                border: 'none',
+                transition: 'all 0.15s ease'
               }}
             >
-              <span>{loading ? 'Initializing Secure Gateway...' : `Proceed to Pay ₹${totalPayable.toFixed(2)}`}</span>
+              <span>
+                {loading
+                  ? 'Opening Secure Razorpay Gateway...'
+                  : `Proceed to Pay ₹${totalPayable.toFixed(2)}`}
+              </span>
               <ArrowRight size={16} />
             </button>
           </div>
@@ -312,3 +577,4 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
     </div>
   );
 };
+
