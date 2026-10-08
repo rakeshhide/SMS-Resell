@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { KeyRound, Plus, Copy, Check, Trash2, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { ApiKey } from '../types';
 import { ApiClient } from '../services/api';
+import { ApiKeysSkeleton, SkeletonTableRows } from '../components/Skeleton';
 
 export const ApiKeysView: React.FC = () => {
   const [keys, setKeys] = useState<ApiKey[]>([]);
@@ -68,6 +69,10 @@ export const ApiKeysView: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  if (loading && keys.length === 0) {
+    return <ApiKeysSkeleton />;
+  }
+
   return (
     <div className="page-container">
       
@@ -129,11 +134,7 @@ export const ApiKeysView: React.FC = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
-                    Loading credentials...
-                  </td>
-                </tr>
+                <SkeletonTableRows rows={4} cols={7} colWidths={['20%', '20%', '15%', '15%', '10%', '10%', '10%']} />
               ) : keys.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>

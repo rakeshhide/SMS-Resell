@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { User, OtpTransaction } from '../types';
 import { ApiClient } from '../services/api';
+import { DashboardSkeleton } from '../components/Skeleton';
 
 interface DashboardViewProps {
   user: User | null;
@@ -82,6 +83,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     ? parseFloat(walletInfo.otpRate.toString()).toFixed(2)
     : (user?.otpRate ? parseFloat(user.otpRate.toString()).toFixed(2) : '0.75');
   const activeTierName = walletInfo?.tierName || 'Starter Tier';
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="page-container">

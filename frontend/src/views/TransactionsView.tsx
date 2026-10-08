@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, RefreshCw, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Eye } from 'lucide-react';
 import { OtpTransaction } from '../types';
 import { ApiClient } from '../services/api';
+import { TransactionsSkeleton, SkeletonTableRows } from '../components/Skeleton';
 
 export const TransactionsView: React.FC = () => {
   const [transactions, setTransactions] = useState<OtpTransaction[]>([]);
@@ -38,6 +39,10 @@ export const TransactionsView: React.FC = () => {
     setPage(1);
     fetchTransactions();
   };
+
+  if (loading && transactions.length === 0) {
+    return <TransactionsSkeleton />;
+  }
 
   return (
     <div className="page-container">
@@ -159,11 +164,7 @@ export const TransactionsView: React.FC = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)', fontSize: '14px' }}>
-                    Loading transactions...
-                  </td>
-                </tr>
+                <SkeletonTableRows rows={8} cols={6} colWidths={['70%', '80%', '60%', '50%', '50%', '40%']} />
               ) : transactions.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)', fontSize: '14px' }}>

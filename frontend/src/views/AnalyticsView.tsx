@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, CheckCircle2, Clock, Zap, Inbox } from 'lucide-react';
 import { ApiClient } from '../services/api';
+import { AnalyticsSkeleton } from '../components/Skeleton';
 
 export const AnalyticsView: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
@@ -13,6 +14,10 @@ export const AnalyticsView: React.FC = () => {
       if (res?.trend) setTrend(res.trend);
     }).catch(console.error).finally(() => setLoading(false));
   }, []);
+
+  if (loading) {
+    return <AnalyticsSkeleton />;
+  }
 
   const totalSent = parseInt(stats?.total_sent || '0');
   const delivered = parseInt(stats?.delivered || '0');

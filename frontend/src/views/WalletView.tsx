@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Wallet, PlusCircle, ArrowDownLeft, ArrowUpRight, ShieldCheck, CheckCircle2, RefreshCw, FileText } from 'lucide-react';
 import { WalletTransaction, PricingTier } from '../types';
 import { ApiClient } from '../services/api';
+import { WalletSkeleton } from '../components/Skeleton';
 
 interface WalletViewProps {
   onOpenWalletModal: () => void;
@@ -86,6 +87,10 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
         return { label: type, bg: 'var(--bg-app)', color: 'var(--text-main)', isCredit: true };
     }
   };
+
+  if (loading) {
+    return <WalletSkeleton />;
+  }
 
   return (
     <div className="page-container">

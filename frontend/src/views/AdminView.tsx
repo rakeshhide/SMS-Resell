@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { PricingTier, SystemSettings } from '../types';
+import { AdminSkeleton } from '../components/Skeleton';
 
 export const AdminView: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
@@ -182,6 +183,10 @@ export const AdminView: React.FC = () => {
       setSubmittingAdjust(false);
     }
   };
+
+  if (loading) {
+    return <AdminSkeleton />;
+  }
 
   return (
     <div className="page-container">

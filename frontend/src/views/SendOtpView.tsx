@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Send, KeyRound, Smartphone, ShieldCheck, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { ApiKey } from '../types';
+import { SendOtpSkeleton } from '../components/Skeleton';
 
 interface SendOtpViewProps {
   onSuccessDispatch?: () => void;
@@ -14,25 +15,29 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<any | null>(null);
   const [otpRate, setOtpRate] = useState<number>(0.75);
   const [tierName, setTierName] = useState<string>('Starter Tier');
 
   useEffect(() => {
-    ApiClient.listApiKeys().then((res) => {
-      if (res?.keys && res.keys.length > 0) {
-        setKeys(res.keys);
-      }
-    }).catch(() => {});
-
-    ApiClient.getWalletBalance().then((res) => {
-      if (res?.otpRate) {
-        setOtpRate(res.otpRate);
-      }
-      if (res?.tierName) {
-        setTierName(res.tierName);
-      }
-    }).catch(() => {});
+    Promise.all([
+      ApiClient.listApiKeys().then((res) => {
+        if (res?.keys && res.keys.length > 0) {
+          setKeys(res.keys);
+        }
+      }).catch(() => {}),
+      ApiClient.getWalletBalance().then((res) => {
+        if (res?.otpRate) {
+          setOtpRate(res.otpRate);
+        }
+        if (res?.tierName) {
+          setTierName(res.tierName);
+        }
+      }).catch(() => {})
+    ]).finally(() => {
+      setLoading(false);
+    });
   }, []);
 
   const handleGenerateRandomOtp = () => {
@@ -65,6 +70,10 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
       setSending(false);
     }
   };
+
+  if (loading) {
+    return <SendOtpSkeleton />;
+  }
 
   return (
     <div className="page-container">
