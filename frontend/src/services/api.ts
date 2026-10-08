@@ -1,5 +1,19 @@
 import { PricingTier, SystemSettings, WalletBalanceResponse, WalletTransaction } from '../types';
 
+export interface ServerNotification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'system' | 'wallet' | 'warning' | 'security' | 'otp';
+  actionUrl?: string | null;
+  actionLabel?: string | null;
+  isRead: boolean;
+  isDismissed: boolean;
+  metadata?: any;
+  createdAt: string;
+}
+
 const API_BASE = import.meta.env.VITE_API_URL || 'https://apinexusotp.vercel.app/api/v1';
 
 export class ApiClient {
@@ -149,6 +163,40 @@ export class ApiClient {
 
   public static revokeApiKey(id: string) {
     return this.request<{ success: boolean; message: string }>(`/api-keys/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Server-driven dynamic notifications
+  public static getNotifications(limit = 30, offset = 0) {
+    return this.request<{
+      success: boolean;
+      data: ServerNotification[];
+      unreadCount: number;
+      total: number;
+    }>(`/notifications?limit=${limit}&offset=${offset}`);
+  }
+
+  public static markNotificationRead(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/notifications/${id}/read`, {
+      method: 'PATCH',
+    });
+  }
+
+  public static markAllNotificationsRead() {
+    return this.request<{ success: boolean; message: string; markedCount: number }>('/notifications/read-all', {
+      method: 'POST',
+    });
+  }
+
+  public static dismissNotification(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  public static dismissAllNotifications() {
+    return this.request<{ success: boolean; message: string; clearedCount: number }>('/notifications', {
       method: 'DELETE',
     });
   }

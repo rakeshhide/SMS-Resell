@@ -1,6 +1,7 @@
 import { pool } from '../config/db';
 import { PoolClient } from 'pg';
 import { BillingService } from './billingService';
+import { NotificationService } from './notificationService';
 
 export interface DeductResult {
   success: boolean;
@@ -113,6 +114,18 @@ export class WalletService {
       `, [wallet.id, userId, amount, balanceBefore, balanceAfter, currentRate, referenceId, description]);
 
       await client.query('COMMIT');
+
+      // Low balance warning notification trigger
+      if (balanceAfter < 50 && balanceBefore >= 50) {
+        NotificationService.createNotification({
+          userId,
+          title: 'Low Balance Warning',
+          message: `Your balance is now ₹${balanceAfter.toFixed(2)}. Top up to maintain continuous OTP dispatch.`,
+          type: 'warning',
+          actionLabel: 'Add Funds',
+          actionUrl: '/wallet'
+        }).catch((err) => console.error('[NOTIFICATION] Failed to create low balance notice:', err.message));
+      }
 
       return {
         success: true,
@@ -253,6 +266,18 @@ export class WalletService {
       `, [walletId, userId, creditAmount, balanceBefore, balanceAfter, newOtpRate, paymentId, orderId, description]);
 
       await client.query('COMMIT');
+
+      // Server-side dynamic notification for wallet top-up
+      NotificationService.createNotification({
+        userId,
+        title: 'Wallet Recharged Successfully',
+        message: `₹${creditAmount.toFixed(2)} credited to your wallet. Unlocked route rate: ₹${newOtpRate.toFixed(2)}/OTP.`,
+        type: 'wallet',
+        actionLabel: 'View Ledger',
+        actionUrl: '/wallet',
+        metadata: { paymentId, orderId, creditAmount, balanceAfter }
+      }).catch((err) => console.error('[NOTIFICATION] Failed to create wallet credit notice:', err.message));
+
       return { success: true, balanceAfter, applicableRate: newOtpRate };
     } catch (err: any) {
       await client.query('ROLLBACK');
@@ -325,6 +350,17 @@ export class WalletService {
       ]);
 
       await client.query('COMMIT');
+
+      // Server-side dynamic notification for admin adjustment
+      NotificationService.createNotification({
+        userId: targetUserId,
+        title: adjustmentAmount >= 0 ? 'Wallet Credited by Admin' : 'Wallet Adjusted by Admin',
+        message: `Your wallet was adjusted by ₹${Math.abs(adjustmentAmount).toFixed(2)}. Reason: ${reason}`,
+        type: 'wallet',
+        actionLabel: 'View Ledger',
+        actionUrl: '/wallet'
+      }).catch((err) => console.error('[NOTIFICATION] Failed to create admin adjustment notice:', err.message));
+
       return { success: true, newBalance: balanceAfter };
     } catch (err: any) {
       await client.query('ROLLBACK');

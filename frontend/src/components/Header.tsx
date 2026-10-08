@@ -36,6 +36,24 @@ interface NotificationItem {
   actionLabel?: string;
 }
 
+function formatTimeAgo(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    const diffMs = Date.now() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  } catch {
+    return 'Recent';
+  }
+}
+
 export const Header: React.FC<HeaderProps> = ({
   title,
   user,
@@ -62,117 +80,74 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, [notificationsOpen]);
 
-  // Load and build notification list
-  useEffect(() => {
-    const readIds: string[] = JSON.parse(
-      localStorage.getItem('nexus_read_notifications') || '[]'
-    );
-
-    const baseItems: NotificationItem[] = [];
-
-    // 1. Balance status notification
-    const balance = user?.balance ?? 0;
-    if (balance < 50) {
-      baseItems.push({
-        id: 'notice-low-bal',
-        title: 'Low Wallet Balance',
-        message: `Current balance is ₹${balance.toFixed(2)}. Recharge your wallet to avoid OTP delivery pauses.`,
-        timestamp: 'Requires Action',
-        type: 'warning',
-        read: readIds.includes('notice-low-bal'),
-        action: onOpenWalletModal,
-        actionLabel: 'Top Up Now',
-      });
-    } else {
-      baseItems.push({
-        id: 'notice-wallet-ok',
-        title: 'Wallet Active',
-        message: `Available balance: ₹${balance.toFixed(2)}. Route rate: ₹${(user?.otpRate ?? 0.75).toFixed(2)}/OTP.`,
-        timestamp: 'Active',
-        type: 'wallet',
-        read: readIds.includes('notice-wallet-ok'),
-        action: onOpenWalletModal,
-        actionLabel: 'Add Funds',
-      });
-    }
-
-    // 2. Gateway route notice
-    baseItems.push({
-      id: 'notice-gateway',
-      title: 'Direct Carrier Route Active',
-      message: 'Tier-1 telecom carrier pipeline running at 99.8% delivery SLA with sub-second dispatch.',
-      timestamp: 'System Normal',
-      type: 'system',
-      read: readIds.includes('notice-gateway'),
-    });
-
-    // 3. Security notice
-    baseItems.push({
-      id: 'notice-security',
-      title: 'Security Verified',
-      message: 'HMAC API verification and SHA-256 webhook signatures are active on your account.',
-      timestamp: 'Security',
-      type: 'security',
-      read: readIds.includes('notice-security'),
-    });
-
-    // Fetch recent transaction if authenticated
-    ApiClient.getWalletLedger(1, 2)
+  // Fetch fully dynamic notifications from backend server
+  const fetchServerNotifications = () => {
+    if (!user) return;
+    ApiClient.getNotifications(30, 0)
       .then((res) => {
-        if (res.success && res.data && res.data.length > 0) {
-          const isCredit = (type: string) => ['TOPUP', 'ADMIN_CREDIT', 'CREDIT'].includes(type);
-          const txItems: NotificationItem[] = res.data.map((tx) => {
-            const credit = isCredit(tx.type);
-            const numAmount = Number(tx.amount) || 0;
-            return {
-              id: `tx-${tx.id}`,
-              title: credit ? 'Wallet Credited' : 'OTP Debited',
-              message: `${tx.description || (credit ? 'Wallet top-up received' : 'SMS dispatches processed')}: ₹${numAmount.toFixed(2)}`,
-              timestamp: new Date(tx.created_at).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              }),
-              type: credit ? 'wallet' : 'system',
-              read: readIds.includes(`tx-${tx.id}`),
-            };
-          });
-          setNotifications([...txItems, ...baseItems]);
-        } else {
-          setNotifications(baseItems);
+        if (res.success && res.data) {
+          const items: NotificationItem[] = res.data.map((n) => ({
+            id: n.id,
+            title: n.title,
+            message: n.message,
+            timestamp: formatTimeAgo(n.createdAt),
+            type: (n.type as NotificationItem['type']) || 'system',
+            read: n.isRead,
+            action: n.actionUrl === '/wallet' ? onOpenWalletModal : undefined,
+            actionLabel: n.actionLabel || undefined,
+          }));
+          setNotifications(items);
         }
       })
-      .catch(() => {
-        setNotifications(baseItems);
+      .catch((err) => {
+        console.error('[NOTIFICATIONS] Server fetch error:', err);
       });
-  }, [user?.balance, user?.otpRate, onOpenWalletModal]);
+  };
+
+  useEffect(() => {
+    fetchServerNotifications();
+  }, [user?.id, user?.balance]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const handleMarkAllRead = () => {
-    const allIds = notifications.map((n) => n.id);
-    localStorage.setItem('nexus_read_notifications', JSON.stringify(allIds));
+  const handleMarkAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await ApiClient.markAllNotificationsRead();
+    } catch (err) {
+      console.error('[NOTIFICATIONS] Mark all read error:', err);
+    }
   };
 
-  const handleClearAll = () => {
-    const allIds = notifications.map((n) => n.id);
-    localStorage.setItem('nexus_read_notifications', JSON.stringify(allIds));
+  const handleClearAll = async () => {
     setNotifications([]);
+    try {
+      await ApiClient.dismissAllNotifications();
+    } catch (err) {
+      console.error('[NOTIFICATIONS] Dismiss all error:', err);
+    }
   };
 
-  const handleItemClick = (item: NotificationItem) => {
-    // Mark as read
-    const readIds: string[] = JSON.parse(
-      localStorage.getItem('nexus_read_notifications') || '[]'
-    );
-    if (!readIds.includes(item.id)) {
-      readIds.push(item.id);
-      localStorage.setItem('nexus_read_notifications', JSON.stringify(readIds));
+  const handleDismissNotification = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await ApiClient.dismissNotification(id);
+    } catch (err) {
+      console.error('[NOTIFICATIONS] Dismiss error:', err);
+    }
+  };
+
+  const handleItemClick = async (item: NotificationItem) => {
+    if (!item.read) {
       setNotifications((prev) =>
         prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
       );
+      try {
+        await ApiClient.markNotificationRead(item.id);
+      } catch (err) {
+        console.error('[NOTIFICATIONS] Mark read error:', err);
+      }
     }
 
     if (item.action) {
@@ -478,16 +453,39 @@ export const Header: React.FC<HeaderProps> = ({
                         )}
                       </div>
 
-                      {!item.read && (
-                        <div style={{
-                          width: '7px',
-                          height: '7px',
-                          borderRadius: '50%',
-                          backgroundColor: '#3b82f6',
-                          flexShrink: 0,
-                          marginTop: '6px'
-                        }} />
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, marginTop: '2px' }}>
+                        {!item.read && (
+                          <div style={{
+                            width: '7px',
+                            height: '7px',
+                            borderRadius: '50%',
+                            backgroundColor: '#3b82f6',
+                            flexShrink: 0
+                          }} />
+                        )}
+                        <button
+                          onClick={(e) => handleDismissNotification(e, item.id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: 0.6,
+                            transition: 'opacity 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                          onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                          title="Delete notification"
+                          aria-label="Delete notification"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}

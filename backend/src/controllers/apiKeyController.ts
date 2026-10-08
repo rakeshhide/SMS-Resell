@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { pool } from '../config/db';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { generateApiKey } from '../utils/crypto';
+import { NotificationService } from '../services/notificationService';
 
 const createKeySchema = z.object({
   name: z.string().min(2, 'Key name must be at least 2 characters').max(60),
@@ -37,6 +38,16 @@ export class ApiKeyController {
       `, [req.user.id, name, keyPrefix, keyHash, rateLimitPerMin || 120]);
 
       const record = insertRes.rows[0];
+
+      // Dynamic server notification for security event
+      NotificationService.createNotification({
+        userId: req.user.id,
+        title: 'New API Key Generated',
+        message: `API Key "${name}" (${keyPrefix}...) was created. Store your secret key securely.`,
+        type: 'security',
+        actionLabel: 'Manage Keys',
+        actionUrl: '/api-keys'
+      }).catch((err) => console.error('[NOTIFICATION] Error creating key notice:', err.message));
 
       res.status(201).json({
         success: true,
@@ -108,10 +119,22 @@ export class ApiKeyController {
         return;
       }
 
+      const revokedRecord = updateRes.rows[0];
+
+      // Dynamic server notification for security revocation
+      NotificationService.createNotification({
+        userId: req.user.id,
+        title: 'API Key Revoked',
+        message: `API Key "${revokedRecord.name || 'Key'}" has been revoked and can no longer make API requests.`,
+        type: 'security',
+        actionLabel: 'Manage Keys',
+        actionUrl: '/api-keys'
+      }).catch((err) => console.error('[NOTIFICATION] Error creating revoke notice:', err.message));
+
       res.json({
         success: true,
         message: 'API key has been permanently revoked.',
-        apiKey: updateRes.rows[0]
+        apiKey: revokedRecord
       });
     } catch (err: any) {
       console.error('[API_KEY_CONTROLLER] Revoke key error:', err.message);

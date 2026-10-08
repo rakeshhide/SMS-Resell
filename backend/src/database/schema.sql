@@ -141,3 +141,27 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_created ON audit_logs(actor_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+
+-- 9. Notifications Table (Scalable, multi-tenant, dynamic server notifications)
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(150) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL DEFAULT 'system', -- 'system' | 'wallet' | 'warning' | 'security' | 'otp'
+    action_url VARCHAR(255),
+    action_label VARCHAR(100),
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    is_dismissed BOOLEAN NOT NULL DEFAULT FALSE,
+    metadata JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Billion-scale indexes: Fast retrieval of active notifications per user
+CREATE INDEX IF NOT EXISTS idx_notifications_user_active_created 
+ON notifications(user_id, is_dismissed, created_at DESC);
+
+-- Fast partial index for unread count badge
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread 
+ON notifications(user_id, is_read) 
+WHERE is_dismissed = FALSE;

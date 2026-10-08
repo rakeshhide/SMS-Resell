@@ -10,6 +10,7 @@ import otpRoutes from './routes/otpRoutes';
 import walletRoutes from './routes/walletRoutes';
 import apiKeyRoutes from './routes/apiKeyRoutes';
 import adminRoutes from './routes/adminRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 dotenv.config();
 
@@ -108,6 +109,7 @@ app.use('/api/v1/otp', otpRoutes);
 app.use('/api/v1/wallet', walletRoutes);
 app.use('/api/v1/api-keys', apiKeyRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {
