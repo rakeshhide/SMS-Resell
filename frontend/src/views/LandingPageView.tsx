@@ -1,0 +1,633 @@
+import React, { useState } from 'react';
+import {
+  Radio,
+  ArrowRight,
+  CodeXml,
+  CheckCircle2,
+  ShieldCheck,
+  Zap,
+  Lock,
+  BarChart3,
+  Globe,
+  Wallet,
+  Clock,
+  Layers,
+  ChevronRight,
+  Terminal,
+  Copy,
+  Check
+} from 'lucide-react';
+
+interface LandingPageViewProps {
+  onOpenAuth: (isSignUp?: boolean) => void;
+  onGoToDashboard: () => void;
+  isLoggedIn: boolean;
+}
+
+export const LandingPageView: React.FC<LandingPageViewProps> = ({
+  onOpenAuth,
+  onGoToDashboard,
+  isLoggedIn,
+}) => {
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  const heroCode = `curl -X POST https://apinexusotp.vercel.app/api/v1/otp/send \\
+  -H "Authorization: Bearer sk_live_9a8f4c21e7b..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "phone": "9876543210",
+    "otp": "482910"
+  }'
+
+# Response (200 OK):
+{
+  "success": true,
+  "message": "OTP request accepted",
+  "transaction_id": "TXN_884920194_ab12",
+  "recipient": "98******10",
+  "charged": 0.75,
+  "latency_ms": 142
+}`;
+
+  const copyHeroCode = () => {
+    navigator.clipboard.writeText(heroCode);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  return (
+    <div style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-main)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      
+      {/* Top Navbar */}
+      <header style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '20px 48px',
+        backgroundColor: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--border-subtle)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '10px',
+            backgroundColor: '#3b82f6',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+          }}>
+            <Radio size={20} />
+          </div>
+          <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+            NexusOTP
+          </span>
+        </div>
+
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '32px', fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)' }}>
+          <a href="#features" style={{ color: 'inherit', textDecoration: 'none' }}>Features</a>
+          <a href="#how-it-works" style={{ color: 'inherit', textDecoration: 'none' }}>How It Works</a>
+          <a href="#pricing" style={{ color: 'inherit', textDecoration: 'none' }}>Pricing</a>
+          <a href="#developer" style={{ color: 'inherit', textDecoration: 'none' }}>Developer API</a>
+        </nav>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {isLoggedIn ? (
+            <button
+              onClick={onGoToDashboard}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                backgroundColor: '#3b82f6',
+                color: '#ffffff',
+                borderRadius: '10px',
+                fontSize: '14px',
+                fontWeight: 600
+              }}
+            >
+              <span>Go to Dashboard</span>
+              <ArrowRight size={16} />
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => onOpenAuth(false)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  color: 'var(--text-main)',
+                  fontSize: '14px',
+                  fontWeight: 600
+                }}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => onOpenAuth(true)}
+                style={{
+                  padding: '9px 20px',
+                  backgroundColor: '#3b82f6',
+                  color: '#ffffff',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)'
+                }}
+              >
+                Get Started
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section style={{
+        padding: '80px 48px',
+        maxWidth: '1280px',
+        margin: '0 auto',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+        gap: '48px',
+        alignItems: 'center'
+      }}>
+        <div>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 14px',
+            borderRadius: '30px',
+            backgroundColor: '#eff6ff',
+            color: '#1d4ed8',
+            fontSize: '13px',
+            fontWeight: 600,
+            marginBottom: '20px'
+          }}>
+            <Zap size={14} />
+            <span>Developer-First Communication Infrastructure</span>
+          </div>
+
+          <h1 style={{
+            fontSize: '48px',
+            fontWeight: 800,
+            lineHeight: 1.15,
+            letterSpacing: '-0.03em',
+            color: 'var(--text-main)',
+            marginBottom: '20px'
+          }}>
+            Reliable OTP & Messaging APIs for Modern Applications
+          </h1>
+
+          <p style={{
+            fontSize: '18px',
+            color: 'var(--text-secondary)',
+            lineHeight: 1.6,
+            marginBottom: '32px'
+          }}>
+            Send OTPs and transactional messages through a fast, developer-friendly API built for modern applications. Scale from your first user to millions with transparent wallet billing and enterprise security.
+          </p>
+
+          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => onOpenAuth(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '14px 28px',
+                backgroundColor: '#3b82f6',
+                color: '#ffffff',
+                borderRadius: '12px',
+                fontSize: '15px',
+                fontWeight: 600,
+                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.3)'
+              }}
+            >
+              <span>Get Started Free</span>
+              <ArrowRight size={18} />
+            </button>
+
+            <a
+              href="#developer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '14px 24px',
+                backgroundColor: 'var(--bg-surface)',
+                color: 'var(--text-main)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '12px',
+                fontSize: '15px',
+                fontWeight: 600,
+                textDecoration: 'none'
+              }}
+            >
+              <CodeXml size={18} />
+              <span>View API Documentation</span>
+            </a>
+          </div>
+
+          <div style={{ display: 'flex', gap: '24px', marginTop: '36px', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 500 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <CheckCircle2 size={16} color="#10b981" />
+              <span>Instant API Keys</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <CheckCircle2 size={16} color="#10b981" />
+              <span>No Monthly Subscriptions</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <CheckCircle2 size={16} color="#10b981" />
+              <span>Auto-Refund on Failure</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Hero Code Preview Window */}
+        <div style={{
+          backgroundColor: '#0f172a',
+          borderRadius: 'var(--radius-xl)',
+          overflow: 'hidden',
+          border: '1px solid #1e293b',
+          boxShadow: 'var(--shadow-xl)'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 18px',
+            backgroundColor: '#0b1120',
+            borderBottom: '1px solid #1e293b'
+          }}>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ef4444' }}></span>
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#f59e0b' }}></span>
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981' }}></span>
+            </div>
+            <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>
+              POST /api/v1/otp/send
+            </span>
+            <button
+              onClick={copyHeroCode}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                backgroundColor: '#1e293b',
+                color: '#cbd5e1',
+                fontSize: '11px'
+              }}
+            >
+              {copiedCode ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
+              <span>{copiedCode ? 'Copied' : 'Copy'}</span>
+            </button>
+          </div>
+
+          <div style={{ padding: '24px' }}>
+            <pre style={{
+              margin: 0,
+              fontFamily: 'var(--font-mono)',
+              fontSize: '13px',
+              color: '#38bdf8',
+              lineHeight: 1.6,
+              overflowX: 'auto'
+            }}>
+              {heroCode}
+            </pre>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section id="features" style={{ padding: '80px 48px', backgroundColor: 'var(--bg-surface)' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 56px auto' }}>
+            <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+              Built for High Performance & Unwavering Reliability
+            </h2>
+            <p style={{ fontSize: '16px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              Everything your engineering team needs to power verification and notifications.
+            </p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '28px'
+          }}>
+            {[
+              { icon: Zap, title: 'Developer-Friendly REST API', desc: 'Predictable resource-oriented URLs, standard HTTP response codes, and clean JSON payloads.' },
+              { icon: Lock, title: 'Secure Cryptographic Keys', desc: 'Keys stored as irreversible SHA-256 hashes. Rotate, revoke, or regenerate credentials with one click.' },
+              { icon: Wallet, title: 'Wallet-Based Billing', desc: 'Recharge via Razorpay with zero commitments. Pay only for successful messages deducted atomically.' },
+              { icon: BarChart3, title: 'Real-Time Delivery Analytics', desc: 'Monitor throughput, success rates, latency, and hourly volume in your live interactive dashboard.' },
+              { icon: Clock, title: 'Atomic Double-Spend Protection', desc: 'Database row-level locks guarantee 100% financial consistency across concurrent requests.' },
+              { icon: ShieldCheck, title: 'Automatic Failure Reversals', desc: 'If upstream carrier delivery is unfulfilled, funds are automatically refunded to your wallet ledger.' },
+            ].map((f, i) => {
+              const Icon = f.icon;
+              return (
+                <div key={i} style={{
+                  padding: '28px',
+                  borderRadius: 'var(--radius-lg)',
+                  backgroundColor: 'var(--bg-app)',
+                  border: '1px solid var(--border-subtle)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px'
+                }}>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '12px',
+                    backgroundColor: '#eff6ff',
+                    color: '#3b82f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Icon size={22} />
+                  </div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>{f.title}</h3>
+                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{f.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works (6 Steps) */}
+      <section id="how-it-works" style={{ padding: '80px 48px' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 56px auto' }}>
+            <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+              How It Works
+            </h2>
+            <p style={{ fontSize: '16px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              From sign-up to dispatching your first production OTP in under 3 minutes.
+            </p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '20px'
+          }}>
+            {[
+              { step: '01', title: 'Create Account', desc: 'Sign up with instant email verification.' },
+              { step: '02', title: 'Add Wallet Balance', desc: 'Top up funds securely via Razorpay checkout.' },
+              { step: '03', title: 'Generate API Key', desc: 'Create your secret sk_live credentials.' },
+              { step: '04', title: 'Integrate the API', desc: 'Copy 5 lines of cURL, Node.js, or Python.' },
+              { step: '05', title: 'Send OTPs', desc: 'Dispatch OTP messages to recipients worldwide.' },
+              { step: '06', title: 'Monitor Usage', desc: 'Track dispatches and ledger in real time.' },
+            ].map((s) => (
+              <div key={s.step} style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '24px 20px',
+                border: '1px solid var(--border-subtle)',
+                position: 'relative'
+              }}>
+                <div style={{ fontSize: '28px', fontWeight: 800, color: '#3b82f6', letterSpacing: '-0.03em' }}>
+                  {s.step}
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-main)', marginTop: '10px' }}>
+                  {s.title}
+                </div>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '6px', lineHeight: 1.4 }}>
+                  {s.desc}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Transparent Pricing Section */}
+      <section id="pricing" style={{ padding: '80px 48px', backgroundColor: 'var(--bg-surface)' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+              Transparent Wallet Top-Up Pricing
+            </h2>
+            <p style={{ fontSize: '16px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              Simple, transparent pay-as-you-go pricing based on your top-up amount. No hidden fees or subscriptions.
+            </p>
+          </div>
+
+          <div style={{
+            backgroundColor: 'var(--bg-app)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '32px',
+            border: '1px solid var(--border-subtle)',
+            boxShadow: 'var(--shadow-md)',
+          }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '14px 20px', fontWeight: 600 }}>Top-Up Bracket</th>
+                    <th style={{ padding: '14px 20px', fontWeight: 600 }}>OTP Rate</th>
+                    <th style={{ padding: '14px 20px', fontWeight: 600 }}>Estimated Volume</th>
+                    <th style={{ padding: '14px 20px', fontWeight: 600 }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { bracket: '₹100 – ₹499', rate: '₹0.75', volume: '~133+ OTPs', badge: 'Starter' },
+                    { bracket: '₹500 – ₹1,999', rate: '₹0.72', volume: '~694+ OTPs', badge: 'Growth' },
+                    { bracket: '₹2,000 – ₹4,999', rate: '₹0.68', volume: '~2,941+ OTPs', badge: 'Scale' },
+                    { bracket: '₹5,000 – ₹9,999', rate: '₹0.64', volume: '~7,812+ OTPs', badge: 'Business' },
+                    { bracket: '₹10,000+', rate: '₹0.60', volume: '~16,666+ OTPs', badge: 'Enterprise' },
+                  ].map((row, idx) => (
+                    <tr
+                      key={idx}
+                      style={{
+                        borderBottom: idx < 4 ? '1px solid var(--border-subtle)' : 'none',
+                      }}
+                    >
+                      <td style={{ padding: '18px 20px', fontWeight: 700, color: 'var(--text-main)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{row.bracket}</span>
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            backgroundColor: '#eff6ff',
+                            color: '#1d4ed8'
+                          }}>
+                            {row.badge}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '18px 20px', fontWeight: 800, color: '#3b82f6', fontSize: '16px' }}>
+                        {row.rate} <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted)' }}>/ OTP</span>
+                      </td>
+                      <td style={{ padding: '18px 20px', color: 'var(--text-secondary)' }}>
+                        {row.volume}
+                      </td>
+                      <td style={{ padding: '18px 20px' }}>
+                        <button
+                          onClick={() => onOpenAuth(true)}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            backgroundColor: '#3b82f6',
+                            color: '#ffffff',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Top-Up Now
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{
+              marginTop: '24px',
+              paddingTop: '20px',
+              borderTop: '1px solid var(--border-subtle)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
+              fontSize: '12px',
+              color: 'var(--text-muted)'
+            }}>
+              <div>
+                Minimum top-up is ₹100. 100% of top-up amount is credited directly to your wallet float. All prices are exclusive of 18% GST.
+              </div>
+              <div style={{ fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <CheckCircle2 size={14} color="#10b981" />
+                <span>Automatic refunds on undelivered routes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Developer Section Preview */}
+      <section id="developer" style={{ padding: '80px 48px' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '16px' }}>
+            Ready to integrate into your application?
+          </h2>
+          <p style={{ fontSize: '16px', color: 'var(--text-secondary)', maxWidth: '580px', margin: '0 auto 32px auto' }}>
+            Create your account today, fund your wallet via Razorpay, and dispatch your first OTP in minutes.
+          </p>
+
+          <button
+            onClick={() => onOpenAuth(true)}
+            style={{
+              padding: '14px 32px',
+              backgroundColor: '#3b82f6',
+              color: '#ffffff',
+              borderRadius: '12px',
+              fontSize: '15px',
+              fontWeight: 600,
+              boxShadow: '0 4px 14px rgba(59, 130, 246, 0.3)'
+            }}
+          >
+            Create Developer Account
+          </button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{
+        marginTop: 'auto',
+        backgroundColor: '#0f172a',
+        color: '#94a3b8',
+        padding: '56px 48px 32px 48px',
+        borderTop: '1px solid #1e293b'
+      }}>
+        <div style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '40px',
+          marginBottom: '48px'
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ffffff', marginBottom: '12px' }}>
+              <Radio size={20} color="#3b82f6" />
+              <span style={{ fontSize: '18px', fontWeight: 800 }}>NexusOTP</span>
+            </div>
+            <p style={{ fontSize: '13px', lineHeight: 1.5, color: '#64748b' }}>
+              High-throughput OTP and transactional messaging infrastructure designed for enterprise scalability and developer happiness.
+            </p>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', marginBottom: '14px' }}>
+              Platform
+            </div>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+              <li><a href="#features" style={{ color: 'inherit', textDecoration: 'none' }}>Features</a></li>
+              <li><a href="#pricing" style={{ color: 'inherit', textDecoration: 'none' }}>Transparent Pricing</a></li>
+              <li><a href="#developer" style={{ color: 'inherit', textDecoration: 'none' }}>API Reference</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', marginBottom: '14px' }}>
+              Compliance & Legal
+            </div>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+              <li><span style={{ cursor: 'pointer' }}>Terms of Service</span></li>
+              <li><span style={{ cursor: 'pointer' }}>Privacy Policy</span></li>
+              <li><span style={{ cursor: 'pointer' }}>Acceptable Use Policy</span></li>
+              <li><span style={{ cursor: 'pointer' }}>Refund & Reversal Policy</span></li>
+            </ul>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', marginBottom: '14px' }}>
+              Security
+            </div>
+            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
+              All communications are encrypted using TLS 1.3. API credentials hashed with SHA-256. Zero plaintext secret storage.
+            </p>
+          </div>
+        </div>
+
+        <div style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          paddingTop: '24px',
+          borderTop: '1px solid #1e293b',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '12px',
+          color: '#64748b'
+        }}>
+          <div>
+            © 2026 NexusOTP Platform. All rights reserved.
+          </div>
+          <div>
+            High Availability Telecom Gateway Route
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
