@@ -99,8 +99,8 @@ export const Header: React.FC<HeaderProps> = ({
     // 2. Gateway route notice
     baseItems.push({
       id: 'notice-gateway',
-      title: 'Fast2SMS Direct Route Active',
-      message: 'Fast2SMS carrier pipeline running at 99.8% delivery SLA with sub-second dispatch.',
+      title: 'Direct Carrier Route Active',
+      message: 'Tier-1 telecom carrier pipeline running at 99.8% delivery SLA with sub-second dispatch.',
       timestamp: 'System Normal',
       type: 'system',
       read: readIds.includes('notice-gateway'),
