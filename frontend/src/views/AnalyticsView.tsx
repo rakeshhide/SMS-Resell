@@ -56,7 +56,7 @@ export const AnalyticsView: React.FC = () => {
           <div style={{ fontSize: '32px', fontWeight: 800, color: '#3b82f6', marginTop: '6px' }}>
             ₹{stats?.total_spent ? parseFloat(stats.total_spent).toFixed(2) : '0.00'}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>At ₹0.6000 per delivery</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Deducted from float via active rate</div>
         </div>
 
         <div style={{ backgroundColor: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>

@@ -15,11 +15,22 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
   const [otp, setOtp] = useState('');
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<any | null>(null);
+  const [otpRate, setOtpRate] = useState<number>(0.75);
+  const [tierName, setTierName] = useState<string>('Starter Tier');
 
   useEffect(() => {
     ApiClient.listApiKeys().then((res) => {
       if (res?.keys && res.keys.length > 0) {
         setKeys(res.keys);
+      }
+    }).catch(() => {});
+
+    ApiClient.getWalletBalance().then((res) => {
+      if (res?.otpRate) {
+        setOtpRate(res.otpRate);
+      }
+      if (res?.tierName) {
+        setTierName(res.tierName);
       }
     }).catch(() => {});
   }, []);
@@ -196,10 +207,13 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
               fontSize: '12px',
               color: 'var(--text-secondary)',
               display: 'flex',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              alignItems: 'center'
             }}>
               <span>Tariff per Dispatch:</span>
-              <span style={{ fontWeight: 700, color: '#3b82f6' }}>₹0.6000 (Deducted from float)</span>
+              <span style={{ fontWeight: 700, color: '#3b82f6' }}>
+                ₹{otpRate.toFixed(2)} / OTP ({tierName} - Deducted from float)
+              </span>
             </div>
 
             <button
