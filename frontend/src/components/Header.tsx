@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bell, Shield, User as UserIcon, Menu } from 'lucide-react';
+import { Search, Bell, Shield, User as UserIcon, Menu, Wallet } from 'lucide-react';
 import { User } from '../types';
 
 interface HeaderProps {
@@ -33,7 +33,17 @@ export const Header: React.FC<HeaderProps> = ({ title, user, onOpenWalletModal, 
         </h1>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Mobile Quick Balance Pill */}
+        <button
+          onClick={onOpenWalletModal}
+          className="mobile-header-wallet"
+          title="Top Up Wallet"
+        >
+          <Wallet size={14} color="#3b82f6" />
+          <span>₹{(user?.balance ?? 0).toFixed(2)}</span>
+        </button>
+
         {/* Search Bar - Hidden on tablet/mobile */}
         <div className="header-search-bar">
           <Search size={16} color="var(--text-muted)" />

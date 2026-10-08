@@ -63,139 +63,44 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       
       {/* Top Navbar */}
       <header className="landing-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            backgroundColor: '#3b82f6',
-            color: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
-          }}>
-            <Radio size={20} />
+        <div className="landing-header-inner">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              backgroundColor: '#3b82f6',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+            }}>
+              <Radio size={20} />
+            </div>
+            <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+              NexusOTP
+            </span>
           </div>
-          <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
-            NexusOTP
-          </span>
-        </div>
 
-        {/* Desktop Navigation */}
-        <nav className="landing-nav-desktop">
-          <a href="#features" style={{ color: 'inherit', textDecoration: 'none' }}>Features</a>
-          <a href="#how-it-works" style={{ color: 'inherit', textDecoration: 'none' }}>How It Works</a>
-          <a href="#pricing" style={{ color: 'inherit', textDecoration: 'none' }}>Pricing</a>
-          <a href="#developer" style={{ color: 'inherit', textDecoration: 'none' }}>Developer API</a>
-        </nav>
+          {/* Desktop Navigation */}
+          <nav className="landing-nav-desktop">
+            <a href="#features" style={{ color: 'inherit', textDecoration: 'none' }}>Features</a>
+            <a href="#how-it-works" style={{ color: 'inherit', textDecoration: 'none' }}>How It Works</a>
+            <a href="#pricing" style={{ color: 'inherit', textDecoration: 'none' }}>Pricing</a>
+            <a href="#developer" style={{ color: 'inherit', textDecoration: 'none' }}>Developer API</a>
+          </nav>
 
-        {/* Desktop Auth Buttons */}
-        <div className="landing-auth-desktop">
-          {isLoggedIn ? (
-            <button
-              onClick={onGoToDashboard}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 20px',
-                backgroundColor: '#3b82f6',
-                color: '#ffffff',
-                borderRadius: '10px',
-                fontSize: '14px',
-                fontWeight: 600
-              }}
-            >
-              <span>Go to Dashboard</span>
-              <ArrowRight size={16} />
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={() => onOpenAuth(false)}
-                style={{
-                  padding: '9px 18px',
-                  borderRadius: '10px',
-                  color: 'var(--text-main)',
-                  fontSize: '14px',
-                  fontWeight: 600
-                }}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => onOpenAuth(true)}
-                style={{
-                  padding: '9px 20px',
-                  backgroundColor: '#3b82f6',
-                  color: '#ffffff',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)'
-                }}
-              >
-                Get Started
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Mobile Hamburger Button */}
-        <button
-          className="landing-mobile-toggle"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle navigation menu"
-        >
-          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </header>
-
-      {/* Mobile Drawer Dropdown */}
-      {mobileMenuOpen && (
-        <div className="landing-mobile-drawer">
-          <a
-            href="#features"
-            onClick={() => setMobileMenuOpen(false)}
-            style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 600, fontSize: '15px', padding: '6px 0' }}
-          >
-            Features
-          </a>
-          <a
-            href="#how-it-works"
-            onClick={() => setMobileMenuOpen(false)}
-            style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 600, fontSize: '15px', padding: '6px 0' }}
-          >
-            How It Works
-          </a>
-          <a
-            href="#pricing"
-            onClick={() => setMobileMenuOpen(false)}
-            style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 600, fontSize: '15px', padding: '6px 0' }}
-          >
-            Pricing
-          </a>
-          <a
-            href="#developer"
-            onClick={() => setMobileMenuOpen(false)}
-            style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 600, fontSize: '15px', padding: '6px 0' }}
-          >
-            Developer API
-          </a>
-          <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* Desktop Auth Buttons */}
+          <div className="landing-auth-desktop">
             {isLoggedIn ? (
               <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onGoToDashboard();
-                }}
+                onClick={onGoToDashboard}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
                   gap: '8px',
-                  padding: '12px',
+                  padding: '10px 20px',
                   backgroundColor: '#3b82f6',
                   color: '#ffffff',
                   borderRadius: '10px',
@@ -209,15 +114,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             ) : (
               <>
                 <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onOpenAuth(false);
-                  }}
+                  onClick={() => onOpenAuth(false)}
                   style={{
-                    padding: '12px',
+                    padding: '9px 18px',
                     borderRadius: '10px',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-app)',
                     color: 'var(--text-main)',
                     fontSize: '14px',
                     fontWeight: 600
@@ -226,12 +126,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   Sign In
                 </button>
                 <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onOpenAuth(true);
-                  }}
+                  onClick={() => onOpenAuth(true)}
                   style={{
-                    padding: '12px',
+                    padding: '9px 20px',
                     backgroundColor: '#3b82f6',
                     color: '#ffffff',
                     borderRadius: '10px',
@@ -245,8 +142,153 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               </>
             )}
           </div>
+
+          {/* Mobile Hamburger Button */}
+          <button
+            className="landing-mobile-toggle"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
-      )}
+
+        {/* Mobile Drawer Dropdown */}
+        {mobileMenuOpen && (
+          <div className="landing-mobile-drawer">
+            <a
+              href="#features"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                color: 'var(--text-main)',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: '15px',
+                padding: '8px 4px'
+              }}
+            >
+              <Zap size={16} color="#3b82f6" />
+              <span>Features</span>
+            </a>
+            <a
+              href="#how-it-works"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                color: 'var(--text-main)',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: '15px',
+                padding: '8px 4px'
+              }}
+            >
+              <Clock size={16} color="#3b82f6" />
+              <span>How It Works</span>
+            </a>
+            <a
+              href="#pricing"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                color: 'var(--text-main)',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: '15px',
+                padding: '8px 4px'
+              }}
+            >
+              <Wallet size={16} color="#3b82f6" />
+              <span>Pricing</span>
+            </a>
+            <a
+              href="#developer"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                color: 'var(--text-main)',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: '15px',
+                padding: '8px 4px'
+              }}
+            >
+              <CodeXml size={16} color="#3b82f6" />
+              <span>Developer API</span>
+            </a>
+            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {isLoggedIn ? (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onGoToDashboard();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px',
+                    backgroundColor: '#3b82f6',
+                    color: '#ffffff',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: 600
+                  }}
+                >
+                  <span>Go to Dashboard</span>
+                  <ArrowRight size={16} />
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenAuth(false);
+                    }}
+                    style={{
+                      padding: '12px',
+                      borderRadius: '10px',
+                      border: '1px solid var(--border-subtle)',
+                      backgroundColor: 'var(--bg-app)',
+                      color: 'var(--text-main)',
+                      fontSize: '14px',
+                      fontWeight: 600
+                    }}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenAuth(true);
+                    }}
+                    style={{
+                      padding: '12px',
+                      backgroundColor: '#3b82f6',
+                      color: '#ffffff',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)'
+                    }}
+                  >
+                    Get Started
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </header>
 
       {/* Hero Section */}
       <section className="landing-hero-section">

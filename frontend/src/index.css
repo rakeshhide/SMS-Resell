@@ -383,21 +383,34 @@ input, select, textarea {
 
 /* Landing Page Responsive Styles */
 .landing-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 48px;
-  background-color: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
   position: sticky;
   top: 0;
   z-index: 100;
   width: 100%;
+  background-color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dark-mode .landing-header {
+  background-color: rgba(17, 23, 38, 0.88);
+}
+
+.landing-header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
-  .landing-header {
-    padding: 14px 20px;
+  .landing-header-inner {
+    padding: 12px 18px;
   }
 }
 
@@ -408,6 +421,13 @@ input, select, textarea {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .landing-nav-desktop {
+    gap: 18px;
+    font-size: 13px;
+  }
 }
 
 .landing-auth-desktop {
@@ -441,16 +461,126 @@ input, select, textarea {
 .landing-mobile-drawer {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
+  gap: 12px;
+  padding: 20px 18px;
   background-color: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
   position: sticky;
-  top: 69px;
+  top: 65px;
   z-index: 99;
   box-shadow: var(--shadow-lg);
   animation: fadeIn 0.2s ease;
 }
+
+/* Mobile Quick Header Balance Pill */
+.mobile-header-wallet {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-header-wallet {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background-color: #eff6ff;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    color: #1d4ed8;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+  }
+
+  .dark-mode .mobile-header-wallet {
+    background-color: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.35);
+    color: #93c5fd;
+  }
+}
+
+/* Mobile Bottom Navigation Bar (Thumb Friendly) */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border-subtle);
+    z-index: 800;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+  }
+
+  .dark-mode .mobile-bottom-nav {
+    background-color: rgba(17, 23, 38, 0.94);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .mobile-bottom-nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    height: 60px;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 4px;
+  }
+
+  .mobile-bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex: 1;
+    height: 100%;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+
+  .mobile-bottom-nav-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    border-radius: 12px;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-bottom-nav-item.active {
+    color: #3b82f6;
+    font-weight: 700;
+  }
+
+  .mobile-bottom-nav-item.active .mobile-bottom-nav-icon-wrapper {
+    background-color: #eff6ff;
+    color: #3b82f6;
+  }
+
+  .dark-mode .mobile-bottom-nav-item.active .mobile-bottom-nav-icon-wrapper {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+  }
+
+  /* Safe padding so bottom tabs never overlap page content on phones */
+  .app-main-content main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0)) !important;
+  }
+}
+
 
 .landing-hero-section {
   padding: 72px 48px;

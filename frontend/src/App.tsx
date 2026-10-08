@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { DashboardView } from './views/DashboardView';
 import { TransactionsView } from './views/TransactionsView';
 import { AnalyticsView } from './views/AnalyticsView';
@@ -138,6 +139,13 @@ export function App() {
               {currentTab === 'docs' && <DocsView />}
               {currentTab === 'admin' && <AdminView />}
             </main>
+
+            {/* Mobile Bottom Navigation Bar */}
+            <MobileBottomNav
+              currentTab={currentTab}
+              onSelectTab={(tab) => setCurrentTab(tab)}
+              onOpenMobileDrawer={() => setMobileSidebarOpen(true)}
+            />
           </div>
         </div>
       )}
