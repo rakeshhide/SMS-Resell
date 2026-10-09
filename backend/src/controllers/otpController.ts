@@ -9,9 +9,73 @@ import { WalletService } from '../services/walletService';
 import { SMSProviderFactory } from '../providers/provider.factory';
 import { maskPhoneNumber, hashPhoneNumber } from '../utils/crypto';
 
+/**
+ * Validates and strictly normalizes a phone number to exactly 10 digits.
+ * Rejects numbers with invalid lengths (e.g., 11 digits like 98765432100).
+ */
+export function validateAndNormalizePhone(rawPhone: string): { isValid: boolean; normalizedPhone: string; error?: string } {
+  if (!rawPhone || typeof rawPhone !== 'string') {
+    return { isValid: false, normalizedPhone: '', error: 'Phone number is required.' };
+  }
+
+  const cleaned = rawPhone.trim().replace(/[\s\-\(\)]/g, '');
+
+  if (!/^\+?\d+$/.test(cleaned)) {
+    return {
+      isValid: false,
+      normalizedPhone: '',
+      error: 'Phone number must contain only numeric digits.'
+    };
+  }
+
+  const digitsOnly = cleaned.replace(/\D/g, '');
+  let candidate = '';
+
+  // Case 1: Exactly 10 digits
+  if (digitsOnly.length === 10) {
+    candidate = digitsOnly;
+  }
+  // Case 2: 12 digits with Indian country code (+91 or 91)
+  else if ((cleaned.startsWith('+91') || cleaned.startsWith('91')) && digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
+    candidate = digitsOnly.slice(2);
+  }
+  // Case 3: 11 digits with leading 0 (trunk prefix)
+  else if (cleaned.startsWith('0') && digitsOnly.length === 11 && digitsOnly.startsWith('0')) {
+    candidate = digitsOnly.slice(1);
+  }
+  // Any other length (such as 11 digits starting with 9, e.g. 98765432100) is strictly invalid
+  else {
+    return {
+      isValid: false,
+      normalizedPhone: '',
+      error: `Invalid phone number length (${digitsOnly.length} digits). Phone number must be exactly 10 digits.`
+    };
+  }
+
+  // Must be valid Indian mobile range (starts with 6, 7, 8, or 9)
+  if (!/^[6-9]\d{9}$/.test(candidate)) {
+    return {
+      isValid: false,
+      normalizedPhone: '',
+      error: 'Invalid mobile number. A valid 10-digit Indian mobile number must begin with 6, 7, 8, or 9.'
+    };
+  }
+
+  return { isValid: true, normalizedPhone: candidate };
+}
+
 const sendOtpSchema = z.object({
-  phone: z.string().min(10, 'Phone number must be at least 10 digits').max(15, 'Invalid phone number length'),
-  otp: z.string().min(4, 'OTP must be at least 4 characters').max(8, 'OTP cannot exceed 8 characters'),
+  phone: z.string()
+    .trim()
+    .min(1, 'Phone number is required')
+    .refine((val) => validateAndNormalizePhone(val).isValid, {
+      message: 'Invalid phone number. Must be a valid 10-digit mobile number (e.g. 9876543210).'
+    }),
+  otp: z.string()
+    .trim()
+    .min(4, 'OTP code must be at least 4 digits')
+    .max(8, 'OTP code cannot exceed 8 digits')
+    .regex(/^\d+$/, 'OTP code must contain only numeric digits'),
 });
 
 export class OTPController {
@@ -43,18 +107,18 @@ export class OTPController {
 
       const { phone, otp } = parsed.data;
 
-      // Clean phone number (extract last 10 digits for Indian carriers)
-      const cleanDigits = phone.replace(/\D/g, '');
-      const standardPhone = cleanDigits.length > 10 ? cleanDigits.slice(-10) : cleanDigits;
-
-      if (standardPhone.length !== 10) {
+      // Strict phone validation and normalization without blind slicing
+      const phoneValidation = validateAndNormalizePhone(phone);
+      if (!phoneValidation.isValid) {
         res.status(400).json({
           success: false,
           error_code: 'INVALID_PHONE_NUMBER',
-          message: 'Please provide a valid 10-digit mobile number.'
+          message: phoneValidation.error || 'Please provide a valid 10-digit mobile number.'
         });
         return;
       }
+
+      const standardPhone = phoneValidation.normalizedPhone;
 
       const maskedPhone = maskPhoneNumber(standardPhone);
       const phoneHash = hashPhoneNumber(standardPhone);

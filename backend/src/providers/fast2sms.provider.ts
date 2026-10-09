@@ -14,15 +14,15 @@ export class Fast2SMSProvider implements SMSProvider {
   async sendOTP(params: SendOTPParams): Promise<ProviderSendResult> {
     const { phone, otp } = params;
 
-    // Sanitize phone number (remove country code if +91 or 91 prefix provided)
-    const cleanedPhone = phone.replace(/\D/g, '').slice(-10);
+    // Strictly validate 10-digit mobile number (never slice or truncate unknown lengths)
+    const cleanedPhone = phone.replace(/\D/g, '');
 
-    if (!cleanedPhone || cleanedPhone.length !== 10) {
+    if (!cleanedPhone || cleanedPhone.length !== 10 || !/^[6-9]\d{9}$/.test(cleanedPhone)) {
       return {
         success: false,
         providerRefId: '',
         statusCode: 'INVALID_DESTINATION',
-        message: 'Invalid 10-digit mobile number format'
+        message: 'Invalid 10-digit mobile number format. Number must be exactly 10 digits starting with 6, 7, 8, or 9.'
       };
     }
 

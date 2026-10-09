@@ -34,10 +34,19 @@ export const DocsView: React.FC = () => {
     e.preventDefault();
     if (!testKey || !testPhone || !testOtp) return;
 
+    const cleanDigits = testPhone.replace(/\D/g, '');
+    if (cleanDigits.length !== 10 || !/^[6-9]\d{9}$/.test(cleanDigits)) {
+      setTestResult({
+        status: 400,
+        data: { success: false, message: 'Invalid recipient number. Must be a valid 10-digit mobile number starting with 6, 7, 8, or 9.' }
+      });
+      return;
+    }
+
     try {
       setSimulating(true);
       setTestResult(null);
-      const res = await ApiClient.testSendOTP(testKey, testPhone, testOtp);
+      const res = await ApiClient.testSendOTP(testKey, cleanDigits, testOtp);
       setTestResult(res);
     } catch (err: any) {
       setTestResult({ status: 500, data: { success: false, message: err.message } });
@@ -234,12 +243,12 @@ echo $response;
               Recipient Mobile Number
             </label>
             <input
-              type="text"
+              type="tel"
               required
               maxLength={10}
               placeholder="9876543210"
               value={testPhone}
-              onChange={(e) => setTestPhone(e.target.value)}
+              onChange={(e) => setTestPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
               style={{
                 width: '100%',
                 marginTop: '6px',

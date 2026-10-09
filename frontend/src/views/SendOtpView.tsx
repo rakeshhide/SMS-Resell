@@ -13,6 +13,7 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [selectedKey, setSelectedKey] = useState('');
   const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [otp, setOtp] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -47,18 +48,28 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPhoneError(null);
     if (!phone || !otp) return;
+
+    // Strictly validate 10 digits
+    const cleanDigits = phone.replace(/\D/g, '');
+    if (cleanDigits.length !== 10) {
+      setPhoneError('Mobile number must be exactly 10 digits.');
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(cleanDigits)) {
+      setPhoneError('Invalid mobile number. Must start with 6, 7, 8, or 9.');
+      return;
+    }
 
     try {
       setSending(true);
       setResult(null);
 
-      // Clean phone number
-      const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-
       // Dispatch request
       const activeKey = selectedKey || (keys[0] ? keys[0].key_prefix + '...' : '');
-      const response = await ApiClient.testSendOTP(activeKey, cleanPhone, otp);
+      const response = await ApiClient.testSendOTP(activeKey, cleanDigits, otp);
 
       setResult(response);
       if (response.status === 200 && onSuccessDispatch) {
@@ -145,12 +156,16 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
                 <Smartphone size={16} color="var(--text-muted)" />
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>+91</span>
                 <input
-                  type="text"
+                  type="tel"
                   required
                   placeholder="9876543210"
                   maxLength={10}
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    const onlyDigits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setPhone(onlyDigits);
+                    if (phoneError) setPhoneError(null);
+                  }}
                   style={{
                     border: 'none',
                     background: 'transparent',
@@ -163,6 +178,20 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
                   }}
                 />
               </div>
+              {phoneError && (
+                <div style={{
+                  marginTop: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#ef4444',
+                  fontSize: '12px',
+                  fontWeight: 600
+                }}>
+                  <AlertCircle size={14} color="#ef4444" />
+                  <span>{phoneError}</span>
+                </div>
+              )}
             </div>
 
             <div>
