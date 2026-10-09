@@ -257,45 +257,48 @@ export const AdminView: React.FC = () => {
         className="surface-card"
         style={{
           marginTop: '20px',
-          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%)',
+          backgroundColor: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
           borderRadius: 'var(--radius-xl)',
-          padding: '24px'
+          padding: '24px',
+          boxShadow: 'var(--shadow-sm)'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '16px', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '18px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(59, 130, 246, 0.15)',
+              width: '46px',
+              height: '46px',
+              borderRadius: '12px',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0
             }}>
-              <Zap size={22} color="#3b82f6" />
+              <Zap size={24} color="#2563eb" />
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.01em' }}>
                   Fast2SMS Gateway Float & Carrier Solvency
                 </h3>
                 <span style={{
                   fontSize: '11px',
                   fontWeight: 800,
-                  padding: '3px 8px',
+                  padding: '3px 10px',
                   borderRadius: '6px',
-                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                  color: '#60a5fa',
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  color: '#2563eb',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
                   letterSpacing: '0.02em'
                 }}>
                   Formula: 0.45 × All Account OTPs
                 </span>
               </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Required balance you must maintain in your Fast2SMS wallet to ensure 100% of customer OTPs can dispatch without upstream 416 low-balance failures.
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Maintain at least this balance in your Fast2SMS wallet based on circulating developer funds to ensure 0 delivery disruptions.
               </p>
             </div>
           </div>
@@ -309,14 +312,15 @@ export const AdminView: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '8px 14px',
+              padding: '8px 16px',
               borderRadius: '8px',
               border: '1px solid var(--border-subtle)',
               backgroundColor: 'var(--bg-app)',
               color: 'var(--text-main)',
               fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer'
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
             }}
           >
             <RefreshCw size={14} />
@@ -327,43 +331,43 @@ export const AdminView: React.FC = () => {
         {/* Breakdown Stats Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: '16px'
         }}>
           {/* Total Account OTPs */}
           <div style={{
             backgroundColor: 'var(--bg-app)',
-            padding: '16px',
+            padding: '18px',
             borderRadius: 'var(--radius-lg)',
             border: '1px solid var(--border-subtle)'
           }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Total Account OTPs
             </div>
-            <div style={{ fontSize: '26px', fontWeight: 800, color: '#3b82f6', marginTop: '6px' }}>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#2563eb', marginTop: '6px' }}>
               {(stats?.fast2sms?.totalAccountOtps || 0).toLocaleString()}
-              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginLeft: '6px' }}>OTPs</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginLeft: '6px' }}>OTPs</span>
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Sum of OTP capacity across all developer accounts
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Calculated from all account balances (₹{(stats?.circulatingWalletBalance || 0).toFixed(2)})
             </div>
           </div>
 
           {/* Upstream Base Cost */}
           <div style={{
             backgroundColor: 'var(--bg-app)',
-            padding: '16px',
+            padding: '18px',
             borderRadius: 'var(--radius-lg)',
             border: '1px solid var(--border-subtle)'
           }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Carrier Upstream Rate
             </div>
-            <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-main)', marginTop: '6px' }}>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-main)', marginTop: '6px' }}>
               ₹0.45
-              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginLeft: '6px' }}>/ OTP</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginLeft: '6px' }}>/ OTP</span>
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
               Fixed Fast2SMS carrier cost per transaction
             </div>
           </div>
@@ -371,71 +375,71 @@ export const AdminView: React.FC = () => {
           {/* Required Fast2SMS Wallet Balance */}
           <div style={{
             backgroundColor: 'var(--bg-app)',
-            padding: '16px',
+            padding: '18px',
             borderRadius: 'var(--radius-lg)',
-            border: stats?.fast2sms?.isFloatSufficient ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(245, 158, 11, 0.5)',
-            boxShadow: stats?.fast2sms?.isFloatSufficient ? 'none' : '0 0 12px rgba(245, 158, 11, 0.15)'
+            border: stats?.fast2sms?.isFloatSufficient ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(245, 158, 11, 0.4)',
+            boxShadow: stats?.fast2sms?.isFloatSufficient ? 'none' : '0 0 12px rgba(245, 158, 11, 0.12)'
           }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Required Fast2SMS Balance
             </div>
             <div style={{
-              fontSize: '26px',
+              fontSize: '28px',
               fontWeight: 800,
               color: stats?.fast2sms?.isFloatSufficient ? '#10b981' : '#f59e0b',
               marginTop: '6px'
             }}>
               ₹{(stats?.fast2sms?.requiredWalletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Maintain this minimum float in Fast2SMS
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              0.45 × {(stats?.fast2sms?.totalAccountOtps || 0)} OTPs to maintain
             </div>
           </div>
 
           {/* Live Fast2SMS Wallet Balance */}
           <div style={{
             backgroundColor: 'var(--bg-app)',
-            padding: '16px',
+            padding: '18px',
             borderRadius: 'var(--radius-lg)',
             border: '1px solid var(--border-subtle)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Live Fast2SMS Float
               </span>
               {stats?.fast2sms?.liveWalletBalance !== null && stats?.fast2sms?.liveWalletBalance !== undefined && (
                 <span style={{
                   fontSize: '10px',
-                  fontWeight: 700,
-                  padding: '2px 6px',
+                  fontWeight: 800,
+                  padding: '2px 8px',
                   borderRadius: '4px',
                   backgroundColor: stats?.fast2sms?.isFloatSufficient ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  color: stats?.fast2sms?.isFloatSufficient ? '#10b981' : '#ef4444'
+                  color: stats?.fast2sms?.isFloatSufficient ? '#059669' : '#dc2626'
                 }}>
                   {stats?.fast2sms?.isFloatSufficient ? 'Sufficient' : 'Deficit'}
                 </span>
               )}
             </div>
-            <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-main)', marginTop: '6px' }}>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-main)', marginTop: '6px' }}>
               {stats?.fast2sms?.liveWalletBalance !== null && stats?.fast2sms?.liveWalletBalance !== undefined
                 ? `₹${stats.fast2sms.liveWalletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                 : 'Offline'}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
               {stats?.fast2sms?.liveSmsCount !== null && stats?.fast2sms?.liveSmsCount !== undefined
                 ? `Carrier Capacity: ${stats.fast2sms.liveSmsCount} SMS remaining`
-                : 'Queried via Fast2SMS API'}
+                : 'Queried live via Fast2SMS API'}
             </div>
           </div>
         </div>
 
         {/* Solvency Health Status Alert */}
         <div style={{
-          marginTop: '16px',
-          padding: '12px 16px',
-          borderRadius: '8px',
+          marginTop: '18px',
+          padding: '14px 18px',
+          borderRadius: '10px',
           backgroundColor: stats?.fast2sms?.isFloatSufficient ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.1)',
-          border: stats?.fast2sms?.isFloatSufficient ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.3)',
+          border: stats?.fast2sms?.isFloatSufficient ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(245, 158, 11, 0.3)',
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
@@ -443,16 +447,18 @@ export const AdminView: React.FC = () => {
         }}>
           {stats?.fast2sms?.isFloatSufficient ? (
             <>
-              <CheckCircle2 size={18} color="#10b981" />
-              <div style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>
-                Upstream Liquidity Healthy: Your live Fast2SMS balance (₹{(stats?.fast2sms?.liveWalletBalance || 0).toFixed(2)}) comfortably covers the required float of ₹{(stats?.fast2sms?.requiredWalletBalance || 0).toFixed(2)}.
+              <CheckCircle2 size={20} color="#059669" />
+              <div style={{ fontSize: '13px', color: 'var(--text-main)', fontWeight: 600 }}>
+                <strong style={{ color: '#059669', marginRight: '6px' }}>Upstream Liquidity Healthy:</strong>
+                Your live Fast2SMS balance (₹{(stats?.fast2sms?.liveWalletBalance || 0).toFixed(2)}) safely covers the required float of ₹{(stats?.fast2sms?.requiredWalletBalance || 0).toFixed(2)} for all account balances.
               </div>
             </>
           ) : (
             <>
-              <AlertTriangle size={18} color="#f59e0b" />
-              <div style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 600 }}>
-                Float Replenishment Recommended: You need to maintain ₹{(stats?.fast2sms?.requiredWalletBalance || 0).toFixed(2)} in your Fast2SMS wallet (Deficit: ₹{(stats?.fast2sms?.floatDeficit || 0).toFixed(2)}).
+              <AlertTriangle size={20} color="#dc2626" />
+              <div style={{ fontSize: '13px', color: 'var(--text-main)', fontWeight: 600 }}>
+                <strong style={{ color: '#dc2626', marginRight: '6px' }}>Float Replenishment Recommended:</strong>
+                You need to maintain ₹{(stats?.fast2sms?.requiredWalletBalance || 0).toFixed(2)} in Fast2SMS (Deficit: ₹{(stats?.fast2sms?.floatDeficit || 0).toFixed(2)}).
               </div>
             </>
           )}

@@ -39,17 +39,19 @@ export class AdminController {
         FROM otp_transactions
       `);
 
-      // Calculate total outstanding OTP capacity held by user accounts (0.45 * all account otp)
+      // Calculate total outstanding OTP capacity across ALL accounts according to their balance (0.45 * all account otp)
       const accountOtpsRes = await pool.query(`
         SELECT 
-          COALESCE(SUM(FLOOR(w.balance / NULLIF(w.otp_rate, 0))), 0)::BIGINT as total_account_otps,
+          COALESCE(SUM(w.balance / COALESCE(NULLIF(w.otp_rate, 0), 0.75)), 0) as total_otp_capacity,
+          COALESCE(SUM(FLOOR(w.balance / COALESCE(NULLIF(w.otp_rate, 0), 0.75))), 0)::BIGINT as floor_account_otps,
           COALESCE(SUM(w.balance), 0) as total_account_balance
         FROM wallets w
         JOIN users u ON u.id = w.user_id
-        WHERE u.role = 'user'
       `);
       
-      const totalAccountOtps = parseInt(accountOtpsRes.rows[0].total_account_otps || '0');
+      const totalCapacity = parseFloat(accountOtpsRes.rows[0].total_otp_capacity || '0');
+      const totalAccountOtps = Math.round(totalCapacity);
+      const totalAccountBalance = parseFloat(accountOtpsRes.rows[0].total_account_balance || '0');
       const requiredFast2smsBalance = parseFloat((totalAccountOtps * 0.45).toFixed(2));
 
       // Attempt to fetch live Fast2SMS balance
