@@ -776,4 +776,64 @@ input, select, textarea {
   justify-content: space-between;
 }
 
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Mobile-Responsive Admin Support & Chat Center */
+@media (max-width: 768px) {
+  .admin-chat-container {
+    height: calc(100vh - 170px) !important;
+    min-height: 540px !important;
+  }
+
+  .admin-chat-split {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .admin-chat-list-pane {
+    width: 100% !important;
+    border-right: none !important;
+  }
+
+  .admin-chat-active-pane {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+  }
+
+  .admin-tab-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap !important;
+    padding-bottom: 8px;
+  }
+  .admin-tab-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .grid-stats-responsive {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-stats-responsive {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 

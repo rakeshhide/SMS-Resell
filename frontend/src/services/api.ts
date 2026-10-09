@@ -338,10 +338,18 @@ export class ApiClient {
     });
   }
 
-  public static updateSupportTicketStatus(ticketId: string, status: string) {
-    return this.request<{ success: boolean; message: string; data: SupportTicket }>(`/support/tickets/${ticketId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
+  public static async updateSupportTicketStatus(ticketId: string, status: string) {
+    try {
+      return await this.request<{ success: boolean; message: string; data: SupportTicket }>(`/support/tickets/${ticketId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+    } catch (patchErr) {
+      // Fallback to POST in case older proxies or CORS preflights reject PATCH
+      return await this.request<{ success: boolean; message: string; data: SupportTicket }>(`/support/tickets/${ticketId}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status }),
+      });
+    }
   }
 }

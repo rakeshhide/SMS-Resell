@@ -22,6 +22,7 @@ import { ApiClient } from '../services/api';
 import { PricingTier, SystemSettings } from '../types';
 import { AdminSkeleton } from '../components/Skeleton';
 import { AdminSupportChat } from '../components/AdminSupportChat';
+import { ToastContainer, ToastMessage } from '../components/Toast';
 
 export const AdminView: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
@@ -29,6 +30,16 @@ export const AdminView: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [adminSection, setAdminSection] = useState<'overview' | 'support' | 'users' | 'audit'>('overview');
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const showToast = (type: 'success' | 'error' | 'info' | 'warning', message: string, title?: string) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, type, message, title }]);
+  };
+
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   // System Settings
   const [minTopup, setMinTopup] = useState<number>(100);
@@ -86,10 +97,10 @@ export const AdminView: React.FC = () => {
     try {
       setSavingSettings(true);
       await ApiClient.updateAdminSettings(minTopup, defaultGst);
-      alert('Global platform settings updated successfully.');
+      showToast('success', 'Global platform settings updated successfully.', 'Settings Saved');
       fetchAdminData();
     } catch (err: any) {
-      alert(err.message || 'Failed to update settings');
+      showToast('error', err.message || 'Failed to update settings', 'Settings Error');
     } finally {
       setSavingSettings(false);
     }
@@ -98,9 +109,10 @@ export const AdminView: React.FC = () => {
   const handleToggleTier = async (tierId: string, currentStatus: boolean) => {
     try {
       await ApiClient.toggleAdminPricingTier(tierId, !currentStatus);
+      showToast('success', `Pricing tier ${!currentStatus ? 'activated' : 'deactivated'}.`, 'Tier Updated');
       fetchAdminData();
     } catch (err: any) {
-      alert(err.message || 'Failed to toggle tier status');
+      showToast('error', err.message || 'Failed to toggle tier status', 'Tier Error');
     }
   };
 
@@ -108,9 +120,10 @@ export const AdminView: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this pricing tier?')) return;
     try {
       await ApiClient.deleteAdminPricingTier(tierId);
+      showToast('success', 'Pricing tier deleted successfully.', 'Tier Deleted');
       fetchAdminData();
     } catch (err: any) {
-      alert(err.message || 'Failed to delete tier');
+      showToast('error', err.message || 'Failed to delete tier', 'Tier Error');
     }
   };
 
@@ -126,10 +139,10 @@ export const AdminView: React.FC = () => {
         isActive: true,
       });
       setShowAddModal(false);
-      alert('New pricing tier created successfully.');
+      showToast('success', 'New pricing tier created successfully.', 'Tier Created');
       fetchAdminData();
     } catch (err: any) {
-      alert(err.message || 'Failed to create pricing tier');
+      showToast('error', err.message || 'Failed to create pricing tier', 'Tier Error');
     } finally {
       setSubmittingTier(false);
     }
@@ -148,10 +161,10 @@ export const AdminView: React.FC = () => {
         isActive: editingTier.isActive,
       });
       setEditingTier(null);
-      alert('Pricing tier updated successfully.');
+      showToast('success', 'Pricing tier updated successfully.', 'Tier Updated');
       fetchAdminData();
     } catch (err: any) {
-      alert(err.message || 'Failed to update tier');
+      showToast('error', err.message || 'Failed to update tier', 'Tier Error');
     } finally {
       setSubmittingTier(false);
     }
@@ -163,9 +176,10 @@ export const AdminView: React.FC = () => {
 
     try {
       await ApiClient.toggleUserStatus(userId, newStatus);
+      showToast('success', `User account status updated to ${newStatus}.`, 'User Status');
       fetchAdminData();
     } catch (err: any) {
-      alert(err.message || 'Failed to update user status');
+      showToast('error', err.message || 'Failed to update user status', 'Status Error');
     }
   };
 
@@ -176,12 +190,12 @@ export const AdminView: React.FC = () => {
     try {
       setSubmittingAdjust(true);
       const res = await ApiClient.manualWalletAdjustment(selectedUser.id, adjustAmount, adjustReason);
-      alert(res.message);
+      showToast('success', res.message || 'Wallet balance adjustment applied successfully.', 'Float Adjusted');
       setSelectedUser(null);
       setAdjustReason('');
       fetchAdminData();
     } catch (err: any) {
-      alert(err.message || 'Failed to execute adjustment');
+      showToast('error', err.message || 'Failed to execute adjustment', 'Adjustment Error');
     } finally {
       setSubmittingAdjust(false);
     }
@@ -193,6 +207,7 @@ export const AdminView: React.FC = () => {
 
   return (
     <div className="page-container">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       
       {/* Title */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
@@ -208,7 +223,7 @@ export const AdminView: React.FC = () => {
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid-stats">
+      <div className="grid-stats grid-stats-responsive">
         <div style={{ backgroundColor: 'var(--bg-surface)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Active Developers</div>
           <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-main)', marginTop: '6px' }}>{stats?.totalUsers || 0}</div>
@@ -235,15 +250,19 @@ export const AdminView: React.FC = () => {
       </div>
 
       {/* Admin Section Navigation Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: '8px',
-        borderBottom: '1px solid var(--border-subtle)',
-        paddingBottom: '12px',
-        marginTop: '24px',
-        marginBottom: '24px',
-        flexWrap: 'wrap'
-      }}>
+      <div
+        className="admin-tab-scroll"
+        style={{
+          display: 'flex',
+          gap: '8px',
+          borderBottom: '1px solid var(--border-subtle)',
+          paddingBottom: '12px',
+          marginTop: '24px',
+          marginBottom: '24px',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch'
+        }}
+      >
         <button
           onClick={() => setAdminSection('overview')}
           style={{
@@ -256,6 +275,8 @@ export const AdminView: React.FC = () => {
             fontSize: '13px',
             fontWeight: 700,
             cursor: 'pointer',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
             backgroundColor: adminSection === 'overview' ? '#3b82f6' : 'var(--bg-surface)',
             color: adminSection === 'overview' ? '#ffffff' : 'var(--text-secondary)',
             boxShadow: adminSection === 'overview' ? 'var(--shadow-sm)' : 'none'
@@ -277,6 +298,8 @@ export const AdminView: React.FC = () => {
             fontSize: '13px',
             fontWeight: 700,
             cursor: 'pointer',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
             backgroundColor: adminSection === 'support' ? '#8b5cf6' : 'var(--bg-surface)',
             color: adminSection === 'support' ? '#ffffff' : 'var(--text-secondary)',
             boxShadow: adminSection === 'support' ? 'var(--shadow-sm)' : 'none'
@@ -298,6 +321,8 @@ export const AdminView: React.FC = () => {
             fontSize: '13px',
             fontWeight: 700,
             cursor: 'pointer',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
             backgroundColor: adminSection === 'users' ? '#3b82f6' : 'var(--bg-surface)',
             color: adminSection === 'users' ? '#ffffff' : 'var(--text-secondary)',
             boxShadow: adminSection === 'users' ? 'var(--shadow-sm)' : 'none'
@@ -319,6 +344,8 @@ export const AdminView: React.FC = () => {
             fontSize: '13px',
             fontWeight: 700,
             cursor: 'pointer',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
             backgroundColor: adminSection === 'audit' ? '#3b82f6' : 'var(--bg-surface)',
             color: adminSection === 'audit' ? '#ffffff' : 'var(--text-secondary)',
             boxShadow: adminSection === 'audit' ? 'var(--shadow-sm)' : 'none'

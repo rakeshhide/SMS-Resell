@@ -3,6 +3,7 @@ import { KeyRound, Plus, Copy, Check, Trash2, AlertTriangle, ShieldAlert } from 
 import { ApiKey } from '../types';
 import { ApiClient } from '../services/api';
 import { ApiKeysSkeleton, SkeletonTableRows } from '../components/Skeleton';
+import { ToastContainer, ToastMessage } from '../components/Toast';
 
 export const ApiKeysView: React.FC = () => {
   const [keys, setKeys] = useState<ApiKey[]>([]);
@@ -13,6 +14,16 @@ export const ApiKeysView: React.FC = () => {
   const [createdKeySecret, setCreatedKeySecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const showToast = (type: 'success' | 'error' | 'info' | 'warning', message: string, title?: string) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, type, message, title }]);
+  };
+
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   useEffect(() => {
     fetchKeys();
@@ -41,10 +52,11 @@ export const ApiKeysView: React.FC = () => {
       const res = await ApiClient.createApiKey(keyName, rateLimit);
       if (res?.apiKey) {
         setCreatedKeySecret(res.apiKey.rawSecretKey);
+        showToast('success', 'New API key generated successfully.', 'Key Generated');
         fetchKeys();
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to create API key');
+      showToast('error', err.message || 'Failed to create API key', 'Key Generation Error');
     } finally {
       setSubmitting(false);
     }
@@ -57,15 +69,17 @@ export const ApiKeysView: React.FC = () => {
 
     try {
       await ApiClient.revokeApiKey(id);
+      showToast('success', 'API key revoked successfully.', 'Key Revoked');
       fetchKeys();
     } catch (err: any) {
-      alert(err.message || 'Failed to revoke API key');
+      showToast('error', err.message || 'Failed to revoke API key', 'Revocation Error');
     }
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
+    showToast('info', 'API Key copied to clipboard.', 'Copied');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -75,6 +89,7 @@ export const ApiKeysView: React.FC = () => {
 
   return (
     <div className="page-container">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       
       {/* Header Banner */}
       <div className="surface-card" style={{

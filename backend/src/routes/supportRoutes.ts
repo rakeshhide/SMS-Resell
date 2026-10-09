@@ -12,5 +12,6 @@ router.get('/tickets', SupportController.listTickets);
 router.get('/tickets/:id', SupportController.getTicket);
 router.post('/tickets/:id/messages', SupportController.addMessage);
 router.patch('/tickets/:id/status', SupportController.updateStatus);
+router.post('/tickets/:id/status', SupportController.updateStatus);
 
 export default router;

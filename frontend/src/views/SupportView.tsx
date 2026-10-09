@@ -11,10 +11,12 @@ import {
   AlertCircle,
   RefreshCw,
   HelpCircle,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { SupportTicket, SupportMessage } from '../types';
+import { ToastContainer, ToastMessage } from '../components/Toast';
 
 export const SupportView: React.FC = () => {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -24,6 +26,8 @@ export const SupportView: React.FC = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [isMobile, setIsMobile] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
 
   // New Ticket Modal State
   const [showNewModal, setShowNewModal] = useState(false);
@@ -34,6 +38,21 @@ export const SupportView: React.FC = () => {
   const [submittingTicket, setSubmittingTicket] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const showToast = (type: 'success' | 'error' | 'info' | 'warning', message: string, title?: string) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, type, message, title }]);
+  };
+
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   useEffect(() => {
     fetchMyTickets();
@@ -55,7 +74,7 @@ export const SupportView: React.FC = () => {
       const res = await ApiClient.listSupportTickets();
       if (res?.data) {
         setTickets(res.data);
-        if (!selectedTicket && res.data.length > 0) {
+        if (!selectedTicket && res.data.length > 0 && !isMobile) {
           setSelectedTicket(res.data[0]);
         }
       }
@@ -101,9 +120,10 @@ export const SupportView: React.FC = () => {
         setShowNewModal(false);
         setNewSubject('');
         setNewQuestion('');
+        showToast('success', 'Your inquiry has been submitted to support team.', 'Inquiry Created');
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to submit inquiry');
+      showToast('error', err.message || 'Failed to submit inquiry', 'Inquiry Error');
     } finally {
       setSubmittingTicket(false);
     }
@@ -121,7 +141,7 @@ export const SupportView: React.FC = () => {
         setReplyText('');
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to send message');
+      showToast('error', err.message || 'Failed to send message', 'Dispatch Error');
     } finally {
       setSendingReply(false);
     }
@@ -138,9 +158,10 @@ export const SupportView: React.FC = () => {
         setTickets((prev) =>
           prev.map((t) => (t.id === selectedTicket.id ? res.data : t))
         );
+        showToast('success', `Inquiry #${selectedTicket.ticketNumber} marked as resolved.`, 'Ticket Resolved');
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to update ticket');
+      showToast('error', err.message || 'Failed to update ticket status', 'Status Error');
     }
   };
 
@@ -161,6 +182,7 @@ export const SupportView: React.FC = () => {
 
   return (
     <div className="page-container">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       {/* Title & Action */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
         <div>
@@ -196,23 +218,29 @@ export const SupportView: React.FC = () => {
       </div>
 
       {/* Main Support Chat Shell */}
-      <div style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-xl)',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)',
-        display: 'flex',
-        height: '680px',
-        overflow: 'hidden'
-      }}>
-        {/* Left Side: Ticket List */}
-        <div style={{
-          width: '320px',
-          borderRight: '1px solid var(--border-subtle)',
+      <div
+        className="admin-chat-container"
+        style={{
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: 'var(--radius-xl)',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-sm)',
           display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: 'var(--bg-app)'
-        }}>
+          height: '680px',
+          overflow: 'hidden',
+          position: 'relative'
+        }}
+      >
+        {/* Left Side: Ticket List */}
+        {(!isMobile || !selectedTicket) && (
+          <div style={{
+            width: isMobile ? '100%' : '320px',
+            borderRight: isMobile ? 'none' : '1px solid var(--border-subtle)',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'var(--bg-app)',
+            height: '100%'
+          }}>
           <div style={{
             padding: '14px 16px',
             borderBottom: '1px solid var(--border-subtle)',
@@ -313,42 +341,73 @@ export const SupportView: React.FC = () => {
             )}
           </div>
         </div>
+        )}
 
         {/* Right Side: Chat Area */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-surface)' }}>
-          {selectedTicket ? (
-            <>
-              {/* Header */}
-              <div style={{
-                padding: '16px 20px',
-                borderBottom: '1px solid var(--border-subtle)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '8px'
-              }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '12px',
-                      fontWeight: 800,
-                      color: '#3b82f6',
-                      backgroundColor: '#eff6ff',
-                      padding: '2px 6px',
-                      borderRadius: '4px'
-                    }}>
-                      {selectedTicket.ticketNumber}
-                    </span>
-                    <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-                      {selectedTicket.subject}
-                    </h4>
+        {(!isMobile || selectedTicket) && (
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'var(--bg-surface)',
+            height: '100%',
+            width: isMobile ? '100%' : 'auto'
+          }}>
+            {selectedTicket ? (
+              <>
+                {/* Header */}
+                <div style={{
+                  padding: '16px 20px',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '8px'
+                }}>
+                  <div>
+                    {isMobile && (
+                      <button
+                        onClick={() => setSelectedTicket(null)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          marginBottom: '8px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-subtle)',
+                          backgroundColor: 'var(--bg-app)',
+                          color: 'var(--text-main)',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <ArrowLeft size={14} />
+                        <span>Back to Inquiries</span>
+                      </button>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        color: '#3b82f6',
+                        backgroundColor: '#eff6ff',
+                        padding: '2px 6px',
+                        borderRadius: '4px'
+                      }}>
+                        {selectedTicket.ticketNumber}
+                      </span>
+                      <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                        {selectedTicket.subject}
+                      </h4>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      Category: <strong>{selectedTicket.category}</strong> • Priority: <strong>{selectedTicket.priority}</strong>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    Category: <strong>{selectedTicket.category}</strong> • Priority: <strong>{selectedTicket.priority}</strong>
-                  </div>
-                </div>
 
                 {selectedTicket.status !== 'RESOLVED' && selectedTicket.status !== 'CLOSED' && (
                   <button
@@ -521,6 +580,7 @@ export const SupportView: React.FC = () => {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Ask Question Modal */}
