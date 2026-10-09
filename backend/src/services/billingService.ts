@@ -129,14 +129,15 @@ export class BillingService {
   }
 
   /**
-   * Retrieve platform system settings (minimum topup, gst %)
+   * Retrieve platform system settings (minimum topup, gst %, service fee %)
    */
-  public static async getSystemSettings(): Promise<{ minTopup: number; defaultGst: number }> {
+  public static async getSystemSettings(): Promise<{ minTopup: number; defaultGst: number; defaultServiceFee: number }> {
     const now = Date.now();
     if (this.cachedSettings && this.settingsCacheExpiry > now) {
       return {
         minTopup: parseFloat(this.cachedSettings['min_topup_amount'] || '100'),
         defaultGst: parseFloat(this.cachedSettings['default_gst_percentage'] || '18'),
+        defaultServiceFee: parseFloat(this.cachedSettings['default_service_fee_percentage'] || '2.5'),
       };
     }
 
@@ -151,9 +152,10 @@ export class BillingService {
       return {
         minTopup: parseFloat(map['min_topup_amount'] || '100'),
         defaultGst: parseFloat(map['default_gst_percentage'] || '18'),
+        defaultServiceFee: parseFloat(map['default_service_fee_percentage'] || '2.5'),
       };
     } catch (e) {
-      return { minTopup: 100, defaultGst: 18 };
+      return { minTopup: 100, defaultGst: 18, defaultServiceFee: 2.5 };
     }
   }
 

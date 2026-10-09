@@ -18,9 +18,9 @@ export async function runMigration() {
     if (pricingRes.rowCount === 0) {
       await client.query(`
         INSERT INTO pricing_rules (provider_base_cost, gst_percentage, service_charge_percentage, is_active)
-        VALUES (0.1500, 18.00, 2.00, TRUE)
+        VALUES (0.1500, 18.00, 2.50, TRUE)
       `);
-      console.log('[MIGRATION] Default pricing rules initialized (Base: ₹0.15, GST: 18%, Service: 2%).');
+      console.log('[MIGRATION] Default pricing rules initialized (Base: ₹0.15, GST: 18%, Service: 2.5%).');
     }
 
     await client.query('COMMIT');

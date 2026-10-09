@@ -35,7 +35,8 @@ export async function runPricingMigration() {
       INSERT INTO system_settings (key, value, description)
       VALUES 
         ('min_topup_amount', '100.00', 'Minimum wallet top-up allowed in INR'),
-        ('default_gst_percentage', '18.00', 'Default GST percentage for wallet top-ups')
+        ('default_gst_percentage', '18.00', 'Default GST percentage for wallet top-ups'),
+        ('default_service_fee_percentage', '2.50', 'Default platform service fee percentage for wallet top-ups')
       ON CONFLICT (key) DO NOTHING;
     `);
 

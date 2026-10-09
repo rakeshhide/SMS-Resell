@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS payments (
     amount NUMERIC(14, 4) NOT NULL, -- Total payable via gateway
     credit_amount NUMERIC(14, 4) NOT NULL DEFAULT 0.0000, -- Amount added to wallet balance
     gst_amount NUMERIC(14, 4) NOT NULL DEFAULT 0.0000, -- 18% GST
-    service_fee_amount NUMERIC(14, 4) NOT NULL DEFAULT 0.0000, -- 2% Service Fee
+    service_fee_amount NUMERIC(14, 4) NOT NULL DEFAULT 0.0000, -- 2.5% Service Fee
     currency VARCHAR(10) NOT NULL DEFAULT 'INR',
     status VARCHAR(30) NOT NULL DEFAULT 'PENDING', -- 'PENDING' | 'SUCCESS' | 'FAILED'
     idempotency_key VARCHAR(100) UNIQUE NOT NULL,
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS pricing_rules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     provider_base_cost NUMERIC(8, 4) NOT NULL DEFAULT 0.1500,
     gst_percentage NUMERIC(5, 2) NOT NULL DEFAULT 18.00,
-    service_charge_percentage NUMERIC(5, 2) NOT NULL DEFAULT 2.00,
+    service_charge_percentage NUMERIC(5, 2) NOT NULL DEFAULT 2.50,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     updated_by UUID REFERENCES users(id),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
