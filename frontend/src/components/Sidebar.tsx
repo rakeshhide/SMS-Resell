@@ -17,6 +17,7 @@ import {
   LifeBuoy
 } from 'lucide-react';
 import { User } from '../types';
+import { TurfsyLogo } from './TurfsyLogo';
 
 interface SidebarProps {
   currentTab: string;
@@ -81,19 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             padding: '0 8px 24px 8px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '10px',
-                backgroundColor: '#3b82f6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
-              }}>
-                <Radio size={22} />
-              </div>
+              <TurfsyLogo size={38} />
               <div>
                 <div style={{
                   fontSize: '18px',
@@ -104,7 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   alignItems: 'center',
                   gap: '6px'
                 }}>
-                  turfsyOTPs
+                  turfsy<span style={{ color: '#38bdf8' }}>OTPs</span>
                 </div>
                 <div style={{
                   fontSize: '11px',
@@ -113,7 +102,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   letterSpacing: '0.04em',
                   textTransform: 'uppercase'
                 }}>
-                  Messaging API v2.4
+                  Telecom Gateway v2.4
                 </div>
               </div>
             </div>

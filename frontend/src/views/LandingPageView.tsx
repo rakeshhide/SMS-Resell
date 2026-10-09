@@ -19,6 +19,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import { TurfsyLogo } from '../components/TurfsyLogo';
 
 interface LandingPageViewProps {
   onOpenAuth: (isSignUp?: boolean) => void;
@@ -64,21 +65,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       <header className="landing-header">
         <div className="landing-header-inner">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
-              backgroundColor: '#3b82f6',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
-            }}>
-              <Radio size={20} />
-            </div>
+            <TurfsyLogo size={38} />
             <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
-              turfsyOTPs
+              turfsy<span style={{ color: '#3b82f6' }}>OTPs</span>
             </span>
           </div>
 
@@ -693,8 +682,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ffffff', marginBottom: '12px' }}>
-              <Radio size={20} color="#3b82f6" />
-              <span style={{ fontSize: '18px', fontWeight: 800 }}>turfsyOTPs</span>
+              <TurfsyLogo size={32} />
+              <span style={{ fontSize: '18px', fontWeight: 800 }}>turfsy<span style={{ color: '#38bdf8' }}>OTPs</span></span>
             </div>
             <p style={{ fontSize: '13px', lineHeight: 1.5, color: '#64748b' }}>
               High-throughput OTP and transactional messaging infrastructure designed for enterprise scalability and developer happiness.

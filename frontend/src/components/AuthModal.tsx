@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Radio, Lock, Mail, User as UserIcon, Building, ArrowRight } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { User } from '../types';
+import { TurfsyLogo } from './TurfsyLogo';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -54,19 +55,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
-              backgroundColor: '#3b82f6',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Radio size={18} />
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <TurfsyLogo size={32} />
             <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>
               {isSignUp ? 'Create Account' : 'Sign In to turfsyOTPs'}
             </span>
