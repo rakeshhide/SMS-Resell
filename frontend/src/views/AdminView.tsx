@@ -16,7 +16,10 @@ import {
   Edit2,
   ToggleLeft,
   ToggleRight,
-  MessageSquare
+  MessageSquare,
+  Zap,
+  RefreshCw,
+  Wallet
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { PricingTier, SystemSettings } from '../types';
@@ -246,6 +249,213 @@ export const AdminView: React.FC = () => {
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#10b981', marginTop: '6px' }}>
             ₹{(stats?.grossRevenue || 0).toFixed(2)}
           </div>
+        </div>
+      </div>
+
+      {/* Fast2SMS Carrier Reserve & Float Maintenance Banner (0.45 * All Account OTP) */}
+      <div
+        className="surface-card"
+        style={{
+          marginTop: '20px',
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '24px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(59, 130, 246, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Zap size={22} color="#3b82f6" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  Fast2SMS Gateway Float & Carrier Solvency
+                </h3>
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  padding: '3px 8px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                  color: '#60a5fa',
+                  letterSpacing: '0.02em'
+                }}>
+                  Formula: 0.45 × All Account OTPs
+                </span>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Required balance you must maintain in your Fast2SMS wallet to ensure 100% of customer OTPs can dispatch without upstream 416 low-balance failures.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              fetchAdminData();
+              showToast('info', 'Refreshing gateway metrics and live Fast2SMS balance...', 'Syncing');
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+              backgroundColor: 'var(--bg-app)',
+              color: 'var(--text-main)',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            <RefreshCw size={14} />
+            <span>Sync Live Balance</span>
+          </button>
+        </div>
+
+        {/* Breakdown Stats Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          gap: '16px'
+        }}>
+          {/* Total Account OTPs */}
+          <div style={{
+            backgroundColor: 'var(--bg-app)',
+            padding: '16px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-subtle)'
+          }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Total Account OTPs
+            </div>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: '#3b82f6', marginTop: '6px' }}>
+              {(stats?.fast2sms?.totalAccountOtps || 0).toLocaleString()}
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginLeft: '6px' }}>OTPs</span>
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Sum of OTP capacity across all developer accounts
+            </div>
+          </div>
+
+          {/* Upstream Base Cost */}
+          <div style={{
+            backgroundColor: 'var(--bg-app)',
+            padding: '16px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-subtle)'
+          }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Carrier Upstream Rate
+            </div>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-main)', marginTop: '6px' }}>
+              ₹0.45
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginLeft: '6px' }}>/ OTP</span>
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Fixed Fast2SMS carrier cost per transaction
+            </div>
+          </div>
+
+          {/* Required Fast2SMS Wallet Balance */}
+          <div style={{
+            backgroundColor: 'var(--bg-app)',
+            padding: '16px',
+            borderRadius: 'var(--radius-lg)',
+            border: stats?.fast2sms?.isFloatSufficient ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(245, 158, 11, 0.5)',
+            boxShadow: stats?.fast2sms?.isFloatSufficient ? 'none' : '0 0 12px rgba(245, 158, 11, 0.15)'
+          }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Required Fast2SMS Balance
+            </div>
+            <div style={{
+              fontSize: '26px',
+              fontWeight: 800,
+              color: stats?.fast2sms?.isFloatSufficient ? '#10b981' : '#f59e0b',
+              marginTop: '6px'
+            }}>
+              ₹{(stats?.fast2sms?.requiredWalletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Maintain this minimum float in Fast2SMS
+            </div>
+          </div>
+
+          {/* Live Fast2SMS Wallet Balance */}
+          <div style={{
+            backgroundColor: 'var(--bg-app)',
+            padding: '16px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-subtle)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                Live Fast2SMS Float
+              </span>
+              {stats?.fast2sms?.liveWalletBalance !== null && stats?.fast2sms?.liveWalletBalance !== undefined && (
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: stats?.fast2sms?.isFloatSufficient ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  color: stats?.fast2sms?.isFloatSufficient ? '#10b981' : '#ef4444'
+                }}>
+                  {stats?.fast2sms?.isFloatSufficient ? 'Sufficient' : 'Deficit'}
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-main)', marginTop: '6px' }}>
+              {stats?.fast2sms?.liveWalletBalance !== null && stats?.fast2sms?.liveWalletBalance !== undefined
+                ? `₹${stats.fast2sms.liveWalletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : 'Offline'}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              {stats?.fast2sms?.liveSmsCount !== null && stats?.fast2sms?.liveSmsCount !== undefined
+                ? `Carrier Capacity: ${stats.fast2sms.liveSmsCount} SMS remaining`
+                : 'Queried via Fast2SMS API'}
+            </div>
+          </div>
+        </div>
+
+        {/* Solvency Health Status Alert */}
+        <div style={{
+          marginTop: '16px',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          backgroundColor: stats?.fast2sms?.isFloatSufficient ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.1)',
+          border: stats?.fast2sms?.isFloatSufficient ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          flexWrap: 'wrap'
+        }}>
+          {stats?.fast2sms?.isFloatSufficient ? (
+            <>
+              <CheckCircle2 size={18} color="#10b981" />
+              <div style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>
+                Upstream Liquidity Healthy: Your live Fast2SMS balance (₹{(stats?.fast2sms?.liveWalletBalance || 0).toFixed(2)}) comfortably covers the required float of ₹{(stats?.fast2sms?.requiredWalletBalance || 0).toFixed(2)}.
+              </div>
+            </>
+          ) : (
+            <>
+              <AlertTriangle size={18} color="#f59e0b" />
+              <div style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 600 }}>
+                Float Replenishment Recommended: You need to maintain ₹{(stats?.fast2sms?.requiredWalletBalance || 0).toFixed(2)} in your Fast2SMS wallet (Deficit: ₹{(stats?.fast2sms?.floatDeficit || 0).toFixed(2)}).
+              </div>
+            </>
+          )}
         </div>
       </div>
 

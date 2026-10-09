@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { z } from 'zod';
+import axios from 'axios';
 import { pool } from '../config/db';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { WalletService } from '../services/walletService';
@@ -38,6 +39,38 @@ export class AdminController {
         FROM otp_transactions
       `);
 
+      // Calculate total outstanding OTP capacity held by user accounts (0.45 * all account otp)
+      const accountOtpsRes = await pool.query(`
+        SELECT 
+          COALESCE(SUM(FLOOR(w.balance / NULLIF(w.otp_rate, 0))), 0)::BIGINT as total_account_otps,
+          COALESCE(SUM(w.balance), 0) as total_account_balance
+        FROM wallets w
+        JOIN users u ON u.id = w.user_id
+        WHERE u.role = 'user'
+      `);
+      
+      const totalAccountOtps = parseInt(accountOtpsRes.rows[0].total_account_otps || '0');
+      const requiredFast2smsBalance = parseFloat((totalAccountOtps * 0.45).toFixed(2));
+
+      // Attempt to fetch live Fast2SMS balance
+      let fast2smsLiveBalance: number | null = null;
+      let fast2smsSmsCount: number | null = null;
+      try {
+        const apiKey = process.env.FAST2SMS_API_KEY;
+        if (apiKey) {
+          const f2sRes = await axios.get('https://www.fast2sms.com/dev/wallet', {
+            headers: { authorization: apiKey },
+            timeout: 4000
+          });
+          if (f2sRes.data?.return && f2sRes.data?.wallet !== undefined) {
+            fast2smsLiveBalance = parseFloat(f2sRes.data.wallet);
+            fast2smsSmsCount = f2sRes.data.sms_count ? parseInt(f2sRes.data.sms_count) : null;
+          }
+        }
+      } catch (err: any) {
+        console.warn('[ADMIN] Fast2SMS live balance query warning:', err.message);
+      }
+
       const pricing = await BillingService.getActivePricing();
 
       res.json({
@@ -53,6 +86,15 @@ export class AdminController {
           gstCollected: parseFloat(otpMetricsRes.rows[0].gst_collected),
           netServiceMargin: parseFloat(otpMetricsRes.rows[0].net_service_margin),
           activePricing: pricing,
+          fast2sms: {
+            perOtpCost: 0.45,
+            totalAccountOtps,
+            requiredWalletBalance: requiredFast2smsBalance,
+            liveWalletBalance: fast2smsLiveBalance,
+            liveSmsCount: fast2smsSmsCount,
+            isFloatSufficient: fast2smsLiveBalance !== null ? fast2smsLiveBalance >= requiredFast2smsBalance : true,
+            floatDeficit: fast2smsLiveBalance !== null ? Math.max(0, parseFloat((requiredFast2smsBalance - fast2smsLiveBalance).toFixed(2))) : 0
+          }
         }
       });
     } catch (err: any) {
