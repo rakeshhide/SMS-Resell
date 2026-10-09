@@ -59,6 +59,7 @@ export function App() {
     if (user) {
       setUser({ ...user, balance: newBalance });
     }
+    window.location.reload();
   };
 
   const getTabTitle = (tab: string) => {

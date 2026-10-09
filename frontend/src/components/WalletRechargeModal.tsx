@@ -123,7 +123,8 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
             setTimeout(() => {
               onSuccess(verifyRes.newBalance);
               onClose();
-            }, 1500);
+              window.location.reload();
+            }, 1200);
           } catch (err: any) {
             setErrorMessage(err.message || 'Payment signature verification failed.');
           }
