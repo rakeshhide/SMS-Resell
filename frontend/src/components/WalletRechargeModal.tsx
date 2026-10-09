@@ -62,16 +62,16 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
     if (amt >= 5000) return { rate: 0.64, name: 'Business Tier', bracket: '₹5,000 – ₹9,999' };
     if (amt >= 2000) return { rate: 0.68, name: 'Scale Tier', bracket: '₹2,000 – ₹4,999' };
     if (amt >= 500) return { rate: 0.72, name: 'Growth Tier', bracket: '₹500 – ₹1,999' };
-    return { rate: 0.75, name: 'Starter Tier', bracket: '₹100 – ₹499' };
+    return { rate: 0.75, name: 'Starter Tier', bracket: '₹1 – ₹499' };
   };
 
   const unlockedTier = getTier(baseCredit);
   const estMessages = unlockedTier.rate > 0 ? Math.floor(baseCredit / unlockedTier.rate) : 0;
-  const isValidAmount = baseCredit >= 100;
+  const isValidAmount = baseCredit >= 1;
 
   const handleTopup = async () => {
     if (!isValidAmount) {
-      alert('The minimum wallet top-up amount is ₹100.');
+      alert('The minimum wallet top-up amount is ₹1.');
       return;
     }
 
@@ -79,7 +79,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
       setLoading(true);
       setSuccessMessage(null);
 
-      // 1. Create order on backend server (checks min ₹100 & calculates 18% GST + 2.5% service fee)
+      // 1. Create order on backend server (checks min ₹1 & calculates 18% GST + 2.5% service fee)
       const orderData = await ApiClient.createOrder(baseCredit);
 
       if (typeof window.Razorpay === 'undefined') {
@@ -362,7 +362,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                   }}>
                     {isValidAmount
                       ? `${unlockedTier.name} (₹${unlockedTier.rate.toFixed(2)}/OTP)`
-                      : 'Minimum ₹100 required'}
+                      : 'Minimum ₹1 required'}
                   </span>
                 )}
               </div>
@@ -391,8 +391,8 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                 </div>
                 <input
                   type="number"
-                  placeholder="Enter custom amount (min ₹100)"
-                  min={100}
+                  placeholder="Enter custom amount (min ₹1)"
+                  min={1}
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
                   style={{

@@ -34,7 +34,7 @@ export async function runPricingMigration() {
     await client.query(`
       INSERT INTO system_settings (key, value, description)
       VALUES 
-        ('min_topup_amount', '100.00', 'Minimum wallet top-up allowed in INR'),
+        ('min_topup_amount', '1.00', 'Minimum wallet top-up allowed in INR'),
         ('default_gst_percentage', '18.00', 'Default GST percentage for wallet top-ups'),
         ('default_service_fee_percentage', '2.50', 'Default platform service fee percentage for wallet top-ups')
       ON CONFLICT (key) DO NOTHING;
@@ -46,7 +46,7 @@ export async function runPricingMigration() {
       await client.query(`
         INSERT INTO pricing_tiers (min_topup, max_topup, otp_price, gst_percentage, is_active)
         VALUES 
-          (100.00, 499.00, 0.7500, 18.00, TRUE),
+          (1.00, 499.00, 0.7500, 18.00, TRUE),
           (500.00, 1999.00, 0.7200, 18.00, TRUE),
           (2000.00, 4999.00, 0.6800, 18.00, TRUE),
           (5000.00, 9999.00, 0.6400, 18.00, TRUE),

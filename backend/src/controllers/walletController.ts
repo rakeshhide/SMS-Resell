@@ -9,7 +9,7 @@ import { BillingService } from '../services/billingService';
 import { verifyRazorpaySignature, verifyWebhookSignature } from '../utils/crypto';
 
 const topupSchema = z.object({
-  amount: z.number().min(100, 'Minimum wallet top-up is ₹100').max(1000000, 'Maximum recharge is ₹10,00,000'),
+  amount: z.number().min(1, 'Minimum wallet top-up is ₹1').max(1000000, 'Maximum recharge is ₹10,00,000'),
 });
 
 const verifyPaymentSchema = z.object({
@@ -108,7 +108,7 @@ export class WalletController {
 
   /**
    * POST /api/v1/wallet/create-order
-   * Create Razorpay order server-side with minimum ₹100 validation and 18% GST calculation
+   * Create Razorpay order server-side with minimum ₹1 validation and 18% GST calculation
    */
   public static async createOrder(req: AuthRequest, res: Response): Promise<void> {
     try {

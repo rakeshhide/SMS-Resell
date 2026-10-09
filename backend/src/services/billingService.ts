@@ -89,7 +89,7 @@ export class BillingService {
       // Fallback if table was empty
       if (tiers.length === 0) {
         return [
-          { id: 't1', minTopup: 100, maxTopup: 499, otpPrice: 0.75, gstPercentage: 18, isActive: true, name: 'Starter Tier', label: '₹100 – ₹499' },
+          { id: 't1', minTopup: 1, maxTopup: 499, otpPrice: 0.75, gstPercentage: 18, isActive: true, name: 'Starter Tier', label: '₹1 – ₹499' },
           { id: 't2', minTopup: 500, maxTopup: 1999, otpPrice: 0.72, gstPercentage: 18, isActive: true, name: 'Growth Tier', label: '₹500 – ₹1,999' },
           { id: 't3', minTopup: 2000, maxTopup: 4999, otpPrice: 0.68, gstPercentage: 18, isActive: true, name: 'Scale Tier', label: '₹2,000 – ₹4,999' },
           { id: 't4', minTopup: 5000, maxTopup: 9999, otpPrice: 0.64, gstPercentage: 18, isActive: true, name: 'Business Tier', label: '₹5,000 – ₹9,999' },
@@ -103,7 +103,7 @@ export class BillingService {
     } catch (err: any) {
       console.error('[BILLING_SERVICE] Failed to query pricing_tiers table:', err.message);
       return [
-        { id: 't1', minTopup: 100, maxTopup: 499, otpPrice: 0.75, gstPercentage: 18, isActive: true, name: 'Starter Tier', label: '₹100 – ₹499' },
+        { id: 't1', minTopup: 1, maxTopup: 499, otpPrice: 0.75, gstPercentage: 18, isActive: true, name: 'Starter Tier', label: '₹1 – ₹499' },
         { id: 't2', minTopup: 500, maxTopup: 1999, otpPrice: 0.72, gstPercentage: 18, isActive: true, name: 'Growth Tier', label: '₹500 – ₹1,999' },
         { id: 't3', minTopup: 2000, maxTopup: 4999, otpPrice: 0.68, gstPercentage: 18, isActive: true, name: 'Scale Tier', label: '₹2,000 – ₹4,999' },
         { id: 't4', minTopup: 5000, maxTopup: 9999, otpPrice: 0.64, gstPercentage: 18, isActive: true, name: 'Business Tier', label: '₹5,000 – ₹9,999' },
@@ -135,7 +135,7 @@ export class BillingService {
     const now = Date.now();
     if (this.cachedSettings && this.settingsCacheExpiry > now) {
       return {
-        minTopup: parseFloat(this.cachedSettings['min_topup_amount'] || '100'),
+        minTopup: parseFloat(this.cachedSettings['min_topup_amount'] || '1'),
         defaultGst: parseFloat(this.cachedSettings['default_gst_percentage'] || '18'),
         defaultServiceFee: parseFloat(this.cachedSettings['default_service_fee_percentage'] || '2.5'),
       };
@@ -150,12 +150,12 @@ export class BillingService {
       this.cachedSettings = map;
       this.settingsCacheExpiry = now + 60000;
       return {
-        minTopup: parseFloat(map['min_topup_amount'] || '100'),
+        minTopup: parseFloat(map['min_topup_amount'] || '1'),
         defaultGst: parseFloat(map['default_gst_percentage'] || '18'),
         defaultServiceFee: parseFloat(map['default_service_fee_percentage'] || '2.5'),
       };
     } catch (e) {
-      return { minTopup: 100, defaultGst: 18, defaultServiceFee: 2.5 };
+      return { minTopup: 1, defaultGst: 18, defaultServiceFee: 2.5 };
     }
   }
 

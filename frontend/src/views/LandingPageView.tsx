@@ -644,7 +644,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               color: 'var(--text-muted)'
             }}>
               <div>
-                Minimum top-up is ₹100. 100% of top-up amount is credited directly to your wallet float. All prices are exclusive of 18% GST + 2.5% platform service fee.
+                Minimum top-up is ₹1. 100% of top-up amount is credited directly to your wallet float. All prices are exclusive of 18% GST + 2.5% platform service fee.
               </div>
               <div style={{ fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <CheckCircle2 size={14} color="#10b981" />
