@@ -48,7 +48,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   "message": "OTP request accepted",
   "transaction_id": "TXN_884920194_ab12",
   "recipient": "98******10",
-  "charged": 0.75,
   "latency_ms": 142
 }`;
 

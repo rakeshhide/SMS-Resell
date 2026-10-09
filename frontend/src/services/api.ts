@@ -1,4 +1,4 @@
-import { PricingTier, SystemSettings, WalletBalanceResponse, WalletTransaction } from '../types';
+import { PricingTier, SystemSettings, WalletBalanceResponse, WalletTransaction, SupportTicket, SupportMessage } from '../types';
 
 export interface ServerNotification {
   id: string;
@@ -307,5 +307,41 @@ export class ApiClient {
 
   public static getAuditLogs() {
     return this.request<{ success: boolean; logs: any[] }>('/admin/audit-logs');
+  }
+
+  // Support & Real-time Chat
+  public static createSupportTicket(data: { subject: string; message: string; category?: string; priority?: string }) {
+    return this.request<{ success: boolean; message: string; data: { ticket: SupportTicket; message: SupportMessage } }>('/support/tickets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public static listSupportTickets(params?: { status?: string; search?: string; page?: number; limit?: number }) {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    const query = searchParams.toString();
+    return this.request<{ success: boolean; data: SupportTicket[]; total: number; page: number; limit: number }>(`/support/tickets${query ? `?${query}` : ''}`);
+  }
+
+  public static getSupportTicket(ticketId: string) {
+    return this.request<{ success: boolean; data: { ticket: SupportTicket; messages: SupportMessage[] } }>(`/support/tickets/${ticketId}`);
+  }
+
+  public static sendSupportMessage(ticketId: string, message: string) {
+    return this.request<{ success: boolean; message: string; data: SupportMessage }>(`/support/tickets/${ticketId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  }
+
+  public static updateSupportTicketStatus(ticketId: string, status: string) {
+    return this.request<{ success: boolean; message: string; data: SupportTicket }>(`/support/tickets/${ticketId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
   }
 }

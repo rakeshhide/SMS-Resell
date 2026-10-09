@@ -165,3 +165,36 @@ ON notifications(user_id, is_dismissed, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread 
 ON notifications(user_id, is_read) 
 WHERE is_dismissed = FALSE;
+
+-- 10. Support Tickets & Real-Time Chat Infrastructure
+CREATE TABLE IF NOT EXISTS support_tickets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ticket_number VARCHAR(20) NOT NULL UNIQUE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    subject VARCHAR(255) NOT NULL,
+    category VARCHAR(50) NOT NULL DEFAULT 'general', -- 'billing' | 'otp_delivery' | 'api_integration' | 'account' | 'general'
+    status VARCHAR(30) NOT NULL DEFAULT 'OPEN', -- 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
+    priority VARCHAR(20) NOT NULL DEFAULT 'MEDIUM', -- 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+    last_message_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_tickets_user_updated ON support_tickets(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_status_updated ON support_tickets(status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_last_msg ON support_tickets(last_message_at DESC);
+
+-- 11. Support Messages Table (Conversation Thread)
+CREATE TABLE IF NOT EXISTS support_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ticket_id UUID NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    sender_role VARCHAR(20) NOT NULL DEFAULT 'user', -- 'user' | 'admin'
+    message TEXT NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_messages_ticket_created ON support_messages(ticket_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_support_messages_unread ON support_messages(ticket_id, is_read) WHERE is_read = FALSE;
+

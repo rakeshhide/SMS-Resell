@@ -10,6 +10,7 @@ import { SendOtpView } from './views/SendOtpView';
 import { WalletView } from './views/WalletView';
 import { DocsView } from './views/DocsView';
 import { AdminView } from './views/AdminView';
+import { SupportView } from './views/SupportView';
 import { LandingPageView } from './views/LandingPageView';
 import { AuthModal } from './components/AuthModal';
 import { WalletRechargeModal } from './components/WalletRechargeModal';
@@ -69,6 +70,7 @@ export function App() {
       case 'send-otp': return 'Send OTP';
       case 'wallet': return 'Wallet & Billing';
       case 'docs': return 'Developer Documentation';
+      case 'support': return 'Support & Help';
       case 'admin': return 'Admin Center';
       default: return 'Overview';
     }
@@ -137,6 +139,7 @@ export function App() {
                 <WalletView onOpenWalletModal={() => setWalletModalOpen(true)} />
               )}
               {currentTab === 'docs' && <DocsView />}
+              {currentTab === 'support' && <SupportView />}
               {currentTab === 'admin' && <AdminView />}
             </main>
 

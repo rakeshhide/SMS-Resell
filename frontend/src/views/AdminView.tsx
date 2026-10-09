@@ -15,17 +15,20 @@ import {
   Trash2,
   Edit2,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  MessageSquare
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { PricingTier, SystemSettings } from '../types';
 import { AdminSkeleton } from '../components/Skeleton';
+import { AdminSupportChat } from '../components/AdminSupportChat';
 
 export const AdminView: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [adminSection, setAdminSection] = useState<'overview' | 'support' | 'users' | 'audit'>('overview');
 
   // System Settings
   const [minTopup, setMinTopup] = useState<number>(100);
@@ -231,7 +234,111 @@ export const AdminView: React.FC = () => {
         </div>
       </div>
 
-      {/* Global Platform Settings Form */}
+      {/* Admin Section Navigation Tabs */}
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        borderBottom: '1px solid var(--border-subtle)',
+        paddingBottom: '12px',
+        marginTop: '24px',
+        marginBottom: '24px',
+        flexWrap: 'wrap'
+      }}>
+        <button
+          onClick={() => setAdminSection('overview')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 18px',
+            borderRadius: '8px',
+            border: 'none',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            backgroundColor: adminSection === 'overview' ? '#3b82f6' : 'var(--bg-surface)',
+            color: adminSection === 'overview' ? '#ffffff' : 'var(--text-secondary)',
+            boxShadow: adminSection === 'overview' ? 'var(--shadow-sm)' : 'none'
+          }}
+        >
+          <Layers size={16} />
+          <span>Rules & Tiers</span>
+        </button>
+
+        <button
+          onClick={() => setAdminSection('support')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 18px',
+            borderRadius: '8px',
+            border: 'none',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            backgroundColor: adminSection === 'support' ? '#8b5cf6' : 'var(--bg-surface)',
+            color: adminSection === 'support' ? '#ffffff' : 'var(--text-secondary)',
+            boxShadow: adminSection === 'support' ? 'var(--shadow-sm)' : 'none'
+          }}
+        >
+          <MessageSquare size={16} />
+          <span>Support Chat & Questions</span>
+        </button>
+
+        <button
+          onClick={() => setAdminSection('users')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 18px',
+            borderRadius: '8px',
+            border: 'none',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            backgroundColor: adminSection === 'users' ? '#3b82f6' : 'var(--bg-surface)',
+            color: adminSection === 'users' ? '#ffffff' : 'var(--text-secondary)',
+            boxShadow: adminSection === 'users' ? 'var(--shadow-sm)' : 'none'
+          }}
+        >
+          <Users size={16} />
+          <span>Developer Accounts ({users.length})</span>
+        </button>
+
+        <button
+          onClick={() => setAdminSection('audit')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 18px',
+            borderRadius: '8px',
+            border: 'none',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            backgroundColor: adminSection === 'audit' ? '#3b82f6' : 'var(--bg-surface)',
+            color: adminSection === 'audit' ? '#ffffff' : 'var(--text-secondary)',
+            boxShadow: adminSection === 'audit' ? 'var(--shadow-sm)' : 'none'
+          }}
+        >
+          <FileText size={16} />
+          <span>Compliance Audit Trail</span>
+        </button>
+      </div>
+
+      {/* Support Chat & Inquiries Section */}
+      {adminSection === 'support' && (
+        <AdminSupportChat />
+      )}
+
+      {/* Rules & Pricing Tiers Section */}
+      {adminSection === 'overview' && (
+        <>
+          {/* Global Platform Settings Form */}
+
       <div style={{
         backgroundColor: 'var(--bg-surface)',
         borderRadius: 'var(--radius-xl)',
@@ -597,10 +704,14 @@ export const AdminView: React.FC = () => {
           </div>
         </div>
       )}
+      </>
+    )}
 
       {/* Developer Accounts Table */}
-      <div className="surface-card">
-        <div style={{ marginBottom: '20px' }}>
+      {adminSection === 'users' && (
+        <>
+          <div className="surface-card">
+            <div style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Users size={20} color="#3b82f6" />
             <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>
@@ -763,51 +874,56 @@ export const AdminView: React.FC = () => {
           </div>
         </div>
       )}
+      </>
+    )}
 
       {/* Compliance Audit Trail */}
-      <div className="surface-card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-          <FileText size={20} color="#8b5cf6" />
-          <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>
-            Compliance & Administrative Audit Trail
-          </h3>
-        </div>
+      {adminSection === 'audit' && (
+        <div className="surface-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+            <FileText size={20} color="#8b5cf6" />
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>
+              Compliance & Administrative Audit Trail
+            </h3>
+          </div>
 
-        <div className="table-responsive">
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', minWidth: '640px' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Timestamp</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Action</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Actor</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Target</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Reason / Audit Detail</th>
-              </tr>
-            </thead>
-            <tbody>
-              {auditLogs.map((log) => (
-                <tr key={log.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>
-                    {new Date(log.created_at).toLocaleString()}
-                  </td>
-                  <td style={{ padding: '12px 16px', fontWeight: 700, color: '#3b82f6' }}>
-                    {log.action}
-                  </td>
-                  <td style={{ padding: '12px 16px', color: 'var(--text-main)' }}>
-                    {log.actor_email || 'System'}
-                  </td>
-                  <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>
-                    {log.target_type}
-                  </td>
-                  <td style={{ padding: '12px 16px', color: 'var(--text-main)' }}>
-                    {log.reason}
-                  </td>
+          <div className="table-responsive">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', minWidth: '640px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '12px 16px', fontWeight: 600 }}>Timestamp</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600 }}>Action</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600 }}>Actor</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600 }}>Target</th>
+                  <th style={{ padding: '12px 16px', fontWeight: 600 }}>Reason / Audit Detail</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {auditLogs.map((log) => (
+                  <tr key={log.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>
+                      {new Date(log.created_at).toLocaleString()}
+                    </td>
+                    <td style={{ padding: '12px 16px', fontWeight: 700, color: '#3b82f6' }}>
+                      {log.action}
+                    </td>
+                    <td style={{ padding: '12px 16px', color: 'var(--text-main)' }}>
+                      {log.actor_email || 'System'}
+                    </td>
+                    <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>
+                      {log.target_type}
+                    </td>
+                    <td style={{ padding: '12px 16px', color: 'var(--text-main)' }}>
+                      {log.reason}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
+

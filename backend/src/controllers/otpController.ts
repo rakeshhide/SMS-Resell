@@ -140,9 +140,7 @@ export class OTPController {
         res.status(402).json({
           success: false,
           error_code: 'INSUFFICIENT_FUNDS',
-          message: deduction.error || 'Insufficient wallet balance. Please add funds to your account.',
-          current_balance: deduction.balanceBefore,
-          required_amount: totalCost
+          message: deduction.error || 'Insufficient wallet balance. Please add funds to your account.'
         });
         return;
       }
@@ -225,9 +223,6 @@ export class OTPController {
         message: 'OTP request accepted and dispatched to carrier network.',
         transaction_id: txnRefId,
         recipient: maskedPhone,
-        charged: totalCost,
-        currency: 'INR',
-        remaining_balance: deduction.balanceAfter,
         latency_ms: executionDurationMs
       });
     } catch (err: any) {

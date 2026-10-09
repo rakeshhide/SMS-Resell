@@ -13,7 +13,8 @@ import {
   Sun,
   Radio,
   Globe,
-  X
+  X,
+  LifeBuoy
 } from 'lucide-react';
 import { User } from '../types';
 
@@ -48,6 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'send-otp', label: 'Send OTP', icon: Send },
     { id: 'wallet', label: 'Wallet & Billing', icon: Wallet },
     { id: 'docs', label: 'API Documentation', icon: CodeXml },
+    { id: 'support', label: 'Support & Help', icon: LifeBuoy },
   ];
 
   if (user?.role === 'admin') {

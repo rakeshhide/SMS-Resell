@@ -109,3 +109,32 @@ export interface DailyTrend {
   count: string;
   success_count: string;
 }
+
+export interface SupportTicket {
+  id: string;
+  ticketNumber: string;
+  userId: string;
+  userEmail?: string;
+  userName?: string;
+  subject: string;
+  category: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  lastMessageAt: string;
+  createdAt: string;
+  updatedAt: string;
+  unreadCount?: number;
+  latestMessage?: string;
+}
+
+export interface SupportMessage {
+  id: string;
+  ticketId: string;
+  senderId: string;
+  senderName?: string;
+  senderEmail?: string;
+  senderRole: 'user' | 'admin';
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}

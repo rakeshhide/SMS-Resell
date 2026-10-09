@@ -111,10 +111,10 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "transactionId": "tx_...",
-  "status": "SENT",
-  "charged": 0.75,
-  "balance": 999.25
+  "transaction_id": "TXN_1711234567890_a1b2c3d4",
+  "message": "OTP request accepted and dispatched to carrier network.",
+  "recipient": "98******10",
+  "latency_ms": 142
 }
 ```
 
