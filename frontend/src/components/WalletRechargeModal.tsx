@@ -8,7 +8,8 @@ import {
   Lock,
   Info,
   Sparkles,
-  Check
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
 
@@ -37,6 +38,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
   const [customAmount, setCustomAmount] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -70,8 +72,9 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
   const isValidAmount = baseCredit >= 1;
 
   const handleTopup = async () => {
+    setErrorMessage(null);
     if (!isValidAmount) {
-      alert('The minimum wallet top-up amount is ₹1.');
+      setErrorMessage('The minimum wallet top-up amount is ₹1.');
       return;
     }
 
@@ -83,7 +86,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
       const orderData = await ApiClient.createOrder(baseCredit);
 
       if (typeof window.Razorpay === 'undefined') {
-        alert('Payment gateway SDK is loading or unavailable. Please refresh the page and try again.');
+        setErrorMessage('Payment gateway SDK is loading or unavailable. Please refresh the page and try again.');
         return;
       }
 
@@ -102,6 +105,11 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
         theme: {
           color: '#3b82f6',
         },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+          }
+        },
         handler: async function (response: any) {
           try {
             // 3. Server-side signature verification & exact base balance credit
@@ -117,15 +125,19 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
               onClose();
             }, 1500);
           } catch (err: any) {
-            alert(err.message || 'Payment signature verification failed.');
+            setErrorMessage(err.message || 'Payment signature verification failed.');
           }
         },
       };
 
       const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (resp: any) {
+        setErrorMessage(resp?.error?.description || 'Payment was unsuccessful or cancelled.');
+        setLoading(false);
+      });
       rzp.open();
     } catch (err: any) {
-      alert(err.message || 'Payment initialization error');
+      setErrorMessage(err.message || 'Payment initialization error');
     } finally {
       setLoading(false);
     }
@@ -183,7 +195,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
               }}>
                 <span>Instant balance credit</span>
                 <span>•</span>
-                <span>Minimum ₹100</span>
+                <span>Minimum ₹1</span>
               </p>
             </div>
           </div>
@@ -239,7 +251,43 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
+            {/* Error Notification Banner */}
+            {errorMessage && (
+              <div style={{
+                padding: '12px 14px',
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                borderRadius: '12px',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                color: '#ef4444',
+                fontSize: '13px',
+                fontWeight: 600,
+                lineHeight: 1.45
+              }}>
+                <AlertCircle size={18} color="#ef4444" style={{ flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>{errorMessage}</div>
+                <button
+                  type="button"
+                  onClick={() => setErrorMessage(null)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#ef4444',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    borderRadius: '6px'
+                  }}
+                  aria-label="Dismiss error"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
             {/* Presets Grid */}
             <div>
               <div style={{
@@ -276,6 +324,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                       onClick={() => {
                         setSelectedAmount(preset.amt);
                         setCustomAmount('');
+                        setErrorMessage(null);
                       }}
                       style={{
                         position: 'relative',
@@ -394,7 +443,10 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                   placeholder="Enter custom amount (min ₹1)"
                   min={1}
                   value={customAmount}
-                  onChange={(e) => setCustomAmount(e.target.value)}
+                  onChange={(e) => {
+                    setCustomAmount(e.target.value);
+                    setErrorMessage(null);
+                  }}
                   style={{
                     border: 'none',
                     background: 'transparent',
