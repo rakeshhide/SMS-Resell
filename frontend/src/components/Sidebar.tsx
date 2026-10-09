@@ -104,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   alignItems: 'center',
                   gap: '6px'
                 }}>
-                  NexusOTP
+                  turfsyOTPs
                 </div>
                 <div style={{
                   fontSize: '11px',

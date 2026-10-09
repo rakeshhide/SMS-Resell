@@ -413,7 +413,7 @@ export const SupportView: React.FC = () => {
                           {isAdmin ? (
                             <>
                               <ShieldCheck size={12} color="#8b5cf6" />
-                              <span style={{ fontWeight: 700, color: '#8b5cf6' }}>Nexus Engineering Team</span>
+                              <span style={{ fontWeight: 700, color: '#8b5cf6' }}>turfsyOTPs Engineering Team</span>
                             </>
                           ) : (
                             <span style={{ fontWeight: 600 }}>You</span>

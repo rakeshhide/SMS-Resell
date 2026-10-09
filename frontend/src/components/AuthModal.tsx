@@ -68,7 +68,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <Radio size={18} />
             </div>
             <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>
-              {isSignUp ? 'Create Account' : 'Sign In to NexusOTP'}
+              {isSignUp ? 'Create Account' : 'Sign In to turfsyOTPs'}
             </span>
           </div>
           <button onClick={onClose} style={{ color: 'var(--text-muted)', fontSize: '18px' }}>✕</button>

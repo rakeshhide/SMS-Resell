@@ -78,7 +78,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <Radio size={20} />
             </div>
             <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
-              NexusOTP
+              turfsyOTPs
             </span>
           </div>
 
@@ -694,7 +694,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ffffff', marginBottom: '12px' }}>
               <Radio size={20} color="#3b82f6" />
-              <span style={{ fontSize: '18px', fontWeight: 800 }}>NexusOTP</span>
+              <span style={{ fontSize: '18px', fontWeight: 800 }}>turfsyOTPs</span>
             </div>
             <p style={{ fontSize: '13px', lineHeight: 1.5, color: '#64748b' }}>
               High-throughput OTP and transactional messaging infrastructure designed for enterprise scalability and developer happiness.
@@ -748,7 +748,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           color: '#64748b'
         }}>
           <div>
-            © 2026 NexusOTP Platform. All rights reserved.
+            © 2026 turfsyOTPs Platform. All rights reserved.
           </div>
           <div>
             High Availability Telecom Gateway Route

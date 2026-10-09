@@ -515,7 +515,7 @@ export const AdminSupportChat: React.FC = () => {
                           {isAdmin ? (
                             <>
                               <ShieldCheck size={12} color="#8b5cf6" />
-                              <span style={{ fontWeight: 700, color: '#8b5cf6' }}>Nexus Support Team</span>
+                              <span style={{ fontWeight: 700, color: '#8b5cf6' }}>turfsyOTPs Support Team</span>
                             </>
                           ) : (
                             <>

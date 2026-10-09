@@ -95,7 +95,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
         key: orderData.keyId,
         amount: orderData.amountInPaise,
         currency: 'INR',
-        name: 'NexusOTP Platform',
+        name: 'turfsyOTPs Platform',
         description: `Wallet Top-Up: ₹${baseCredit.toFixed(2)} (+18% GST ₹${gstAmount.toFixed(2)} + 2.5% Service Fee ₹${serviceFeeAmount.toFixed(2)})`,
         order_id: orderData.orderId,
         prefill: {
