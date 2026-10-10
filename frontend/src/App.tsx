@@ -12,6 +12,7 @@ import { DocsView } from './views/DocsView';
 import { AdminView } from './views/AdminView';
 import { SupportView } from './views/SupportView';
 import { LandingPageView } from './views/LandingPageView';
+import { LegalView, LegalTab } from './views/LegalView';
 import { AuthModal } from './components/AuthModal';
 import { WalletRechargeModal } from './components/WalletRechargeModal';
 import { User } from './types';
@@ -21,6 +22,7 @@ export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [viewingLanding, setViewingLanding] = useState<boolean>(false);
+  const [legalViewTab, setLegalViewTab] = useState<LegalTab | null>(null);
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
   // Modals
@@ -30,6 +32,16 @@ export function App() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
+    // Check URL hash for direct policy routing
+    const handleHash = () => {
+      const hash = window.location.hash.replace('#', '').toLowerCase();
+      if (['terms', 'privacy', 'aup', 'refund'].includes(hash)) {
+        setLegalViewTab(hash as LegalTab);
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+
     // Check initial user session
     ApiClient.getMe().then((res) => {
       if (res?.user) {
@@ -41,6 +53,8 @@ export function App() {
     }).catch(() => {
       setViewingLanding(true);
     });
+
+    return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
   const handleLogout = () => {
@@ -73,13 +87,23 @@ export function App() {
       case 'docs': return 'Developer Documentation';
       case 'support': return 'Support & Help';
       case 'admin': return 'Admin Center';
+      case 'legal': return 'Compliance, Legal & Refund Policies';
       default: return 'Overview';
     }
   };
 
   return (
     <div className={darkMode ? 'dark-mode' : ''} style={{ minHeight: '100vh', backgroundColor: 'var(--bg-app)' }}>
-      {viewingLanding ? (
+      {legalViewTab !== null ? (
+        <LegalView
+          initialTab={legalViewTab}
+          onBack={() => {
+            setLegalViewTab(null);
+            window.location.hash = '';
+          }}
+          darkMode={darkMode}
+        />
+      ) : viewingLanding ? (
         <LandingPageView
           onOpenAuth={(isSignUp = false) => {
             setAuthModalIsSignUp(isSignUp);
@@ -87,6 +111,7 @@ export function App() {
           }}
           onGoToDashboard={() => setViewingLanding(false)}
           isLoggedIn={!!user}
+          onOpenLegal={(tab) => setLegalViewTab(tab)}
         />
       ) : (
         <div className="app-container">
@@ -142,6 +167,13 @@ export function App() {
               {currentTab === 'docs' && <DocsView />}
               {currentTab === 'support' && <SupportView />}
               {currentTab === 'admin' && <AdminView />}
+              {currentTab === 'legal' && (
+                <LegalView
+                  initialTab="terms"
+                  onBack={() => setCurrentTab('dashboard')}
+                  darkMode={darkMode}
+                />
+              )}
             </main>
 
             {/* Mobile Bottom Navigation Bar */}

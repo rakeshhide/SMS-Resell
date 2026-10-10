@@ -14,7 +14,8 @@ import {
   Radio,
   Globe,
   X,
-  LifeBuoy
+  LifeBuoy,
+  Scale
 } from 'lucide-react';
 import { User } from '../types';
 import { TurfsyLogo } from './TurfsyLogo';
@@ -51,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'wallet', label: 'Wallet & Billing', icon: Wallet },
     { id: 'docs', label: 'API Documentation', icon: CodeXml },
     { id: 'support', label: 'Support & Help', icon: LifeBuoy },
+    { id: 'legal', label: 'Compliance & Legal', icon: Scale },
   ];
 
   if (user?.role === 'admin') {

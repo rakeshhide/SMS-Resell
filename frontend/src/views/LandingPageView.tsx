@@ -27,12 +27,14 @@ interface LandingPageViewProps {
   onOpenAuth: (isSignUp?: boolean) => void;
   onGoToDashboard: () => void;
   isLoggedIn: boolean;
+  onOpenLegal?: (tab: 'terms' | 'privacy' | 'aup' | 'refund') => void;
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
   onOpenAuth,
   onGoToDashboard,
   isLoggedIn,
+  onOpenLegal,
 }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -733,10 +735,50 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               Compliance & Legal
             </div>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-              <li><span style={{ cursor: 'pointer' }}>Terms of Service</span></li>
-              <li><span style={{ cursor: 'pointer' }}>Privacy Policy</span></li>
-              <li><span style={{ cursor: 'pointer' }}>Acceptable Use Policy</span></li>
-              <li><span style={{ cursor: 'pointer' }}>Refund & Reversal Policy</span></li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onOpenLegal ? onOpenLegal('terms') : (window.location.hash = 'terms')}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', padding: 0, cursor: 'pointer', fontSize: '13px', textAlign: 'left', transition: 'color 0.15s ease' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#38bdf8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
+                >
+                  Terms of Service
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onOpenLegal ? onOpenLegal('privacy') : (window.location.hash = 'privacy')}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', padding: 0, cursor: 'pointer', fontSize: '13px', textAlign: 'left', transition: 'color 0.15s ease' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#38bdf8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
+                >
+                  Privacy Policy
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onOpenLegal ? onOpenLegal('aup') : (window.location.hash = 'aup')}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', padding: 0, cursor: 'pointer', fontSize: '13px', textAlign: 'left', transition: 'color 0.15s ease' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#38bdf8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
+                >
+                  Acceptable Use Policy
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onOpenLegal ? onOpenLegal('refund') : (window.location.hash = 'refund')}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', padding: 0, cursor: 'pointer', fontSize: '13px', textAlign: 'left', transition: 'color 0.15s ease' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#38bdf8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
+                >
+                  Refund & Reversal Policy
+                </button>
+              </li>
             </ul>
           </div>
 
