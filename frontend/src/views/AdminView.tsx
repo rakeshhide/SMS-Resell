@@ -45,8 +45,9 @@ export const AdminView: React.FC = () => {
   };
 
   // System Settings
-  const [minTopup, setMinTopup] = useState<number>(100);
+  const [minTopup, setMinTopup] = useState<number>(1);
   const [defaultGst, setDefaultGst] = useState<number>(18);
+  const [defaultServiceFee, setDefaultServiceFee] = useState<number>(3.0);
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Pricing Tiers
@@ -76,7 +77,7 @@ export const AdminView: React.FC = () => {
         ApiClient.getAdminOverview(),
         ApiClient.listUsers(1, 20),
         ApiClient.getAuditLogs(),
-        ApiClient.listAdminPricingTiers().catch(() => ({ success: false, tiers: [], settings: { minTopup: 100, defaultGst: 18 } }))
+        ApiClient.listAdminPricingTiers().catch(() => ({ success: false, tiers: [], settings: { minTopup: 1, defaultGst: 18, defaultServiceFee: 3.0 } }))
       ]);
 
       if (ovRes?.stats) setStats(ovRes.stats);
@@ -85,8 +86,9 @@ export const AdminView: React.FC = () => {
 
       if (tiersRes?.tiers) setTiers(tiersRes.tiers);
       if (tiersRes?.settings) {
-        setMinTopup(tiersRes.settings.minTopup || 100);
+        setMinTopup(tiersRes.settings.minTopup || 1);
         setDefaultGst(tiersRes.settings.defaultGst || 18);
+        setDefaultServiceFee(tiersRes.settings.defaultServiceFee ?? 3.0);
       }
     } catch (err) {
       console.error('Failed to load admin data', err);
@@ -99,7 +101,7 @@ export const AdminView: React.FC = () => {
     e.preventDefault();
     try {
       setSavingSettings(true);
-      await ApiClient.updateAdminSettings(minTopup, defaultGst);
+      await ApiClient.updateAdminSettings(minTopup, defaultGst, defaultServiceFee);
       showToast('success', 'Global platform settings updated successfully.', 'Settings Saved');
       fetchAdminData();
     } catch (err: any) {
@@ -596,10 +598,10 @@ export const AdminView: React.FC = () => {
           </h3>
         </div>
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-          Configure minimum top-up requirements and standard statutory GST rates without redeploying code.
+          Configure minimum top-up requirements, standard statutory GST, and platform service charge rates without redeploying code.
         </p>
 
-        <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', alignItems: 'flex-end' }}>
+        <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'flex-end' }}>
           <div>
             <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
               Minimum Wallet Top-up (₹)
@@ -608,7 +610,7 @@ export const AdminView: React.FC = () => {
               type="number"
               min={1}
               value={minTopup}
-              onChange={(e) => setMinTopup(parseFloat(e.target.value) || 100)}
+              onChange={(e) => setMinTopup(parseFloat(e.target.value) || 1)}
               style={{
                 width: '100%',
                 marginTop: '6px',
@@ -645,10 +647,33 @@ export const AdminView: React.FC = () => {
           </div>
 
           <div>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Service Fee Rate (%)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={defaultServiceFee}
+              onChange={(e) => setDefaultServiceFee(parseFloat(e.target.value) || 0)}
+              style={{
+                width: '100%',
+                marginTop: '6px',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-app)',
+                color: 'var(--text-main)',
+                fontSize: '14px'
+              }}
+            />
+          </div>
+
+          <div>
             <button
               type="submit"
               disabled={savingSettings}
               style={{
+                width: '100%',
                 padding: '10px 20px',
                 backgroundColor: '#3b82f6',
                 color: '#ffffff',

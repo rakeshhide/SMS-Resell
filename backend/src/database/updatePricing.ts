@@ -4,7 +4,7 @@ async function updatePricing() {
   try {
     await pool.query(`
       UPDATE pricing_rules
-      SET service_charge_percentage = 2.50
+      SET service_charge_percentage = 3.00
       WHERE is_active = TRUE
     `);
     await pool.query(`
@@ -18,7 +18,7 @@ async function updatePricing() {
     await pool.query(`
       INSERT INTO system_settings (key, value, description, updated_at)
       VALUES 
-        ('default_service_fee_percentage', '2.50', 'Default platform service fee percentage for wallet top-ups', NOW()),
+        ('default_service_fee_percentage', '3.00', 'Default platform service fee percentage for wallet top-ups', NOW()),
         ('min_topup_amount', '1.00', 'Minimum wallet top-up allowed in INR', NOW())
       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
     `);

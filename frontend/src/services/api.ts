@@ -291,10 +291,10 @@ export class ApiClient {
     return this.request<{ success: boolean; settings: SystemSettings }>('/admin/settings');
   }
 
-  public static updateAdminSettings(minTopup: number, defaultGst: number) {
+  public static updateAdminSettings(minTopup: number, defaultGst: number, defaultServiceFee?: number) {
     return this.request<{ success: boolean; message: string; settings: SystemSettings }>('/admin/settings', {
       method: 'PUT',
-      body: JSON.stringify({ minTopup, defaultGst }),
+      body: JSON.stringify({ minTopup, defaultGst, defaultServiceFee }),
     });
   }
 

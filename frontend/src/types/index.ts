@@ -68,6 +68,7 @@ export interface PricingTier {
 export interface SystemSettings {
   minTopup: number;
   defaultGst: number;
+  defaultServiceFee?: number;
 }
 
 export interface WalletBalanceResponse {

@@ -410,18 +410,21 @@ export class AdminController {
    */
   public static async updateSettings(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const { minTopup, defaultGst } = req.body;
+      const { minTopup, defaultGst, defaultServiceFee } = req.body;
       if (minTopup !== undefined) {
         await BillingService.updateSetting('min_topup_amount', Number(minTopup).toFixed(2));
       }
       if (defaultGst !== undefined) {
         await BillingService.updateSetting('default_gst_percentage', Number(defaultGst).toFixed(2));
       }
+      if (defaultServiceFee !== undefined) {
+        await BillingService.updateSetting('default_service_fee_percentage', Number(defaultServiceFee).toFixed(2));
+      }
 
       await pool.query(`
         INSERT INTO audit_logs (actor_id, action, target_type, target_id, reason, metadata)
         VALUES ($1, 'UPDATE_SYSTEM_SETTINGS', 'system', 'settings', 'Admin updated platform settings', $2)
-      `, [req.user?.id, JSON.stringify({ minTopup, defaultGst })]);
+      `, [req.user?.id, JSON.stringify({ minTopup, defaultGst, defaultServiceFee })]);
 
       const updated = await BillingService.getSystemSettings();
       res.json({ success: true, message: 'Platform settings updated successfully.', settings: updated });

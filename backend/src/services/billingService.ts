@@ -137,7 +137,7 @@ export class BillingService {
       return {
         minTopup: parseFloat(this.cachedSettings['min_topup_amount'] || '1'),
         defaultGst: parseFloat(this.cachedSettings['default_gst_percentage'] || '18'),
-        defaultServiceFee: parseFloat(this.cachedSettings['default_service_fee_percentage'] || '2.5'),
+        defaultServiceFee: parseFloat(this.cachedSettings['default_service_fee_percentage'] || '3.0'),
       };
     }
 
@@ -152,10 +152,10 @@ export class BillingService {
       return {
         minTopup: parseFloat(map['min_topup_amount'] || '1'),
         defaultGst: parseFloat(map['default_gst_percentage'] || '18'),
-        defaultServiceFee: parseFloat(map['default_service_fee_percentage'] || '2.5'),
+        defaultServiceFee: parseFloat(map['default_service_fee_percentage'] || '3.0'),
       };
     } catch (e) {
-      return { minTopup: 1, defaultGst: 18, defaultServiceFee: 2.5 };
+      return { minTopup: 1, defaultGst: 18, defaultServiceFee: 3.0 };
     }
   }
 
