@@ -7,7 +7,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Lock,
-  Mail,
+  MessageSquare,
   Building2,
   ArrowLeft,
   Search,
@@ -39,9 +39,19 @@ export const LegalView: React.FC<LegalViewProps> = ({
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Update hash for deep linking
-    window.location.hash = activeTab;
   }, [activeTab]);
+
+  const handleTabChange = (tab: LegalTab) => {
+    setActiveTab(tab);
+    window.location.hash = tab;
+  };
+
+  const handleBack = () => {
+    if (window.location.hash) {
+      history.pushState('', document.title, window.location.pathname + window.location.search);
+    }
+    onBack();
+  };
 
   const navItems = [
     {
@@ -94,7 +104,7 @@ export const LegalView: React.FC<LegalViewProps> = ({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
-            onClick={onBack}
+            onClick={handleBack}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -114,7 +124,11 @@ export const LegalView: React.FC<LegalViewProps> = ({
             <span>Back</span>
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            onClick={handleBack}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+            title="Return to main page"
+          >
             <TurfsyLogo size={28} />
             <span style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.02em' }}>
               turfsy<span style={{ color: '#38bdf8' }}>OTPs</span>
@@ -194,7 +208,7 @@ export const LegalView: React.FC<LegalViewProps> = ({
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActiveTab(item.id)}
+                    onClick={() => handleTabChange(item.id)}
                     style={{
                       display: 'flex',
                       alignItems: 'flex-start',
@@ -244,7 +258,7 @@ export const LegalView: React.FC<LegalViewProps> = ({
             <div style={{ fontSize: '12px', color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <div><strong>Platform:</strong> turfsyOTPs Infrastructure</div>
               <div><strong>Jurisdiction:</strong> New Delhi, India</div>
-              <div><strong>Support & Grievance:</strong> support@turfsy.com</div>
+              <div><strong>Support & Grievance:</strong> In-Platform Live Chat Support</div>
               <div><strong>Response SLA:</strong> Within 24-48 business hours</div>
             </div>
           </div>
@@ -460,7 +474,7 @@ const PrivacyPolicyContent: React.FC = () => {
         }}>
           <div><strong>Designation:</strong> Chief Privacy & Grievance Officer</div>
           <div><strong>Entity:</strong> turfsyOTPs Platform Operations</div>
-          <div><strong>Email:</strong> privacy@turfsy.com / support@turfsy.com</div>
+          <div><strong>Support Channel:</strong> In-Platform Live Chat Support & Help Desk</div>
           <div><strong>Redressal Period:</strong> Acknowledged within 24 hours, resolved within 15 days</div>
         </div>
       </section>
@@ -678,7 +692,7 @@ const RefundPolicyContent: React.FC = () => {
       <section>
         <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '12px' }}>5. How to Request a Refund</h2>
         <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
-          To request a top-up refund, simply raise a support ticket from your developer dashboard or email our billing desk:
+          To request a top-up refund, message us directly via the <strong>Live Chat Support</strong> on the website or raise a ticket from the Support & Help desk in your developer dashboard.
         </p>
         <div style={{
           padding: '16px',
@@ -689,11 +703,11 @@ const RefundPolicyContent: React.FC = () => {
           color: 'var(--text-main)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '4px'
+          gap: '6px'
         }}>
-          <div><strong>Email:</strong> billing@turfsy.com or support@turfsy.com</div>
-          <div><strong>Subject Line:</strong> Refund Request - [Your Registered Email]</div>
-          <div><strong>Required Info:</strong> Payment ID (e.g. <code style={{ fontFamily: 'var(--font-mono)' }}>pay_...</code>), Razorpay Order ID, Top-up Date, and Reason</div>
+          <div><strong>Support Channel:</strong> In-Platform Live Chat Support & Dashboard Ticket Desk</div>
+          <div><strong>Required Information:</strong> Razorpay Payment ID (e.g. <code style={{ fontFamily: 'var(--font-mono)' }}>pay_...</code>) or Order ID, top-up date, and reason for refund</div>
+          <div><strong>Resolution SLA:</strong> Reviewed and initiated within 24 hours directly via Razorpay back to your original payment method</div>
           <div><strong>Support Desk Hours:</strong> Monday – Saturday, 9:00 AM – 7:00 PM IST</div>
         </div>
       </section>

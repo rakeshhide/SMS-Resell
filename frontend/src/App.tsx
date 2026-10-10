@@ -21,7 +21,7 @@ import { ApiClient } from './services/api';
 export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
-  const [viewingLanding, setViewingLanding] = useState<boolean>(false);
+  const [viewingLanding, setViewingLanding] = useState<boolean>(true);
   const [legalViewTab, setLegalViewTab] = useState<LegalTab | null>(null);
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
@@ -37,6 +37,8 @@ export function App() {
       const hash = window.location.hash.replace('#', '').toLowerCase();
       if (['terms', 'privacy', 'aup', 'refund'].includes(hash)) {
         setLegalViewTab(hash as LegalTab);
+      } else {
+        setLegalViewTab(null);
       }
     };
     handleHash();
@@ -99,7 +101,16 @@ export function App() {
           initialTab={legalViewTab}
           onBack={() => {
             setLegalViewTab(null);
-            window.location.hash = '';
+            if (window.location.hash) {
+              try {
+                history.pushState('', document.title, window.location.pathname + window.location.search);
+              } catch {
+                window.location.hash = '';
+              }
+            }
+            if (!user) {
+              setViewingLanding(true);
+            }
           }}
           darkMode={darkMode}
         />
@@ -111,7 +122,10 @@ export function App() {
           }}
           onGoToDashboard={() => setViewingLanding(false)}
           isLoggedIn={!!user}
-          onOpenLegal={(tab) => setLegalViewTab(tab)}
+          onOpenLegal={(tab) => {
+            window.location.hash = tab;
+            setLegalViewTab(tab);
+          }}
         />
       ) : (
         <div className="app-container">
