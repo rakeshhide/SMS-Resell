@@ -10,8 +10,10 @@ import {
   MessageSquare,
   Building2,
   ArrowLeft,
+  ArrowUp,
   Search,
-  ExternalLink,
+  Menu,
+  X,
   ChevronRight,
   Printer
 } from 'lucide-react';
@@ -32,23 +34,37 @@ export const LegalView: React.FC<LegalViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<LegalTab>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [activeTab]);
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 280);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleTabChange = (tab: LegalTab) => {
     setActiveTab(tab);
     window.location.hash = tab;
+    setMobileMenuOpen(false);
+    setShowMobileSearch(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleBack = () => {
     if (window.location.hash) {
-      history.pushState('', document.title, window.location.pathname + window.location.search);
+      try {
+        history.pushState('', document.title, window.location.pathname + window.location.search);
+      } catch {
+        window.location.hash = '';
+      }
     }
     onBack();
   };
@@ -57,59 +73,45 @@ export const LegalView: React.FC<LegalViewProps> = ({
     {
       id: 'terms' as LegalTab,
       title: 'Terms of Service',
+      shortTitle: 'Terms',
       desc: 'Platform governance, API licensing & billing terms',
       icon: <Scale size={18} />
     },
     {
       id: 'privacy' as LegalTab,
       title: 'Privacy Policy',
+      shortTitle: 'Privacy',
       desc: 'Data protection, DPDP Act 2023 & transmission security',
       icon: <ShieldCheck size={18} />
     },
     {
       id: 'aup' as LegalTab,
       title: 'Acceptable Use Policy',
+      shortTitle: 'AUP',
       desc: 'Permitted traffic, TRAI DLT compliance & anti-spam rules',
       icon: <FileText size={18} />
     },
     {
       id: 'refund' as LegalTab,
       title: 'Refund & Reversal Policy',
+      shortTitle: 'Refunds',
       desc: 'Automatic route refunds, top-up returns & timelines',
       icon: <RefreshCw size={18} />
     }
   ];
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: 'var(--bg-app)',
-      color: 'var(--text-main)',
-      fontFamily: 'var(--font-sans)',
-      paddingBottom: '80px'
-    }}>
+    <div className="legal-layout-container">
       {/* Top Header Bar */}
-      <header style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        backgroundColor: 'var(--bg-card)',
-        borderBottom: '1px solid var(--border-subtle)',
-        backdropFilter: 'blur(12px)',
-        padding: '14px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '16px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <header className="legal-header-bar">
+        <div className="legal-header-left">
           <button
             onClick={handleBack}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '8px 12px',
+              padding: '7px 12px',
               borderRadius: '8px',
               border: '1px solid var(--border-subtle)',
               backgroundColor: 'var(--bg-app)',
@@ -119,38 +121,83 @@ export const LegalView: React.FC<LegalViewProps> = ({
               cursor: 'pointer',
               transition: 'all 0.15s ease'
             }}
+            aria-label="Back"
           >
             <ArrowLeft size={16} />
-            <span>Back</span>
+            <span style={{ display: 'inline-block' }}>Back</span>
           </button>
 
           <div
             onClick={handleBack}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
             title="Return to main page"
           >
-            <TurfsyLogo size={28} />
-            <span style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.02em' }}>
+            <TurfsyLogo size={26} />
+            <span style={{ fontSize: '17px', fontWeight: 800, letterSpacing: '-0.02em' }}>
               turfsy<span style={{ color: '#38bdf8' }}>OTPs</span>
             </span>
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              padding: '3px 8px',
-              borderRadius: '6px',
-              backgroundColor: 'rgba(56, 189, 248, 0.12)',
-              color: '#0284c7',
-              letterSpacing: '0.05em'
-            }}>
+            <span
+              className="legal-header-badge"
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                color: '#0284c7',
+                letterSpacing: '0.05em'
+              }}
+            >
               Legal & Compliance
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="legal-header-right">
+          {/* Desktop Search Box */}
+          <div className="legal-search-box legal-search-box-desktop">
+            <Search size={14} color="var(--text-muted)" />
+            <input
+              type="text"
+              placeholder="Search in policy..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                outline: 'none',
+                fontSize: '12px',
+                color: 'var(--text-main)',
+                width: '100%'
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: 0 }}
+                aria-label="Clear search"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
+          {/* Mobile Search Toggle */}
+          <button
+            onClick={() => setShowMobileSearch(!showMobileSearch)}
+            className="legal-icon-btn"
+            style={{ display: 'flex' }}
+            aria-label="Search policy"
+            title="Search policy"
+          >
+            {showMobileSearch ? <X size={16} /> : <Search size={16} />}
+          </button>
+
+          {/* Desktop Print Policy Button */}
           <button
             onClick={() => window.print()}
+            className="legal-print-btn"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -166,29 +213,80 @@ export const LegalView: React.FC<LegalViewProps> = ({
             }}
           >
             <Printer size={15} />
-            <span>Print Policy</span>
+            <span>Print</span>
+          </button>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="legal-menu-btn"
+            aria-label="Open document menu"
+            title="Legal policies menu"
+          >
+            <Menu size={18} />
           </button>
         </div>
       </header>
 
-      {/* Main Container */}
-      <div style={{
-        maxWidth: '1240px',
-        margin: '0 auto',
-        padding: '32px 20px',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '32px',
-        alignItems: 'start'
-      }}>
-        {/* Navigation Sidebar */}
-        <aside style={{
-          position: 'sticky',
-          top: '90px',
+      {/* Mobile Collapsible Search Dropdown */}
+      {showMobileSearch && (
+        <div style={{
+          padding: '10px 16px',
+          backgroundColor: 'var(--bg-surface)',
+          borderBottom: '1px solid var(--border-subtle)',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '16px'
+          alignItems: 'center',
+          gap: '8px'
         }}>
+          <Search size={16} color="var(--text-muted)" />
+          <input
+            type="text"
+            placeholder="Type keyword to find in this policy..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            autoFocus
+            style={{
+              flex: 1,
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+              fontSize: '14px',
+              color: 'var(--text-main)'
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}
+              aria-label="Clear keyword"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Mobile Sticky Horizontal Segment Pills */}
+      <div className="legal-mobile-pills-bar">
+        {navItems.map((item) => {
+          const isSelected = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleTabChange(item.id)}
+              className={`legal-pill-btn ${isSelected ? 'active' : ''}`}
+            >
+              {item.icon}
+              <span>{item.shortTitle}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Main Grid Container */}
+      <div className="legal-main-grid">
+        {/* Desktop Navigation Sidebar */}
+        <aside className="legal-sidebar-sticky legal-desktop-sidebar">
           <div className="surface-card" style={{ padding: '16px' }}>
             <div style={{
               fontSize: '11px',
@@ -265,8 +363,8 @@ export const LegalView: React.FC<LegalViewProps> = ({
         </aside>
 
         {/* Content Pane */}
-        <main style={{ gridColumn: 'span 2' }}>
-          <div className="surface-card" style={{ padding: '36px', lineHeight: 1.7 }}>
+        <main style={{ minWidth: 0 }}>
+          <div className="legal-content-card">
             {activeTab === 'terms' && <TermsOfServiceContent />}
             {activeTab === 'privacy' && <PrivacyPolicyContent />}
             {activeTab === 'aup' && <AcceptableUseContent />}
@@ -274,6 +372,106 @@ export const LegalView: React.FC<LegalViewProps> = ({
           </div>
         </main>
       </div>
+
+      {/* Mobile Drawer Menu Sheet */}
+      {mobileMenuOpen && (
+        <div className="legal-drawer-overlay" onClick={() => setMobileMenuOpen(false)}>
+          <div className="legal-drawer-sheet" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <TurfsyLogo size={24} />
+                <span style={{ fontSize: '16px', fontWeight: 800 }}>Policies & Compliance</span>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex' }}
+                aria-label="Close menu"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {navItems.map((item) => {
+                const isSelected = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabChange(item.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      border: isSelected ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid var(--border-subtle)',
+                      backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.08)' : 'var(--bg-app)',
+                      color: isSelected ? '#2563eb' : 'var(--text-main)',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ marginTop: '2px', color: isSelected ? '#2563eb' : 'var(--text-muted)' }}>
+                      {item.icon}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '14px', fontWeight: isSelected ? 700 : 600 }}>
+                        {item.title}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
+                        {item.desc}
+                      </div>
+                    </div>
+                    {isSelected && <CheckCircle2 size={16} color="#2563eb" style={{ marginTop: '2px' }} />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Official Entity Box in Mobile Drawer */}
+            <div style={{
+              padding: '14px',
+              borderRadius: '12px',
+              backgroundColor: 'var(--bg-app)',
+              border: '1px solid var(--border-subtle)',
+              fontSize: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                <Building2 size={14} color="#3b82f6" />
+                <span>Entity & Grievance Desk</span>
+              </div>
+              <div style={{ color: 'var(--text-secondary)' }}>New Delhi, India • Live Chat Help Desk</div>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: '#0284c7',
+                fontWeight: 600,
+                marginTop: '4px'
+              }}>
+                <MessageSquare size={13} />
+                <span>In-Platform Live Chat Desk Available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="legal-scroll-top-btn"
+          aria-label="Scroll to top"
+          title="Scroll to top"
+        >
+          <ArrowUp size={20} />
+        </button>
+      )}
     </div>
   );
 };
@@ -291,7 +489,7 @@ const TermsOfServiceContent: React.FC = () => {
             Enterprise Customer Agreement
           </span>
         </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
+        <h1 className="legal-title-h1" style={{ margin: '0 0 8px 0' }}>
           Terms of Service
         </h1>
         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -394,7 +592,7 @@ const PrivacyPolicyContent: React.FC = () => {
             Data Protection & Security
           </span>
         </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
+        <h1 className="legal-title-h1" style={{ margin: '0 0 8px 0' }}>
           Privacy Policy
         </h1>
         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -495,7 +693,7 @@ const AcceptableUseContent: React.FC = () => {
             Content Standards & Anti-Abuse
           </span>
         </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
+        <h1 className="legal-title-h1" style={{ margin: '0 0 8px 0' }}>
           Acceptable Use Policy (AUP)
         </h1>
         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -584,7 +782,7 @@ const RefundPolicyContent: React.FC = () => {
             Financial Fairness & Settlement
           </span>
         </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
+        <h1 className="legal-title-h1" style={{ margin: '0 0 8px 0' }}>
           Refund & Reversal Policy
         </h1>
         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -654,13 +852,8 @@ const RefundPolicyContent: React.FC = () => {
 
       <section style={{ marginBottom: '28px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '12px' }}>4. Refund Processing Timelines & Mechanics</h2>
-        <div style={{
-          overflowX: 'auto',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '10px',
-          marginBottom: '16px'
-        }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+        <div className="legal-table-responsive">
+          <table style={{ width: '100%', minWidth: '480px', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
             <thead>
               <tr style={{ backgroundColor: 'var(--bg-app)', borderBottom: '1px solid var(--border-subtle)' }}>
                 <th style={{ padding: '12px 16px', fontWeight: 700 }}>Refund Category</th>
