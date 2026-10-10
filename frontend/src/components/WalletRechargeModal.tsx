@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Wallet,
   ShieldCheck,
@@ -12,6 +12,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
+import { PricingTier } from '../types';
 
 declare global {
   interface Window {
@@ -39,42 +40,94 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  const [minTopup, setMinTopup] = useState<number>(1);
+  const [defaultGst, setDefaultGst] = useState<number>(18);
+  const [defaultServiceFee, setDefaultServiceFee] = useState<number>(3);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen) {
+      ApiClient.getPublicPricing()
+        .then((res) => {
+          if (res?.tiers && res.tiers.length > 0) {
+            setPricingTiers(res.tiers);
+          }
+          if (res?.settings) {
+            const min = res.settings.minTopup ?? 1;
+            setMinTopup(min);
+            if (res.settings.defaultGst !== undefined) setDefaultGst(res.settings.defaultGst);
+            if (res.settings.defaultServiceFee !== undefined) setDefaultServiceFee(res.settings.defaultServiceFee);
+            setSelectedAmount((prev) => (prev < min ? min : prev));
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to fetch public pricing in modal', err);
+        });
+    }
+  }, [isOpen]);
 
-  const presets = [
-    { amt: 100, rate: 0.75, tier: 'Starter' },
-    { amt: 500, rate: 0.72, tier: 'Growth' },
-    { amt: 1000, rate: 0.72, tier: 'Growth', badge: 'POPULAR' },
-    { amt: 2000, rate: 0.68, tier: 'Scale' },
-    { amt: 5000, rate: 0.64, tier: 'Business', badge: 'BEST VALUE' },
-    { amt: 10000, rate: 0.60, tier: 'Enterprise', badge: 'MAX SAVINGS' },
-  ];
+  const presets = useMemo(() => {
+    if (pricingTiers.length > 0) {
+      return pricingTiers.map((t, idx) => {
+        let badge: string | undefined = undefined;
+        if (t.minTopup === 1000 || idx === 2) badge = 'POPULAR';
+        else if (t.minTopup === 5000) badge = 'BEST VALUE';
+        else if (t.minTopup >= 10000) badge = 'MAX SAVINGS';
+        return {
+          amt: Math.max(t.minTopup, minTopup),
+          rate: t.otpPrice,
+          tier: t.name?.replace(' Tier', '') || `Tier ${idx + 1}`,
+          badge
+        };
+      });
+    }
+    return [
+      { amt: Math.max(minTopup, 100), rate: 0.75, tier: 'Starter' },
+      { amt: Math.max(minTopup, 500), rate: 0.72, tier: 'Growth' },
+      { amt: Math.max(minTopup, 1000), rate: 0.72, tier: 'Growth', badge: 'POPULAR' },
+      { amt: Math.max(minTopup, 2000), rate: 0.68, tier: 'Scale' },
+      { amt: Math.max(minTopup, 5000), rate: 0.64, tier: 'Business', badge: 'BEST VALUE' },
+      { amt: Math.max(minTopup, 10000), rate: 0.60, tier: 'Enterprise', badge: 'MAX SAVINGS' },
+    ];
+  }, [pricingTiers, minTopup]);
 
   const parsedCustom = parseFloat(customAmount);
   const finalAmount = customAmount ? (isNaN(parsedCustom) ? 0 : parsedCustom) : selectedAmount;
   const baseCredit = finalAmount > 0 ? finalAmount : 0;
-  const gstAmount = Number((baseCredit * 0.18).toFixed(2));
-  const serviceFeeAmount = Number((baseCredit * 0.03).toFixed(2)); // 3% Service Fee
+  const gstAmount = Number((baseCredit * (defaultGst / 100)).toFixed(2));
+  const serviceFeeAmount = Number((baseCredit * (defaultServiceFee / 100)).toFixed(2));
   const totalPayable = Number((baseCredit + gstAmount + serviceFeeAmount).toFixed(2));
 
   // Dynamic Volume Tier lookup
   const getTier = (amt: number) => {
+    if (pricingTiers.length > 0) {
+      const sorted = [...pricingTiers].sort((a, b) => b.minTopup - a.minTopup);
+      for (const t of sorted) {
+        if (amt >= t.minTopup) {
+          const bracket = t.maxTopup ? `₹${t.minTopup.toLocaleString('en-IN')} – ₹${t.maxTopup.toLocaleString('en-IN')}` : `₹${t.minTopup.toLocaleString('en-IN')}+`;
+          return { rate: t.otpPrice, name: t.name || 'Volume Tier', bracket };
+        }
+      }
+      const lowest = [...pricingTiers].sort((a, b) => a.minTopup - b.minTopup)[0];
+      return { rate: lowest.otpPrice, name: lowest.name || 'Starter Tier', bracket: lowest.label || `₹${lowest.minTopup}+` };
+    }
     if (amt >= 10000) return { rate: 0.60, name: 'Enterprise Tier', bracket: '₹10,000+' };
     if (amt >= 5000) return { rate: 0.64, name: 'Business Tier', bracket: '₹5,000 – ₹9,999' };
     if (amt >= 2000) return { rate: 0.68, name: 'Scale Tier', bracket: '₹2,000 – ₹4,999' };
     if (amt >= 500) return { rate: 0.72, name: 'Growth Tier', bracket: '₹500 – ₹1,999' };
-    return { rate: 0.75, name: 'Starter Tier', bracket: '₹1 – ₹499' };
+    return { rate: 0.75, name: 'Starter Tier', bracket: `₹${minTopup} – ₹499` };
   };
 
   const unlockedTier = getTier(baseCredit);
   const estMessages = unlockedTier.rate > 0 ? Math.floor(baseCredit / unlockedTier.rate) : 0;
-  const isValidAmount = baseCredit >= 1;
+  const isValidAmount = baseCredit >= minTopup;
+
+  if (!isOpen) return null;
 
   const handleTopup = async () => {
     setErrorMessage(null);
     if (!isValidAmount) {
-      setErrorMessage('The minimum wallet top-up amount is ₹1.');
+      setErrorMessage(`The minimum wallet top-up amount is ₹${minTopup.toLocaleString('en-IN')}.`);
       return;
     }
 
@@ -82,7 +135,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
       setLoading(true);
       setSuccessMessage(null);
 
-      // 1. Create order on backend server (checks min ₹1 & calculates 18% GST + 3% service fee)
+      // 1. Create order on backend server (checks min dynamic topup & calculates dynamic GST + service fee)
       const orderData = await ApiClient.createOrder(baseCredit);
 
       if (typeof window.Razorpay === 'undefined') {
@@ -90,13 +143,13 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
         return;
       }
 
-      // 2. Open standard Razorpay Checkout with total payable (topup + 18% GST + 3% service fee)
+      // 2. Open standard Razorpay Checkout with total payable (topup + GST + service fee)
       const options = {
         key: orderData.keyId,
         amount: orderData.amountInPaise,
         currency: 'INR',
         name: 'turfsyOTPs Platform',
-        description: `Wallet Top-Up: ₹${baseCredit.toFixed(2)} (+18% GST ₹${gstAmount.toFixed(2)} + 3% Service Fee ₹${serviceFeeAmount.toFixed(2)})`,
+        description: `Wallet Top-Up: ₹${baseCredit.toFixed(2)} (+${defaultGst}% GST ₹${gstAmount.toFixed(2)} + ${defaultServiceFee}% Service Fee ₹${serviceFeeAmount.toFixed(2)})`,
         order_id: orderData.orderId,
         prefill: {
           name: userName || 'Customer',
@@ -196,7 +249,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
               }}>
                 <span>Instant balance credit</span>
                 <span>•</span>
-                <span>Minimum ₹1</span>
+                <span>Minimum ₹{minTopup.toLocaleString('en-IN')}</span>
               </p>
             </div>
           </div>
@@ -412,7 +465,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                   }}>
                     {isValidAmount
                       ? `${unlockedTier.name} (₹${unlockedTier.rate.toFixed(2)}/OTP)`
-                      : 'Minimum ₹1 required'}
+                      : `Minimum ₹${minTopup.toLocaleString('en-IN')} required`}
                   </span>
                 )}
               </div>
@@ -441,8 +494,8 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                 </div>
                 <input
                   type="number"
-                  placeholder="Enter custom amount (min ₹1)"
-                  min={1}
+                  placeholder={`Enter custom amount (min ₹${minTopup.toLocaleString('en-IN')})`}
+                  min={minTopup}
                   value={customAmount}
                   onChange={(e) => {
                     setCustomAmount(e.target.value);
@@ -495,7 +548,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                  GST (18% Statutory Levy):
+                  GST ({defaultGst}% Statutory Levy):
                 </span>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
                   +₹{gstAmount.toFixed(2)}
@@ -504,7 +557,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                  Service Fee (3% Platform Charge):
+                  Service Fee ({defaultServiceFee}% Platform Charge):
                 </span>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
                   +₹{serviceFeeAmount.toFixed(2)}
@@ -523,7 +576,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                     Total Payable:
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Inclusive of 18% GST + 3% service fee
+                    Inclusive of {defaultGst}% GST + {defaultServiceFee}% service fee
                   </div>
                 </div>
                 <div style={{
@@ -584,7 +637,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
             }}>
               <Info size={14} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                100% of your <strong>₹{baseCredit.toFixed(2)}</strong> top-up is credited directly to your wallet float. 18% GST (₹{gstAmount.toFixed(2)}) and 3% platform service fee (₹{serviceFeeAmount.toFixed(2)}) are remitted separately.
+                100% of your <strong>₹{baseCredit.toFixed(2)}</strong> top-up is credited directly to your wallet float. {defaultGst}% GST (₹{gstAmount.toFixed(2)}) and {defaultServiceFee}% platform service fee (₹{serviceFeeAmount.toFixed(2)}) are remitted separately.
               </div>
             </div>
 

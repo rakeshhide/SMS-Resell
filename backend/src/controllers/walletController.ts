@@ -9,7 +9,7 @@ import { BillingService } from '../services/billingService';
 import { verifyRazorpaySignature, verifyWebhookSignature } from '../utils/crypto';
 
 const topupSchema = z.object({
-  amount: z.number().min(1, 'Minimum wallet top-up is ₹1').max(1000000, 'Maximum recharge is ₹10,00,000'),
+  amount: z.number().min(0.01, 'Top-up amount must be greater than zero').max(1000000, 'Maximum recharge is ₹10,00,000'),
 });
 
 const verifyPaymentSchema = z.object({

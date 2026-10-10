@@ -20,6 +20,9 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
   const [tierName, setTierName] = useState<string>('Starter Tier');
   const [nextTier, setNextTier] = useState<any>(null);
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  const [minTopup, setMinTopup] = useState<number>(1);
+  const [defaultGst, setDefaultGst] = useState<number>(18);
+  const [defaultServiceFee, setDefaultServiceFee] = useState<number>(3);
 
   useEffect(() => {
     fetchWalletData();
@@ -31,7 +34,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
       const [balRes, ledgerRes, pricingRes] = await Promise.all([
         ApiClient.getWalletBalance().catch(() => ({ success: false, balance: 0, currency: 'INR', otpRate: 0.75, activeTier: 'TIER_1', tierName: 'Starter Tier', highestTopup: 0, nextTier: null })),
         ApiClient.getWalletLedger(page, 15).catch(() => ({ success: false, data: [], pagination: {} })),
-        ApiClient.getPublicPricing().catch(() => ({ success: false, pricing: null, tiers: [] }))
+        ApiClient.getPublicPricing().catch(() => ({ success: false, pricing: null, tiers: [], settings: { minTopup: 1, defaultGst: 18, defaultServiceFee: 3 } }))
       ]);
 
       if (balRes?.balance !== undefined) setBalance(balRes.balance);
@@ -39,6 +42,12 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
       if (balRes?.activeTier !== undefined) setActiveTier(balRes.activeTier);
       if (balRes?.tierName !== undefined) setTierName(balRes.tierName);
       if (balRes?.nextTier !== undefined) setNextTier(balRes.nextTier);
+
+      if (pricingRes?.settings) {
+        if (pricingRes.settings.minTopup !== undefined) setMinTopup(pricingRes.settings.minTopup);
+        if (pricingRes.settings.defaultGst !== undefined) setDefaultGst(pricingRes.settings.defaultGst);
+        if (pricingRes.settings.defaultServiceFee !== undefined) setDefaultServiceFee(pricingRes.settings.defaultServiceFee);
+      }
 
       if (pricingRes?.tiers && pricingRes.tiers.length > 0) {
         setPricingTiers(pricingRes.tiers);
@@ -203,7 +212,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
             Wallet Top-Up Volume Pricing
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            Pricing is determined by your top-up amount. The purchased amount is fully credited to your wallet float. All prices are exclusive of 18% GST + 3% platform service fee.
+            Pricing is determined by your top-up amount (minimum ₹{minTopup.toLocaleString('en-IN')}). The purchased amount is fully credited to your wallet float. All prices are exclusive of {defaultGst}% GST + {defaultServiceFee}% platform service fee.
           </p>
         </div>
 

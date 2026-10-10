@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Radio,
   ArrowRight,
@@ -20,6 +20,8 @@ import {
   X
 } from 'lucide-react';
 import { TurfsyLogo } from '../components/TurfsyLogo';
+import { ApiClient } from '../services/api';
+import { PricingTier } from '../types';
 
 interface LandingPageViewProps {
   onOpenAuth: (isSignUp?: boolean) => void;
@@ -34,6 +36,27 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  const [minTopup, setMinTopup] = useState<number>(1);
+  const [defaultGst, setDefaultGst] = useState<number>(18);
+  const [defaultServiceFee, setDefaultServiceFee] = useState<number>(3);
+
+  useEffect(() => {
+    ApiClient.getPublicPricing()
+      .then((res) => {
+        if (res?.tiers && res.tiers.length > 0) {
+          setPricingTiers(res.tiers);
+        }
+        if (res?.settings) {
+          if (res.settings.minTopup !== undefined) setMinTopup(res.settings.minTopup);
+          if (res.settings.defaultGst !== undefined) setDefaultGst(res.settings.defaultGst);
+          if (res.settings.defaultServiceFee !== undefined) setDefaultServiceFee(res.settings.defaultServiceFee);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch public pricing on landing', err);
+      });
+  }, []);
 
   const heroCode = `curl -X POST https://apinexusotp.vercel.app/api/v1/otp/send \\
   -H "Authorization: Bearer sk_live_9a8f4c21e7b..." \\
@@ -563,58 +586,62 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { bracket: '₹100 – ₹499', rate: '₹0.75', volume: '~133+ OTPs', badge: 'Starter' },
-                    { bracket: '₹500 – ₹1,999', rate: '₹0.72', volume: '~694+ OTPs', badge: 'Growth' },
-                    { bracket: '₹2,000 – ₹4,999', rate: '₹0.68', volume: '~2,941+ OTPs', badge: 'Scale' },
-                    { bracket: '₹5,000 – ₹9,999', rate: '₹0.64', volume: '~7,812+ OTPs', badge: 'Business' },
-                    { bracket: '₹10,000+', rate: '₹0.60', volume: '~16,666+ OTPs', badge: 'Enterprise' },
-                  ].map((row, idx) => (
-                    <tr
-                      key={idx}
-                      style={{
-                        borderBottom: idx < 4 ? '1px solid var(--border-subtle)' : 'none',
-                      }}
-                    >
-                      <td style={{ padding: '16px', fontWeight: 700, color: 'var(--text-main)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>{row.bracket}</span>
-                          <span style={{
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            backgroundColor: '#eff6ff',
-                            color: '#1d4ed8'
-                          }}>
-                            {row.badge}
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '16px', fontWeight: 800, color: '#3b82f6', fontSize: '15px' }}>
-                        {row.rate} <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>/ OTP</span>
-                      </td>
-                      <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>
-                        {row.volume}
-                      </td>
-                      <td style={{ padding: '16px' }}>
-                        <button
-                          onClick={() => onOpenAuth(true)}
-                          style={{
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            backgroundColor: '#3b82f6',
-                            color: '#ffffff',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Top-Up Now
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {(pricingTiers.length > 0 ? pricingTiers : [
+                    { minTopup: minTopup, maxTopup: 499, otpPrice: 0.75, name: 'Starter Tier', label: `₹${minTopup} – ₹499` },
+                    { minTopup: 500, maxTopup: 1999, otpPrice: 0.72, name: 'Growth Tier', label: '₹500 – ₹1,999' },
+                    { minTopup: 2000, maxTopup: 4999, otpPrice: 0.68, name: 'Scale Tier', label: '₹2,000 – ₹4,999' },
+                    { minTopup: 5000, maxTopup: 9999, otpPrice: 0.64, name: 'Business Tier', label: '₹5,000 – ₹9,999' },
+                    { minTopup: 10000, maxTopup: null, otpPrice: 0.60, name: 'Enterprise Tier', label: '₹10,000+' },
+                  ]).map((tier, idx) => {
+                    const label = tier.label || (tier.maxTopup ? `₹${tier.minTopup.toLocaleString('en-IN')} – ₹${tier.maxTopup.toLocaleString('en-IN')}` : `₹${tier.minTopup.toLocaleString('en-IN')}+`);
+                    const volumeEst = tier.otpPrice > 0 ? `~${Math.floor(tier.minTopup / tier.otpPrice).toLocaleString('en-IN')}+ OTPs` : '';
+                    return (
+                      <tr
+                        key={'id' in tier ? tier.id : idx}
+                        style={{
+                          borderBottom: idx < (pricingTiers.length || 5) - 1 ? '1px solid var(--border-subtle)' : 'none',
+                        }}
+                      >
+                        <td style={{ padding: '16px', fontWeight: 700, color: 'var(--text-main)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>{label}</span>
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              backgroundColor: '#eff6ff',
+                              color: '#1d4ed8'
+                            }}>
+                              {tier.name?.replace(' Tier', '') || `Tier ${idx + 1}`}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px', fontWeight: 800, color: '#3b82f6', fontSize: '15px' }}>
+                          ₹{tier.otpPrice.toFixed(2)} <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>/ OTP</span>
+                        </td>
+                        <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>
+                          {volumeEst}
+                        </td>
+                        <td style={{ padding: '16px' }}>
+                          <button
+                            onClick={() => onOpenAuth(true)}
+                            style={{
+                              padding: '8px 16px',
+                              borderRadius: '8px',
+                              backgroundColor: '#3b82f6',
+                              color: '#ffffff',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Top-Up Now
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -632,7 +659,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               color: 'var(--text-muted)'
             }}>
               <div>
-                Minimum top-up is ₹1. 100% of top-up amount is credited directly to your wallet float. All prices are exclusive of 18% GST + 3% platform service fee.
+                Minimum top-up is ₹{minTopup.toLocaleString('en-IN')}. 100% of top-up amount is credited directly to your wallet float. All prices are exclusive of {defaultGst}% GST + {defaultServiceFee}% platform service fee.
               </div>
               <div style={{ fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <CheckCircle2 size={14} color="#10b981" />
