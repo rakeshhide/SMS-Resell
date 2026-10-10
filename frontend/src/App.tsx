@@ -186,6 +186,7 @@ export function App() {
                   initialTab="terms"
                   onBack={() => setCurrentTab('dashboard')}
                   darkMode={darkMode}
+                  isEmbedded={true}
                 />
               )}
             </main>

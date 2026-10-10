@@ -6,15 +6,9 @@ import {
   RefreshCw,
   AlertTriangle,
   CheckCircle2,
-  Lock,
-  MessageSquare,
   Building2,
   ArrowLeft,
   ArrowUp,
-  Search,
-  Menu,
-  X,
-  ChevronRight,
   Printer
 } from 'lucide-react';
 import { TurfsyLogo } from '../components/TurfsyLogo';
@@ -25,17 +19,16 @@ interface LegalViewProps {
   initialTab?: LegalTab;
   onBack: () => void;
   darkMode?: boolean;
+  isEmbedded?: boolean;
 }
 
 export const LegalView: React.FC<LegalViewProps> = ({
   initialTab = 'terms',
   onBack,
   darkMode = false,
+  isEmbedded = false
 }) => {
   const [activeTab, setActiveTab] = useState<LegalTab>(initialTab);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
@@ -53,8 +46,6 @@ export const LegalView: React.FC<LegalViewProps> = ({
   const handleTabChange = (tab: LegalTab) => {
     setActiveTab(tab);
     window.location.hash = tab;
-    setMobileMenuOpen(false);
-    setShowMobileSearch(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -101,365 +92,150 @@ export const LegalView: React.FC<LegalViewProps> = ({
   ];
 
   return (
-    <div className="legal-layout-container">
-      {/* Top Header Bar */}
-      <header className="legal-header-bar">
-        <div className="legal-header-left">
-          <button
-            onClick={handleBack}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '7px 12px',
-              borderRadius: '8px',
-              border: '1px solid var(--border-subtle)',
-              backgroundColor: 'var(--bg-app)',
-              color: 'var(--text-main)',
-              fontSize: '13px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-            aria-label="Back"
-          >
-            <ArrowLeft size={16} />
-            <span style={{ display: 'inline-block' }}>Back</span>
-          </button>
-
-          <div
-            onClick={handleBack}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-            title="Return to main page"
-          >
-            <TurfsyLogo size={26} />
-            <span style={{ fontSize: '17px', fontWeight: 800, letterSpacing: '-0.02em' }}>
-              turfsy<span style={{ color: '#38bdf8' }}>OTPs</span>
-            </span>
-            <span
-              className="legal-header-badge"
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                padding: '3px 8px',
-                borderRadius: '6px',
-                backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                color: '#0284c7',
-                letterSpacing: '0.05em'
-              }}
-            >
-              Legal & Compliance
-            </span>
-          </div>
-        </div>
-
-        <div className="legal-header-right">
-          {/* Desktop Search Box */}
-          <div className="legal-search-box legal-search-box-desktop">
-            <Search size={14} color="var(--text-muted)" />
-            <input
-              type="text"
-              placeholder="Search in policy..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                outline: 'none',
-                fontSize: '12px',
-                color: 'var(--text-main)',
-                width: '100%'
-              }}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: 0 }}
-                aria-label="Clear search"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
-
-          {/* Mobile Search Toggle */}
-          <button
-            onClick={() => setShowMobileSearch(!showMobileSearch)}
-            className="legal-icon-btn"
-            style={{ display: 'flex' }}
-            aria-label="Search policy"
-            title="Search policy"
-          >
-            {showMobileSearch ? <X size={16} /> : <Search size={16} />}
-          </button>
-
-          {/* Desktop Print Policy Button */}
-          <button
-            onClick={() => window.print()}
-            className="legal-print-btn"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              border: '1px solid var(--border-subtle)',
-              backgroundColor: 'var(--bg-app)',
-              color: 'var(--text-secondary)',
-              fontSize: '13px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            <Printer size={15} />
-            <span>Print</span>
-          </button>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="legal-menu-btn"
-            aria-label="Open document menu"
-            title="Legal policies menu"
-          >
-            <Menu size={18} />
-          </button>
-        </div>
-      </header>
-
-      {/* Mobile Collapsible Search Dropdown */}
-      {showMobileSearch && (
-        <div style={{
-          padding: '10px 16px',
-          backgroundColor: 'var(--bg-surface)',
-          borderBottom: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <Search size={16} color="var(--text-muted)" />
-          <input
-            type="text"
-            placeholder="Type keyword to find in this policy..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            autoFocus
-            style={{
-              flex: 1,
-              border: 'none',
-              background: 'transparent',
-              outline: 'none',
-              fontSize: '14px',
-              color: 'var(--text-main)'
-            }}
-          />
-          {searchQuery && (
+    <div className={`legal-wrapper ${isEmbedded ? 'embedded' : ''}`}>
+      {/* Standalone Top Header Bar (only when viewing directly / non-embedded) */}
+      {!isEmbedded && (
+        <header className="legal-standalone-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
-              onClick={() => setSearchQuery('')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}
-              aria-label="Clear keyword"
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Mobile Sticky Horizontal Segment Pills */}
-      <div className="legal-mobile-pills-bar">
-        {navItems.map((item) => {
-          const isSelected = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleTabChange(item.id)}
-              className={`legal-pill-btn ${isSelected ? 'active' : ''}`}
-            >
-              {item.icon}
-              <span>{item.shortTitle}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Main Grid Container */}
-      <div className="legal-main-grid">
-        {/* Desktop Navigation Sidebar */}
-        <aside className="legal-sidebar-sticky legal-desktop-sidebar">
-          <div className="surface-card" style={{ padding: '16px' }}>
-            <div style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              color: 'var(--text-muted)',
-              letterSpacing: '0.06em',
-              marginBottom: '12px',
-              paddingLeft: '8px'
-            }}>
-              Legal Documents
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {navItems.map((item) => {
-                const isSelected = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleTabChange(item.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '12px',
-                      padding: '12px 14px',
-                      borderRadius: '10px',
-                      border: isSelected ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid transparent',
-                      backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.08)' : 'transparent',
-                      color: isSelected ? '#2563eb' : 'var(--text-main)',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <div style={{
-                      marginTop: '2px',
-                      color: isSelected ? '#2563eb' : 'var(--text-muted)'
-                    }}>
-                      {item.icon}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '14px', fontWeight: isSelected ? 700 : 600 }}>
-                        {item.title}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
-                        {item.desc}
-                      </div>
-                    </div>
-                    {isSelected && <ChevronRight size={16} color="#2563eb" style={{ marginTop: '2px' }} />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Compliance & Contact Box */}
-          <div className="surface-card" style={{ padding: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <Building2 size={16} color="#3b82f6" />
-              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)' }}>
-                Official Entity & Grievance
-              </div>
-            </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 12px 0' }}>
-              For compliance audits, legal inquiries, or DLT registration support:
-            </p>
-            <div style={{ fontSize: '12px', color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div><strong>Platform:</strong> turfsyOTPs Infrastructure</div>
-              <div><strong>Jurisdiction:</strong> New Delhi, India</div>
-              <div><strong>Support & Grievance:</strong> In-Platform Live Chat Support</div>
-              <div><strong>Response SLA:</strong> Within 24-48 business hours</div>
-            </div>
-          </div>
-        </aside>
-
-        {/* Content Pane */}
-        <main style={{ minWidth: 0 }}>
-          <div className="legal-content-card">
-            {activeTab === 'terms' && <TermsOfServiceContent />}
-            {activeTab === 'privacy' && <PrivacyPolicyContent />}
-            {activeTab === 'aup' && <AcceptableUseContent />}
-            {activeTab === 'refund' && <RefundPolicyContent />}
-          </div>
-        </main>
-      </div>
-
-      {/* Mobile Drawer Menu Sheet */}
-      {mobileMenuOpen && (
-        <div className="legal-drawer-overlay" onClick={() => setMobileMenuOpen(false)}>
-          <div className="legal-drawer-sheet" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <TurfsyLogo size={24} />
-                <span style={{ fontSize: '16px', fontWeight: 800 }}>Policies & Compliance</span>
-              </div>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex' }}
-                aria-label="Close menu"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {navItems.map((item) => {
-                const isSelected = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleTabChange(item.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '12px',
-                      padding: '12px 14px',
-                      borderRadius: '12px',
-                      border: isSelected ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid var(--border-subtle)',
-                      backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.08)' : 'var(--bg-app)',
-                      color: isSelected ? '#2563eb' : 'var(--text-main)',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <div style={{ marginTop: '2px', color: isSelected ? '#2563eb' : 'var(--text-muted)' }}>
-                      {item.icon}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '14px', fontWeight: isSelected ? 700 : 600 }}>
-                        {item.title}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
-                        {item.desc}
-                      </div>
-                    </div>
-                    {isSelected && <CheckCircle2 size={16} color="#2563eb" style={{ marginTop: '2px' }} />}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Official Entity Box in Mobile Drawer */}
-            <div style={{
-              padding: '14px',
-              borderRadius: '12px',
-              backgroundColor: 'var(--bg-app)',
-              border: '1px solid var(--border-subtle)',
-              fontSize: '12px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
-                <Building2 size={14} color="#3b82f6" />
-                <span>Entity & Grievance Desk</span>
-              </div>
-              <div style={{ color: 'var(--text-secondary)' }}>New Delhi, India • Live Chat Help Desk</div>
-              <div style={{
+              onClick={handleBack}
+              style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                color: '#0284c7',
+                padding: '7px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-app)',
+                color: 'var(--text-main)',
+                fontSize: '13px',
                 fontWeight: 600,
-                marginTop: '4px'
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              aria-label="Back"
+            >
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+
+            <div
+              onClick={handleBack}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              title="Return to main page"
+            >
+              <TurfsyLogo size={24} />
+              <span style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+                turfsy<span style={{ color: '#38bdf8' }}>OTPs</span>
+              </span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  padding: '3px 8px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                  color: '#0284c7',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                Legal & Compliance
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={() => window.print()}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-app)',
+                color: 'var(--text-secondary)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <Printer size={15} />
+              <span>Print</span>
+            </button>
+          </div>
+        </header>
+      )}
+
+      {/* Main Container */}
+      <div className={`legal-container ${isEmbedded ? 'embedded' : ''}`}>
+        {/* Horizontal Navigation Tabs */}
+        <nav className="legal-tabs-nav" aria-label="Policy sections">
+          {navItems.map((item) => {
+            const isSelected = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleTabChange(item.id)}
+                className={`legal-tab-item ${isSelected ? 'active' : ''}`}
+                aria-selected={isSelected}
+              >
+                {item.icon}
+                <span className="legal-tab-text">{item.title}</span>
+                <span className="legal-tab-short">{item.shortTitle}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Selected Document Content Card */}
+        <main className="legal-card-body">
+          {activeTab === 'terms' && <TermsOfServiceContent />}
+          {activeTab === 'privacy' && <PrivacyPolicyContent />}
+          {activeTab === 'aup' && <AcceptableUseContent />}
+          {activeTab === 'refund' && <RefundPolicyContent />}
+
+          {/* Official Entity & Grievance Callout Box at bottom of document */}
+          <div style={{
+            marginTop: '36px',
+            paddingTop: '24px',
+            borderTop: '1px solid var(--border-subtle)'
+          }}>
+            <div style={{
+              padding: '20px 22px',
+              borderRadius: '14px',
+              backgroundColor: 'var(--bg-app)',
+              border: '1px solid var(--border-subtle)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Building2 size={18} color="#3b82f6" />
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>
+                  Official Entity & Grievance Desk
+                </span>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
+                turfsyOTPs Infrastructure operates in compliance with the Ministry of Communications (DoT/TRAI) and DPDP Act regulations. For compliance audits, disputes, or technical escalation:
+              </p>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '12px',
+                fontSize: '12.5px',
+                color: 'var(--text-main)'
               }}>
-                <MessageSquare size={13} />
-                <span>In-Platform Live Chat Desk Available</span>
+                <div><strong>Jurisdiction:</strong> New Delhi, India</div>
+                <div><strong>Response SLA:</strong> Within 24-48 business hours</div>
+                <div><strong>Support Channel:</strong> In-Platform Live Chat Desk</div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </main>
+      </div>
 
       {/* Floating Scroll to Top Button */}
       {showScrollTop && (
