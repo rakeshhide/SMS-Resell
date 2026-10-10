@@ -91,6 +91,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
     ];
   }, [pricingTiers, minTopup]);
 
+  const MAX_TOPUP = 100000; // ₹1,00,000 (1 Lakh) max topup limit
   const parsedCustom = parseFloat(customAmount);
   const finalAmount = customAmount ? (isNaN(parsedCustom) ? 0 : parsedCustom) : selectedAmount;
   const baseCredit = finalAmount > 0 ? finalAmount : 0;
@@ -120,14 +121,19 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
 
   const unlockedTier = getTier(baseCredit);
   const estMessages = unlockedTier.rate > 0 ? Math.floor(baseCredit / unlockedTier.rate) : 0;
-  const isValidAmount = baseCredit >= minTopup;
+  const isOverMax = baseCredit > MAX_TOPUP;
+  const isValidAmount = baseCredit >= minTopup && baseCredit <= MAX_TOPUP;
 
   if (!isOpen) return null;
 
   const handleTopup = async () => {
     setErrorMessage(null);
-    if (!isValidAmount) {
+    if (baseCredit < minTopup) {
       setErrorMessage(`The minimum wallet top-up amount is ₹${minTopup.toLocaleString('en-IN')}.`);
+      return;
+    }
+    if (baseCredit > MAX_TOPUP) {
+      setErrorMessage(`The maximum wallet top-up limit is ₹${MAX_TOPUP.toLocaleString('en-IN')} (1 Lakh).`);
       return;
     }
 
@@ -249,7 +255,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
               }}>
                 <span>Instant balance credit</span>
                 <span>•</span>
-                <span>Minimum ₹{minTopup.toLocaleString('en-IN')}</span>
+                <span>Min ₹{minTopup.toLocaleString('en-IN')} – Max ₹1,00,000</span>
               </p>
             </div>
           </div>
@@ -455,17 +461,19 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em'
                 }}>
-                  Or Custom Amount
+                  Or Custom Amount (Max ₹1,00,000)
                 </span>
                 {customAmount && (
                   <span style={{
                     fontSize: '11px',
                     fontWeight: 600,
-                    color: isValidAmount ? '#10b981' : '#ef4444'
+                    color: isOverMax ? '#ef4444' : isValidAmount ? '#10b981' : '#ef4444'
                   }}>
-                    {isValidAmount
-                      ? `${unlockedTier.name} (₹${unlockedTier.rate.toFixed(2)}/OTP)`
-                      : `Minimum ₹${minTopup.toLocaleString('en-IN')} required`}
+                    {isOverMax
+                      ? 'Maximum ₹1,00,000 (1 Lakh) allowed'
+                      : !isValidAmount
+                      ? `Minimum ₹${minTopup.toLocaleString('en-IN')} required`
+                      : `${unlockedTier.name} (₹${unlockedTier.rate.toFixed(2)}/OTP)`}
                   </span>
                 )}
               </div>
@@ -486,7 +494,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                 <div style={{
                   fontSize: '16px',
                   fontWeight: 800,
-                  color: '#3b82f6',
+                  color: isOverMax ? '#ef4444' : '#3b82f6',
                   display: 'flex',
                   alignItems: 'center'
                 }}>
@@ -494,11 +502,39 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                 </div>
                 <input
                   type="number"
-                  placeholder={`Enter custom amount (min ₹${minTopup.toLocaleString('en-IN')})`}
+                  placeholder={`Enter amount (₹${minTopup.toLocaleString('en-IN')} – ₹1,00,000)`}
                   min={minTopup}
+                  max={MAX_TOPUP}
                   value={customAmount}
                   onChange={(e) => {
-                    setCustomAmount(e.target.value);
+                    let val = e.target.value;
+                    if (val === '') {
+                      setCustomAmount('');
+                      setErrorMessage(null);
+                      return;
+                    }
+                    val = val.replace(/[^0-9.]/g, '');
+                    const parts = val.split('.');
+                    if (parts.length > 2) return;
+                    if (parts[1] && parts[1].length > 2) {
+                      val = `${parts[0]}.${parts[1].slice(0, 2)}`;
+                    }
+                    if (parts[0].length > 1 && parts[0].startsWith('0')) {
+                      parts[0] = parts[0].replace(/^0+/, '') || '0';
+                      val = parts[1] !== undefined ? `${parts[0]}.${parts[1]}` : parts[0];
+                    }
+                    if (parts[0].length > 6) {
+                      setCustomAmount(MAX_TOPUP.toString());
+                      setErrorMessage('Maximum wallet top-up limit is ₹1,00,000 (1 Lakh).');
+                      return;
+                    }
+                    const num = parseFloat(val);
+                    if (!isNaN(num) && num > MAX_TOPUP) {
+                      setCustomAmount(MAX_TOPUP.toString());
+                      setErrorMessage('Maximum wallet top-up limit is ₹1,00,000 (1 Lakh).');
+                      return;
+                    }
+                    setCustomAmount(val);
                     setErrorMessage(null);
                   }}
                   style={{
@@ -508,7 +544,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                     fontSize: '15px',
                     fontWeight: 700,
                     width: '100%',
-                    color: 'var(--text-main)'
+                    color: isOverMax ? '#ef4444' : 'var(--text-main)'
                   }}
                 />
                 {customAmount && isValidAmount && (
@@ -542,7 +578,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                   Wallet Float Credit:
                 </span>
                 <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>
-                  ₹{baseCredit.toFixed(2)}
+                  ₹{baseCredit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
 
@@ -551,7 +587,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                   GST ({defaultGst}% Statutory Levy):
                 </span>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                  +₹{gstAmount.toFixed(2)}
+                  +₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
 
@@ -560,7 +596,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                   Service Fee ({defaultServiceFee}% Platform Charge):
                 </span>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                  +₹{serviceFeeAmount.toFixed(2)}
+                  +₹{serviceFeeAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
 
@@ -582,10 +618,10 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                 <div style={{
                   fontSize: '19px',
                   fontWeight: 900,
-                  color: '#3b82f6',
+                  color: isOverMax ? '#ef4444' : '#3b82f6',
                   letterSpacing: '-0.02em'
                 }}>
-                  ₹{totalPayable.toFixed(2)}
+                  ₹{totalPayable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
 
@@ -637,7 +673,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
             }}>
               <Info size={14} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                100% of your <strong>₹{baseCredit.toFixed(2)}</strong> top-up is credited directly to your wallet float. {defaultGst}% GST (₹{gstAmount.toFixed(2)}) and {defaultServiceFee}% platform service fee (₹{serviceFeeAmount.toFixed(2)}) are remitted separately.
+                100% of your <strong>₹{baseCredit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> top-up is credited directly to your wallet float. {defaultGst}% GST (₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) and {defaultServiceFee}% platform service fee (₹{serviceFeeAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) are remitted separately.
               </div>
             </div>
 
@@ -683,7 +719,11 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
               <span>
                 {loading
                   ? 'Opening Secure Razorpay Gateway...'
-                  : `Proceed to Pay ₹${totalPayable.toFixed(2)}`}
+                  : isOverMax
+                  ? 'Maximum Limit ₹1,00,000 Exceeded'
+                  : !isValidAmount
+                  ? `Enter Valid Amount (Min ₹${minTopup})`
+                  : `Proceed to Pay ₹${totalPayable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </span>
               <ArrowRight size={16} />
             </button>

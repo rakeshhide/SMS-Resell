@@ -58,7 +58,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
           { id: 't2', minTopup: 500, maxTopup: 1999, otpPrice: 0.72, gstPercentage: 18, isActive: true, name: 'Growth Tier', label: '₹500 – ₹1,999' },
           { id: 't3', minTopup: 2000, maxTopup: 4999, otpPrice: 0.68, gstPercentage: 18, isActive: true, name: 'Scale Tier', label: '₹2,000 – ₹4,999' },
           { id: 't4', minTopup: 5000, maxTopup: 9999, otpPrice: 0.64, gstPercentage: 18, isActive: true, name: 'Business Tier', label: '₹5,000 – ₹9,999' },
-          { id: 't5', minTopup: 10000, maxTopup: null, otpPrice: 0.60, gstPercentage: 18, isActive: true, name: 'Enterprise Tier', label: '₹10,000+' },
+          { id: 't5', minTopup: 10000, maxTopup: 100000, otpPrice: 0.60, gstPercentage: 18, isActive: true, name: 'Enterprise Tier', label: '₹10,000 – ₹1,00,000' },
         ]);
       }
 

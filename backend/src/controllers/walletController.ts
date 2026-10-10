@@ -9,7 +9,7 @@ import { BillingService } from '../services/billingService';
 import { verifyRazorpaySignature, verifyWebhookSignature } from '../utils/crypto';
 
 const topupSchema = z.object({
-  amount: z.number().min(0.01, 'Top-up amount must be greater than zero').max(1000000, 'Maximum recharge is ₹10,00,000'),
+  amount: z.number().min(0.01, 'Top-up amount must be greater than zero').max(100000, 'Maximum top-up amount is ₹1,00,000 (1 Lakh)'),
 });
 
 const verifyPaymentSchema = z.object({
@@ -127,6 +127,10 @@ export class WalletController {
       const settings = await BillingService.getSystemSettings();
       if (amount < settings.minTopup) {
         res.status(400).json({ success: false, message: `Minimum top-up amount is ₹${settings.minTopup}` });
+        return;
+      }
+      if (amount > 100000) {
+        res.status(400).json({ success: false, message: 'Maximum top-up amount is ₹1,00,000 (1 Lakh)' });
         return;
       }
 
