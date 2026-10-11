@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Download, Printer, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { X, Download, Printer, CheckCircle2 } from 'lucide-react';
 import { InvoiceData, generateInvoicePdf } from '../utils/invoiceGenerator';
 
 interface InvoiceModalProps {
@@ -25,8 +25,8 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, inv
         className="modal-card"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxWidth: '620px',
-          padding: '30px',
+          maxWidth: '560px',
+          padding: '28px',
           borderRadius: '20px',
           backgroundColor: 'var(--bg-card, #ffffff)'
         }}
@@ -38,11 +38,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, inv
           alignItems: 'center',
           marginBottom: '20px',
           borderBottom: '1px solid var(--border-subtle)',
-          paddingBottom: '16px'
+          paddingBottom: '14px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>
-              Tax Invoice & Receipt
+              Payment Receipt
             </span>
             <span style={{
               fontSize: '11px',
@@ -77,7 +77,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, inv
                 cursor: 'pointer',
                 boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)'
               }}
-              title="Download PDF Invoice"
+              title="Download PDF Receipt"
             >
               <Download size={14} />
               <span>Download PDF</span>
@@ -98,7 +98,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, inv
                 fontWeight: 600,
                 cursor: 'pointer'
               }}
-              title="Print Invoice"
+              title="Print Receipt"
             >
               <Printer size={14} />
               <span>Print</span>
@@ -125,61 +125,73 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, inv
           </div>
         </div>
 
-        {/* Invoice Printable View */}
+        {/* Clean Printable Receipt View */}
         <div style={{
           backgroundColor: '#ffffff',
           borderRadius: '12px',
           border: '1px solid var(--border-subtle)',
-          padding: '24px',
+          padding: '22px',
           color: '#1e293b',
           fontSize: '13px'
         }}>
-          {/* Top Info */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+          {/* Top Brand & Metadata */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
             <div>
-              <div style={{ fontSize: '20px', fontWeight: 900, color: '#1e293b' }}>
+              <div style={{ fontSize: '22px', fontWeight: 900, color: '#1e293b' }}>
                 turfsy<span style={{ color: '#3b82f6' }}>OTPs</span>
               </div>
               <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
                 Enterprise SMS & OTP Routing Infrastructure
               </div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-                GSTIN: 27AABCT9984F1Z2 | SAC: 998413
-              </div>
             </div>
 
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>
-                INVOICE NUMBER
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b' }}>
+                RECEIPT NUMBER
               </div>
               <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b', marginTop: '2px' }}>
                 {invoiceData.invoiceNumber}
               </div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-                Date: {invoiceData.date}
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
+                {invoiceData.date}
               </div>
             </div>
           </div>
 
-          {/* Billed To */}
+          {/* Customer & Payment Info */}
           <div style={{
             padding: '12px 14px',
             backgroundColor: '#f8fafc',
             borderRadius: '10px',
             border: '1px solid #e2e8f0',
-            marginBottom: '18px'
+            marginBottom: '18px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            gap: '10px'
           }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
-              Billed To Customer
+            <div>
+              <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                Billed To
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', marginTop: '2px' }}>
+                {invoiceData.customerName || 'Registered Account'}
+              </div>
+              {invoiceData.customerEmail && (
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                  {invoiceData.customerEmail}
+                </div>
+              )}
             </div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', marginTop: '3px' }}>
-              {invoiceData.customerName || 'Registered Account'}
-            </div>
-            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-              Email: {invoiceData.customerEmail || '—'}
-            </div>
-            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px', wordBreak: 'break-all' }}>
-              Payment Ref: {invoiceData.paymentId || invoiceData.orderId || 'Wallet Top-Up'}
+
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                Payment Reference
+              </div>
+              <div style={{ fontSize: '11px', color: '#0f172a', fontWeight: 600, marginTop: '2px', wordBreak: 'break-all' }}>
+                {invoiceData.paymentId || invoiceData.orderId || 'Wallet Top-Up'}
+              </div>
             </div>
           </div>
 
@@ -188,31 +200,27 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, inv
             <thead>
               <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#f1f5f9' }}>
                 <th style={{ textAlign: 'left', padding: '8px 10px', fontSize: '11px', fontWeight: 700, color: '#475569' }}>Description</th>
-                <th style={{ textAlign: 'center', padding: '8px 10px', fontSize: '11px', fontWeight: 700, color: '#475569' }}>SAC</th>
-                <th style={{ textAlign: 'right', padding: '8px 10px', fontSize: '11px', fontWeight: 700, color: '#475569' }}>Amount</th>
+                <th style={{ textAlign: 'right', padding: '8px 10px', fontSize: '11px', fontWeight: 700, color: '#475569' }}>Amount (INR)</th>
               </tr>
             </thead>
             <tbody>
               <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                 <td style={{ padding: '10px 10px' }}>
-                  <div style={{ fontWeight: 600, color: '#0f172a' }}>Wallet Float Balance Credit</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>100% credited directly to messaging ledger</div>
+                  <div style={{ fontWeight: 600, color: '#0f172a' }}>Wallet Top-Up Balance (SMS & OTP Float)</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>100% credited directly to your messaging float</div>
                 </td>
-                <td style={{ textAlign: 'center', padding: '10px 10px', color: '#475569' }}>998413</td>
                 <td style={{ textAlign: 'right', padding: '10px 10px', fontWeight: 700, color: '#0f172a' }}>
                   ₹{invoiceData.creditAmount.toFixed(2)}
                 </td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                 <td style={{ padding: '8px 10px', color: '#475569' }}>Statutory GST (18%)</td>
-                <td style={{ textAlign: 'center', padding: '8px 10px', color: '#64748b' }}>—</td>
                 <td style={{ textAlign: 'right', padding: '8px 10px', color: '#475569' }}>
                   +₹{invoiceData.gstAmount.toFixed(2)}
                 </td>
               </tr>
               <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '8px 10px', color: '#475569' }}>Platform Service Fee (3%)</td>
-                <td style={{ textAlign: 'center', padding: '8px 10px', color: '#64748b' }}>—</td>
+                <td style={{ padding: '8px 10px', color: '#475569' }}>Platform & Gateway Fee (3%)</td>
                 <td style={{ textAlign: 'right', padding: '8px 10px', color: '#475569' }}>
                   +₹{invoiceData.serviceFeeAmount.toFixed(2)}
                 </td>
@@ -221,7 +229,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, inv
           </table>
 
           {/* Total Row */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '14px' }}>
             <div style={{ width: '220px', backgroundColor: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>
                 <span>Wallet Float:</span>
@@ -238,22 +246,8 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, inv
             </div>
           </div>
 
-          {/* Audit Verification */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '11px',
-            color: '#64748b',
-            backgroundColor: '#eff6ff',
-            padding: '10px 12px',
-            borderRadius: '8px',
-            border: '1px solid #dbeafe'
-          }}>
-            <ShieldCheck size={16} color="#3b82f6" style={{ flexShrink: 0 }} />
-            <span>
-              This is an electronically generated and audited tax invoice authorized by Turfsy. Verified in database ledger.
-            </span>
+          <div style={{ fontSize: '11px', color: '#64748b', textAlign: 'center', marginTop: '10px' }}>
+            Thank you for choosing turfsy. This is an electronically generated receipt.
           </div>
         </div>
       </div>
