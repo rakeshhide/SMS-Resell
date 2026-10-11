@@ -9,7 +9,8 @@ import {
   Info,
   Sparkles,
   Check,
-  AlertCircle
+  AlertCircle,
+  MessageSquare
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { PricingTier } from '../types';
@@ -377,6 +378,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
               }}>
                 {presets.map((preset) => {
                   const isSelected = selectedAmount === preset.amt && !customAmount;
+                  const totalOtps = preset.rate > 0 ? Math.floor(preset.amt / preset.rate) : 0;
                   return (
                     <button
                       key={preset.amt}
@@ -388,7 +390,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                       }}
                       style={{
                         position: 'relative',
-                        padding: '12px 10px',
+                        padding: '12px 6px',
                         borderRadius: '12px',
                         border: isSelected ? '2px solid #3b82f6' : '1px solid var(--border-subtle)',
                         backgroundColor: isSelected
@@ -419,16 +421,36 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                           padding: '2px 6px',
                           borderRadius: '8px',
                           letterSpacing: '0.03em',
-                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)'
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
+                          zIndex: 2
                         }}>
                           {preset.badge}
                         </span>
                       )}
 
                       <span style={{
+                        fontSize: '10.5px',
+                        fontWeight: 700,
+                        color: isSelected ? '#1d4ed8' : '#059669',
+                        backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.12)' : 'rgba(16, 185, 129, 0.1)',
+                        padding: '1px 6px',
+                        borderRadius: '6px',
+                        lineHeight: '1.3',
+                        letterSpacing: '0.01em',
+                        whiteSpace: 'nowrap',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '3px'
+                      }}>
+                        <MessageSquare size={10} />
+                        <span>{totalOtps.toLocaleString('en-IN')} OTPs</span>
+                      </span>
+
+                      <span style={{
                         fontSize: '16px',
                         fontWeight: 800,
-                        color: isSelected ? '#3b82f6' : 'var(--text-main)'
+                        color: isSelected ? '#3b82f6' : 'var(--text-main)',
+                        marginTop: '1px'
                       }}>
                         ₹{preset.amt.toLocaleString('en-IN')}
                       </span>
@@ -473,7 +495,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                       ? 'Maximum ₹1,00,000 (1 Lakh) allowed'
                       : !isValidAmount
                       ? `Minimum ₹${minTopup.toLocaleString('en-IN')} required`
-                      : `${unlockedTier.name} (₹${unlockedTier.rate.toFixed(2)})`}
+                      : `${unlockedTier.name} (₹${unlockedTier.rate.toFixed(2)}) • ~${estMessages.toLocaleString('en-IN')} OTPs`}
                   </span>
                 )}
               </div>
@@ -555,9 +577,14 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                     color: '#1d4ed8',
                     padding: '2px 8px',
                     borderRadius: '8px',
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
                   }}>
-                    ₹{unlockedTier.rate.toFixed(2)}
+                    <span>₹{unlockedTier.rate.toFixed(2)}</span>
+                    <span style={{ opacity: 0.6 }}>•</span>
+                    <span>~{estMessages.toLocaleString('en-IN')} OTPs</span>
                   </div>
                 )}
               </div>
@@ -573,34 +600,6 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
               flexDirection: 'column',
               gap: '10px'
             }}>
-              {/* Total OTPs You Get */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                paddingBottom: '8px',
-                borderBottom: '1px dashed var(--border-subtle)'
-              }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  Total OTPs You Get:
-                </span>
-                <span style={{
-                  fontSize: '13px',
-                  fontWeight: 800,
-                  color: '#059669',
-                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                  border: '1px solid rgba(16, 185, 129, 0.28)',
-                  padding: '3px 10px',
-                  borderRadius: '6px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '5px'
-                }}>
-                  <CheckCircle2 size={13} color="#059669" />
-                  ~{estMessages.toLocaleString('en-IN')} OTPs
-                </span>
-              </div>
-
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                   Wallet Float Credit:
