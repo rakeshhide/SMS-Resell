@@ -573,6 +573,34 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
               flexDirection: 'column',
               gap: '10px'
             }}>
+              {/* Total OTPs You Get */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingBottom: '8px',
+                borderBottom: '1px dashed var(--border-subtle)'
+              }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Total OTPs You Get:
+                </span>
+                <span style={{
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  color: '#059669',
+                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.28)',
+                  padding: '3px 10px',
+                  borderRadius: '6px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}>
+                  <CheckCircle2 size={13} color="#059669" />
+                  ~{estMessages.toLocaleString('en-IN')} OTPs
+                </span>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                   Wallet Float Credit:
