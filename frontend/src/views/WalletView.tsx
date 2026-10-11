@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, PlusCircle, ArrowDownLeft, ArrowUpRight, ShieldCheck, CheckCircle2, RefreshCw, FileText } from 'lucide-react';
+import { Wallet, PlusCircle, ArrowDownLeft, ArrowUpRight, ShieldCheck, RefreshCw, FileText } from 'lucide-react';
 import { WalletTransaction, PricingTier } from '../types';
 import { ApiClient } from '../services/api';
 import { WalletSkeleton } from '../components/Skeleton';
@@ -200,81 +200,8 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
             }}
           >
             <PlusCircle size={18} />
-            <span>Top Up Wallet (Min ₹100)</span>
+            <span>Top Up Wallet (Min ₹{minTopup.toLocaleString('en-IN')})</span>
           </button>
-        </div>
-      </div>
-
-      {/* Pricing Tiers Matrix */}
-      <div className="surface-card">
-        <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
-            Wallet Top-Up Volume Pricing
-          </h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            Pricing is determined by your top-up amount (minimum ₹{minTopup.toLocaleString('en-IN')}). The purchased amount is fully credited to your wallet float. All prices are exclusive of {defaultGst}% GST + {defaultServiceFee}% platform service fee.
-          </p>
-        </div>
-
-        <div className="table-responsive">
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', minWidth: '500px' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Top-up Bracket</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>OTP Rate</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Yield per ₹100</th>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pricingTiers.map((tier) => {
-                const isCurrent = activeTier === tier.id || Math.abs(otpRate - tier.otpPrice) < 0.001;
-                const label = tier.label || (tier.maxTopup ? `₹${tier.minTopup.toLocaleString()} – ₹${tier.maxTopup.toLocaleString()}` : `₹${tier.minTopup.toLocaleString()}+`);
-                const yieldPer100 = tier.otpPrice > 0 ? Math.floor(100 / tier.otpPrice) : 0;
-                return (
-                  <tr
-                    key={tier.id}
-                    style={{
-                      borderBottom: '1px solid var(--border-subtle)',
-                      backgroundColor: isCurrent ? 'rgba(59, 130, 246, 0.04)' : 'transparent'
-                    }}
-                  >
-                    <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--text-main)' }}>
-                      {label}
-                    </td>
-                    <td style={{ padding: '14px 16px', fontWeight: 800, color: '#3b82f6', fontSize: '14px' }}>
-                      ₹{tier.otpPrice.toFixed(2)} / OTP
-                    </td>
-                    <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>
-                      ~{yieldPer100} OTPs
-                    </td>
-                    <td style={{ padding: '14px 16px' }}>
-                      {isCurrent ? (
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          backgroundColor: '#ecfdf5',
-                          color: '#065f46',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          padding: '3px 8px',
-                          borderRadius: '6px'
-                        }}>
-                          <CheckCircle2 size={12} color="#10b981" />
-                          <span>Active Tier</span>
-                        </span>
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                          Unlock on top-up
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
         </div>
       </div>
 
