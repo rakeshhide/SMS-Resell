@@ -271,7 +271,7 @@ export class WalletService {
       NotificationService.createNotification({
         userId,
         title: 'Wallet Recharged Successfully',
-        message: `₹${creditAmount.toFixed(2)} credited to your wallet. Unlocked route rate: ₹${newOtpRate.toFixed(2)}/OTP.`,
+        message: `₹${creditAmount.toFixed(2)} credited to your wallet. Unlocked route rate: ₹${newOtpRate.toFixed(2)}.`,
         type: 'wallet',
         actionLabel: 'View Ledger',
         actionUrl: '/wallet',

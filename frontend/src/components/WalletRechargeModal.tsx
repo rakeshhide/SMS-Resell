@@ -438,7 +438,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                         fontWeight: 600,
                         color: isSelected ? '#2563eb' : 'var(--text-muted)'
                       }}>
-                        ₹{preset.rate.toFixed(2)} / OTP
+                        ₹{preset.rate.toFixed(2)}
                       </span>
                     </button>
                   );
@@ -473,7 +473,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                       ? 'Maximum ₹1,00,000 (1 Lakh) allowed'
                       : !isValidAmount
                       ? `Minimum ₹${minTopup.toLocaleString('en-IN')} required`
-                      : `${unlockedTier.name} (₹${unlockedTier.rate.toFixed(2)}/OTP)`}
+                      : `${unlockedTier.name} (₹${unlockedTier.rate.toFixed(2)})`}
                   </span>
                 )}
               </div>
@@ -557,7 +557,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                     borderRadius: '8px',
                     whiteSpace: 'nowrap'
                   }}>
-                    ₹{unlockedTier.rate.toFixed(2)}/OTP
+                    ₹{unlockedTier.rate.toFixed(2)}
                   </div>
                 )}
               </div>
@@ -651,7 +651,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  <span>₹{unlockedTier.rate.toFixed(2)} / OTP</span>
+                  <span>₹{unlockedTier.rate.toFixed(2)}</span>
                   <span style={{ color: 'var(--text-muted)' }}>•</span>
                   <span>~{estMessages.toLocaleString('en-IN')} OTPs</span>
                 </div>
