@@ -238,7 +238,6 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Timestamp</th>
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Type</th>
-                <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Rate</th>
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Description</th>
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Before</th>
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Amount</th>
@@ -248,13 +247,13 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
                     Loading financial ledger...
                   </td>
                 </tr>
               ) : ledger.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
                     No wallet transactions recorded yet.
                   </td>
                 </tr>
@@ -264,7 +263,6 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
                   const numAmount = typeof entry.amount === 'string' ? parseFloat(entry.amount) : entry.amount;
                   const numBefore = typeof entry.balance_before === 'string' ? parseFloat(entry.balance_before) : entry.balance_before;
                   const numAfter = typeof entry.balance_after === 'string' ? parseFloat(entry.balance_after) : entry.balance_after;
-                  const applicableRateNum = entry.applicable_rate ? (typeof entry.applicable_rate === 'string' ? parseFloat(entry.applicable_rate) : entry.applicable_rate) : null;
 
                   return (
                     <tr key={entry.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
@@ -286,9 +284,6 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
                           {badge.isCredit ? <ArrowDownLeft size={12} /> : <ArrowUpRight size={12} />}
                           <span>{badge.label}</span>
                         </span>
-                      </td>
-                      <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-main)', fontWeight: 600 }}>
-                        {applicableRateNum !== null ? `₹${applicableRateNum.toFixed(2)}` : '—'}
                       </td>
                       <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-main)', maxWidth: '280px' }}>
                         <div>{entry.description}</div>
