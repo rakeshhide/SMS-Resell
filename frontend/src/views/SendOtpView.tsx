@@ -72,6 +72,13 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
       const response = await ApiClient.testSendOTP(activeKey, cleanDigits, otp);
 
       setResult(response);
+
+      // Dynamically refresh wallet rate & tier info
+      ApiClient.getWalletBalance().then((balRes) => {
+        if (balRes?.otpRate !== undefined) setOtpRate(balRes.otpRate);
+        if (balRes?.tierName) setTierName(balRes.tierName);
+      }).catch(() => {});
+
       if (response.status === 200 && onSuccessDispatch) {
         onSuccessDispatch();
       }
@@ -245,6 +252,53 @@ export const SendOtpView: React.FC<SendOtpViewProps> = ({ onSuccessDispatch, onO
                 ₹{otpRate.toFixed(2)} / OTP ({tierName} - Deducted from float)
               </span>
             </div>
+
+            {/* Carrier Rejection / Error Alert */}
+            {result && result.status !== 200 && (
+              <div style={{
+                padding: '12px 14px',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444',
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '8px'
+              }}>
+                <AlertCircle size={16} style={{ marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700 }}>
+                    {result.data?.error_code === 'NUMBER_BLOCKED_DND' 
+                      ? 'Number Blocked in DND List' 
+                      : result.data?.error_code === 'INVALID_PHONE_NUMBER'
+                        ? 'Invalid Destination Number'
+                        : `Dispatch Failed (${result.data?.error_code || 'ERROR'})`}
+                  </div>
+                  <div style={{ fontSize: '12px', marginTop: '2px', color: 'var(--text-secondary)' }}>
+                    {result.data?.message || 'Carrier route rejected message dispatch.'}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Carrier Accepted Alert */}
+            {result && result.status === 200 && (
+              <div style={{
+                padding: '12px 14px',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                color: '#10b981',
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <CheckCircle2 size={16} />
+                <span style={{ fontWeight: 600 }}>OTP message accepted and dispatched to telecom carrier.</span>
+              </div>
+            )}
 
             <button
               type="submit"

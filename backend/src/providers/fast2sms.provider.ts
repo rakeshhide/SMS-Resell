@@ -44,11 +44,31 @@ export class Fast2SMSProvider implements SMSProvider {
       );
 
       const data = response.data;
-      const isLowBalance = data?.status_code === 416 || (typeof data?.message === 'string' && data.message.includes("sufficient wallet balance")) || (Array.isArray(data?.message) && data.message.some((m: string) => m.includes("sufficient wallet balance")));
-      const isSuccess = data?.return === true || data?.status_code === 200 || data?.message?.[0] === 'SMS sent successfully.';
       const refId = data?.request_id || `REQ_${Date.now()}`;
+      const statusCodeNum = data?.status_code;
+      const rawMsg = Array.isArray(data?.message)
+        ? data.message.join('; ')
+        : (typeof data?.message === 'string' ? data.message : '');
+      const lowerMsg = rawMsg.toLowerCase();
 
-      if (isLowBalance) {
+      // Check success
+      const isSuccess = data?.return === true || statusCodeNum === 200 || data?.message?.[0] === 'SMS sent successfully.';
+
+      if (isSuccess) {
+        return {
+          success: true,
+          providerRefId: refId,
+          statusCode: 'DELIVERED_TO_CARRIER',
+          message: rawMsg || 'SMS sent successfully.',
+          rawResponse: {
+            return: data?.return,
+            request_id: data?.request_id
+          }
+        };
+      }
+
+      // Classify error responses returned with HTTP 200 but return: false
+      if (statusCodeNum === 416 || lowerMsg.includes('sufficient wallet balance')) {
         return {
           success: false,
           providerRefId: refId,
@@ -58,23 +78,43 @@ export class Fast2SMSProvider implements SMSProvider {
         };
       }
 
+      if (statusCodeNum === 427 || lowerMsg.includes('dnd') || lowerMsg.includes('blocked')) {
+        return {
+          success: false,
+          providerRefId: refId,
+          statusCode: 'NUMBER_BLOCKED_DND',
+          message: 'Number blocked in Our System DND list / National Do-Not-Disturb registry.',
+          rawResponse: data
+        };
+      }
+
+      if (statusCodeNum === 411 || lowerMsg.includes('invalid number') || lowerMsg.includes('invalid numbers')) {
+        return {
+          success: false,
+          providerRefId: refId,
+          statusCode: 'INVALID_DESTINATION',
+          message: 'Invalid mobile number. Carrier rejected the destination.',
+          rawResponse: data
+        };
+      }
+
       return {
-        success: isSuccess,
+        success: false,
         providerRefId: refId,
-        statusCode: isSuccess ? 'DELIVERED_TO_CARRIER' : 'PROVIDER_REJECTED',
-        message: Array.isArray(data?.message) ? data.message.join('; ') : (data?.message || 'Gateway processed message'),
-        rawResponse: {
-          return: data?.return,
-          request_id: data?.request_id
-        }
+        statusCode: 'PROVIDER_REJECTED',
+        message: rawMsg || 'Gateway processed message reject',
+        rawResponse: data
       };
     } catch (error: any) {
       const errData = error.response?.data;
-      const isLowBalance = errData?.status_code === 416 || 
-        (typeof errData?.message === 'string' && errData.message.includes("sufficient wallet balance")) ||
-        (Array.isArray(errData?.message) && errData.message.some((m: string) => m.includes("sufficient wallet balance")));
+      const statusCodeNum = errData?.status_code || error.response?.status;
+      const rawMsg = Array.isArray(errData?.message)
+        ? errData.message.join('; ')
+        : (typeof errData?.message === 'string' ? errData.message : (error.message || ''));
+      const lowerMsg = rawMsg.toLowerCase();
 
-      if (isLowBalance) {
+      // 1. Upstream route balance exhausted (Fast2SMS 416)
+      if (statusCodeNum === 416 || lowerMsg.includes('sufficient wallet balance')) {
         console.error('[SMS_GATEWAY] Critical Alert: Upstream route replenishment required (Fast2SMS 416)');
         return {
           success: false,
@@ -85,7 +125,29 @@ export class Fast2SMSProvider implements SMSProvider {
         };
       }
 
-      const statusText = error.response?.data?.message || error.message || 'Upstream provider connection error';
+      // 2. DND or Blocked number (Fast2SMS 427)
+      if (statusCodeNum === 427 || lowerMsg.includes('dnd') || lowerMsg.includes('blocked')) {
+        return {
+          success: false,
+          providerRefId: `ERR_${Date.now()}`,
+          statusCode: 'NUMBER_BLOCKED_DND',
+          message: 'Number blocked in Our System DND list / National Do-Not-Disturb registry.',
+          rawResponse: errData
+        };
+      }
+
+      // 3. Invalid number format or unassigned route (Fast2SMS 411)
+      if (statusCodeNum === 411 || lowerMsg.includes('invalid number') || lowerMsg.includes('invalid numbers')) {
+        return {
+          success: false,
+          providerRefId: `ERR_${Date.now()}`,
+          statusCode: 'INVALID_DESTINATION',
+          message: 'Invalid mobile number. Carrier rejected the destination as invalid or non-existent.',
+          rawResponse: errData
+        };
+      }
+
+      const statusText = rawMsg || error.message || 'Upstream provider connection error';
       console.error('[SMS_GATEWAY] Delivery failure:', statusText);
 
       return {
@@ -95,7 +157,8 @@ export class Fast2SMSProvider implements SMSProvider {
         message: typeof statusText === 'string' ? statusText : JSON.stringify(statusText),
         rawResponse: {
           error: error.message,
-          code: error.code
+          code: error.code,
+          details: errData
         }
       };
     }

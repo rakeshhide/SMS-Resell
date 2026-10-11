@@ -185,11 +185,27 @@ export class OTPController {
         ]);
 
         const isMaintenance = providerResult.statusCode === 'PROVIDER_BALANCE_EXHAUSTED';
+        const isDnd = providerResult.statusCode === 'NUMBER_BLOCKED_DND';
+        const isInvalid = providerResult.statusCode === 'INVALID_DESTINATION';
 
-        res.status(502).json({
+        let httpStatus = 502;
+        let errorCode = 'DELIVERY_FAILED';
+
+        if (isMaintenance) {
+          httpStatus = 503;
+          errorCode = 'ROUTE_MAINTENANCE';
+        } else if (isDnd) {
+          httpStatus = 400;
+          errorCode = 'NUMBER_BLOCKED_DND';
+        } else if (isInvalid) {
+          httpStatus = 400;
+          errorCode = 'INVALID_PHONE_NUMBER';
+        }
+
+        res.status(httpStatus).json({
           success: false,
-          error_code: isMaintenance ? 'ROUTE_MAINTENANCE' : 'DELIVERY_FAILED',
-          message: isMaintenance ? providerResult.message : 'Carrier route failed to accept message. Transaction reversed and balance refunded.',
+          error_code: errorCode,
+          message: providerResult.message,
           transaction_id: txnRefId
         });
         return;
