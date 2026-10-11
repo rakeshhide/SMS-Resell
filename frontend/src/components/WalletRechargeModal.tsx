@@ -454,14 +454,6 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                       }}>
                         ₹{preset.amt.toLocaleString('en-IN')}
                       </span>
-
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        color: isSelected ? '#2563eb' : 'var(--text-muted)'
-                      }}>
-                        ₹{preset.rate.toFixed(2)}
-                      </span>
                     </button>
                   );
                 })}
@@ -495,7 +487,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                       ? 'Maximum ₹1,00,000 (1 Lakh) allowed'
                       : !isValidAmount
                       ? `Minimum ₹${minTopup.toLocaleString('en-IN')} required`
-                      : `${unlockedTier.name} (₹${unlockedTier.rate.toFixed(2)}) • ~${estMessages.toLocaleString('en-IN')} OTPs`}
+                      : `${unlockedTier.name} • ~${estMessages.toLocaleString('en-IN')} OTPs`}
                   </span>
                 )}
               </div>
@@ -577,14 +569,9 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                     color: '#1d4ed8',
                     padding: '2px 8px',
                     borderRadius: '8px',
-                    whiteSpace: 'nowrap',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
+                    whiteSpace: 'nowrap'
                   }}>
-                    <span>₹{unlockedTier.rate.toFixed(2)}</span>
-                    <span style={{ opacity: 0.6 }}>•</span>
-                    <span>~{estMessages.toLocaleString('en-IN')} OTPs</span>
+                    ~{estMessages.toLocaleString('en-IN')} OTPs
                   </div>
                 )}
               </div>
@@ -672,15 +659,13 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
                 </div>
                 <div style={{
                   fontSize: '12px',
-                  fontWeight: 600,
-                  color: 'var(--text-main)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
+                  fontWeight: 700,
+                  color: '#059669',
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  padding: '3px 10px',
+                  borderRadius: '6px'
                 }}>
-                  <span>₹{unlockedTier.rate.toFixed(2)}</span>
-                  <span style={{ color: 'var(--text-muted)' }}>•</span>
-                  <span>~{estMessages.toLocaleString('en-IN')} OTPs</span>
+                  ~{estMessages.toLocaleString('en-IN')} OTPs
                 </div>
               </div>
             </div>
