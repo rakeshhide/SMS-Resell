@@ -10,10 +10,12 @@ import {
   Sparkles,
   Check,
   AlertCircle,
-  MessageSquare
+  MessageSquare,
+  Download
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { PricingTier } from '../types';
+import { InvoiceData, generateInvoicePdf } from '../utils/invoiceGenerator';
 
 declare global {
   interface Window {
@@ -41,6 +43,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [completedInvoice, setCompletedInvoice] = useState<InvoiceData | null>(null);
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
   const [minTopup, setMinTopup] = useState<number>(1);
   const [defaultGst, setDefaultGst] = useState<number>(18);
@@ -179,12 +182,30 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
               response.razorpay_signature
             );
 
+            const invoice: InvoiceData = {
+              invoiceNumber: `TRF-${Date.now().toString().slice(-8)}`,
+              date: new Date().toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              }),
+              paymentId: response.razorpay_payment_id || 'pay_verified',
+              orderId: response.razorpay_order_id,
+              customerName: userName || 'Registered Account',
+              customerEmail: userEmail || '',
+              creditAmount: baseCredit,
+              gstAmount: gstAmount,
+              serviceFeeAmount: serviceFeeAmount,
+              totalPaid: totalPayable,
+              gstPercentage: defaultGst,
+              serviceFeePercentage: defaultServiceFee,
+            };
+
+            setCompletedInvoice(invoice);
             setSuccessMessage(`Success! ₹${baseCredit.toFixed(2)} has been credited to your wallet.`);
-            setTimeout(() => {
-              onSuccess(verifyRes.newBalance);
-              onClose();
-              window.location.reload();
-            }, 1200);
+            onSuccess(verifyRes.newBalance);
           } catch (err: any) {
             setErrorMessage(err.message || 'Payment signature verification failed.');
           }
@@ -285,7 +306,7 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
 
         {successMessage ? (
           <div style={{
-            padding: '36px 20px',
+            padding: '32px 20px',
             backgroundColor: '#ecfdf5',
             borderRadius: '16px',
             border: '1px solid #a7f3d0',
@@ -306,8 +327,64 @@ export const WalletRechargeModal: React.FC<WalletRechargeModalProps> = ({
             </div>
             <div style={{ fontSize: '18px', fontWeight: 800 }}>Payment Successful</div>
             <div style={{ fontSize: '14px', marginTop: '6px', color: '#047857' }}>{successMessage}</div>
-            <div style={{ fontSize: '12px', marginTop: '12px', color: '#059669' }}>
-              Updating your real-time wallet ledger...
+            <div style={{ fontSize: '12px', marginTop: '6px', color: '#059669' }}>
+              Transaction Ref: {completedInvoice?.paymentId || 'Verified'}
+            </div>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              marginTop: '22px',
+              flexWrap: 'wrap'
+            }}>
+              {completedInvoice && (
+                <button
+                  type="button"
+                  onClick={() => generateInvoicePdf(completedInvoice)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '11px 18px',
+                    borderRadius: '10px',
+                    backgroundColor: '#059669',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)'
+                  }}
+                  title="Download Official Tax Invoice PDF"
+                >
+                  <Download size={16} />
+                  <span>Download Invoice (PDF)</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  window.location.reload();
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '11px 20px',
+                  borderRadius: '10px',
+                  backgroundColor: '#ffffff',
+                  color: '#065f46',
+                  border: '1px solid #a7f3d0',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                <span>Done</span>
+              </button>
             </div>
           </div>
         ) : (

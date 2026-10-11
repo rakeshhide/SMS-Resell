@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, PlusCircle, ArrowDownLeft, ArrowUpRight, ShieldCheck, RefreshCw, FileText } from 'lucide-react';
+import { Wallet, PlusCircle, ArrowDownLeft, ArrowUpRight, ShieldCheck, RefreshCw, FileText, Download } from 'lucide-react';
 import { WalletTransaction, PricingTier } from '../types';
 import { ApiClient } from '../services/api';
 import { WalletSkeleton } from '../components/Skeleton';
+import { InvoiceData } from '../utils/invoiceGenerator';
+import { InvoiceModal } from '../components/InvoiceModal';
 
 interface WalletViewProps {
   onOpenWalletModal: () => void;
@@ -23,6 +25,9 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
   const [minTopup, setMinTopup] = useState<number>(1);
   const [defaultGst, setDefaultGst] = useState<number>(18);
   const [defaultServiceFee, setDefaultServiceFee] = useState<number>(3);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   useEffect(() => {
     fetchWalletData();
@@ -31,11 +36,14 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
   const fetchWalletData = async () => {
     try {
       setLoading(true);
-      const [balRes, ledgerRes, pricingRes] = await Promise.all([
+      const [balRes, ledgerRes, pricingRes, meRes] = await Promise.all([
         ApiClient.getWalletBalance().catch(() => ({ success: false, balance: 0, currency: 'INR', otpRate: 0.75, activeTier: 'TIER_1', tierName: 'Starter Tier', highestTopup: 0, nextTier: null })),
         ApiClient.getWalletLedger(page, 15).catch(() => ({ success: false, data: [], pagination: {} })),
-        ApiClient.getPublicPricing().catch(() => ({ success: false, pricing: null, tiers: [], settings: { minTopup: 1, defaultGst: 18, defaultServiceFee: 3 } }))
+        ApiClient.getPublicPricing().catch(() => ({ success: false, pricing: null, tiers: [], settings: { minTopup: 1, defaultGst: 18, defaultServiceFee: 3 } })),
+        ApiClient.getMe().catch(() => ({ success: false, user: null }))
       ]);
+
+      if (meRes?.user) setCurrentUser(meRes.user);
 
       if (balRes?.balance !== undefined) setBalance(balRes.balance);
       if (balRes?.otpRate !== undefined) setOtpRate(balRes.otpRate);
@@ -95,6 +103,37 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
       default:
         return { label: type, bg: 'var(--bg-app)', color: 'var(--text-main)', isCredit: true };
     }
+  };
+
+  const handleDownloadInvoice = (entry: WalletTransaction) => {
+    const creditAmount = typeof entry.amount === 'string' ? parseFloat(entry.amount) : entry.amount;
+    const gstAmount = Number((creditAmount * (defaultGst / 100)).toFixed(2));
+    const serviceFeeAmount = Number((creditAmount * (defaultServiceFee / 100)).toFixed(2));
+    const totalPaid = Number((creditAmount + gstAmount + serviceFeeAmount).toFixed(2));
+
+    const invoice: InvoiceData = {
+      invoiceNumber: `TRF-${entry.id.substring(0, 8).toUpperCase()}`,
+      date: new Date(entry.created_at).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      paymentId: entry.payment_id || entry.razorpay_order_id || 'Top-Up Transaction',
+      orderId: entry.razorpay_order_id,
+      customerName: currentUser?.fullName || currentUser?.full_name || 'Registered Merchant',
+      customerEmail: currentUser?.email || '',
+      creditAmount,
+      gstAmount,
+      serviceFeeAmount,
+      totalPaid,
+      gstPercentage: defaultGst,
+      serviceFeePercentage: defaultServiceFee,
+    };
+
+    setSelectedInvoice(invoice);
+    setIsInvoiceModalOpen(true);
   };
 
   if (loading) {
@@ -210,10 +249,10 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.01em' }}>
-              Immutable Financial Ledger
+              Financial Ledger
             </h2>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-              Every wallet credit and debit operation creates an immutable audit ledger entry.
+              Every wallet credit and debit operation creates an audit ledger entry.
             </p>
           </div>
           <span style={{
@@ -242,18 +281,19 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Before</th>
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Amount</th>
                 <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>After</th>
+                <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Invoice</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
                     Loading financial ledger...
                   </td>
                 </tr>
               ) : ledger.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
                     No wallet transactions recorded yet.
                   </td>
                 </tr>
@@ -315,6 +355,34 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
                       }}>
                         ₹{numAfter.toFixed(2)}
                       </td>
+                      <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                        {(entry.type === 'TOPUP' || entry.type === 'CREDIT' || entry.payment_id) ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadInvoice(entry)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              padding: '5px 10px',
+                              borderRadius: '7px',
+                              backgroundColor: '#eff6ff',
+                              color: '#1d4ed8',
+                              border: '1px solid #bfdbfe',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                            title="Download Tax Invoice"
+                          >
+                            <Download size={12} />
+                            <span>Invoice</span>
+                          </button>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })
@@ -323,6 +391,12 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
           </table>
         </div>
       </div>
+
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        invoiceData={selectedInvoice}
+      />
     </div>
   );
 };
