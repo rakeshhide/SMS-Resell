@@ -8,6 +8,7 @@ router.use(authenticateJWT);
 
 router.post('/', ApiKeyController.createKey);
 router.get('/', ApiKeyController.listKeys);
+router.post('/:id/reveal', ApiKeyController.revealKey);
 router.delete('/:id', ApiKeyController.revokeKey);
 
 export default router;

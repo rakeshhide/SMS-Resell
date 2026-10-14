@@ -77,3 +77,42 @@ export function verifyWebhookSignature(
     return false;
   }
 }
+
+/**
+ * Encrypt an API key using AES-256-GCM for secure password-protected re-reveal
+ */
+export function encryptApiKey(plainKey: string): string {
+  const masterSecret = process.env.JWT_SECRET || 'nexus_super_secret_jwt_key_for_development_2026';
+  const key = crypto.createHash('sha256').update(masterSecret).digest(); // 32 bytes
+  const iv = crypto.randomBytes(12); // 12 bytes IV for GCM
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  
+  let encrypted = cipher.update(plainKey, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const tag = cipher.getAuthTag().toString('hex'); // 16 bytes auth tag
+
+  // Store format: iv:tag:encrypted
+  return `${iv.toString('hex')}:${tag}:${encrypted}`;
+}
+
+/**
+ * Decrypt an API key using AES-256-GCM
+ */
+export function decryptApiKey(encryptedData: string): string {
+  const masterSecret = process.env.JWT_SECRET || 'nexus_super_secret_jwt_key_for_development_2026';
+  const key = crypto.createHash('sha256').update(masterSecret).digest();
+  
+  const [ivHex, tagHex, cipherHex] = encryptedData.split(':');
+  if (!ivHex || !tagHex || !cipherHex) {
+    throw new Error('Invalid encrypted API key format');
+  }
+
+  const iv = Buffer.from(ivHex, 'hex');
+  const tag = Buffer.from(tagHex, 'hex');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(tag);
+
+  let decrypted = decipher.update(cipherHex, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}

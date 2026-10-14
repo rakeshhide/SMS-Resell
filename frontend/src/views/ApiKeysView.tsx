@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { KeyRound, Plus, Copy, Check, Trash2, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { KeyRound, Plus, Copy, Check, Trash2, AlertTriangle, ShieldAlert, Eye, EyeOff, Lock } from 'lucide-react';
 import { ApiKey } from '../types';
 import { ApiClient } from '../services/api';
 import { ApiKeysSkeleton, SkeletonTableRows } from '../components/Skeleton';
@@ -15,6 +15,12 @@ export const ApiKeysView: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Reveal Key Modal State
+  const [keyToReveal, setKeyToReveal] = useState<ApiKey | null>(null);
+  const [revealPassword, setRevealPassword] = useState('');
+  const [revealedSecret, setRevealedSecret] = useState<string | null>(null);
+  const [revealing, setRevealing] = useState(false);
 
   const showToast = (type: 'success' | 'error' | 'info' | 'warning', message: string, title?: string) => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -73,6 +79,30 @@ export const ApiKeysView: React.FC = () => {
       fetchKeys();
     } catch (err: any) {
       showToast('error', err.message || 'Failed to revoke API key', 'Revocation Error');
+    }
+  };
+
+  const handleOpenReveal = (key: ApiKey) => {
+    setKeyToReveal(key);
+    setRevealPassword('');
+    setRevealedSecret(null);
+  };
+
+  const handleVerifyAndRevealKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!keyToReveal || !revealPassword) return;
+
+    try {
+      setRevealing(true);
+      const res = await ApiClient.revealApiKey(keyToReveal.id, revealPassword);
+      if (res?.apiKey?.rawSecretKey) {
+        setRevealedSecret(res.apiKey.rawSecretKey);
+        showToast('success', 'Password verified. API Key secret revealed.', 'Key Unlocked');
+      }
+    } catch (err: any) {
+      showToast('error', err.message || 'Incorrect password. Failed to reveal key.', 'Access Denied');
+    } finally {
+      setRevealing(false);
     }
   };
 
@@ -188,26 +218,52 @@ export const ApiKeysView: React.FC = () => {
                       </span>
                     </td>
                     <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                      {k.status === 'active' && (
-                        <button
-                          onClick={() => handleRevokeKey(k.id)}
-                          style={{
-                            padding: '6px 10px',
-                            borderRadius: '8px',
-                            backgroundColor: 'var(--bg-app)',
-                            border: '1px solid var(--border-subtle)',
-                            color: '#ef4444',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            fontSize: '12px'
-                          }}
-                          title="Revoke Key"
-                        >
-                          <Trash2 size={13} />
-                          <span>Revoke</span>
-                        </button>
-                      )}
+                      <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                        {k.status === 'active' && (
+                          <button
+                            onClick={() => handleOpenReveal(k)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              backgroundColor: '#eff6ff',
+                              border: '1px solid #bfdbfe',
+                              color: '#1d4ed8',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                            title="View Full Secret Key"
+                          >
+                            <Eye size={13} />
+                            <span>View Key</span>
+                          </button>
+                        )}
+
+                        {k.status === 'active' && (
+                          <button
+                            onClick={() => handleRevokeKey(k.id)}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: '8px',
+                              backgroundColor: 'var(--bg-app)',
+                              border: '1px solid var(--border-subtle)',
+                              color: '#ef4444',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '12px',
+                              cursor: 'pointer'
+                            }}
+                            title="Revoke Key"
+                          >
+                            <Trash2 size={13} />
+                            <span>Revoke</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -398,6 +454,164 @@ export const ApiKeysView: React.FC = () => {
                     }}
                   >
                     {submitting ? 'Generating...' : 'Create Key'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Password Verification & Key Reveal */}
+      {keyToReveal && (
+        <div className="modal-overlay" onClick={() => { setKeyToReveal(null); setRevealedSecret(null); }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', padding: '28px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Lock size={18} color="#3b82f6" />
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>
+                  {revealedSecret ? 'Secret API Key' : 'Authenticate to View Key'}
+                </h3>
+              </div>
+              <button
+                onClick={() => { setKeyToReveal(null); setRevealedSecret(null); }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '18px',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {revealedSecret ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  Secret key for <strong>{keyToReveal.name}</strong> unlocked. Keep this key secure and never share it publicly.
+                </p>
+
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: 'var(--bg-app)',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #bfdbfe',
+                  justifyContent: 'space-between',
+                  gap: '10px'
+                }}>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '13px',
+                    color: 'var(--text-main)',
+                    wordBreak: 'break-all',
+                    userSelect: 'all'
+                  }}>
+                    {revealedSecret}
+                  </span>
+                  <button
+                    onClick={() => copyToClipboard(revealedSecret)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: copied ? '#ecfdf5' : '#3b82f6',
+                      color: copied ? '#047857' : '#ffffff',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      cursor: 'pointer',
+                      flexShrink: 0
+                    }}
+                  >
+                    {copied ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{copied ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                  <button
+                    onClick={() => { setKeyToReveal(null); setRevealedSecret(null); }}
+                    style={{
+                      padding: '10px 20px',
+                      borderRadius: '8px',
+                      backgroundColor: '#3b82f6',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleVerifyAndRevealKey} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  Enter your account password to confirm identity and reveal the full secret key for <strong>{keyToReveal.name}</strong>.
+                </p>
+
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                    Account Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Enter account password"
+                    value={revealPassword}
+                    onChange={(e) => setRevealPassword(e.target.value)}
+                    style={{
+                      width: '100%',
+                      marginTop: '6px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-subtle)',
+                      backgroundColor: 'var(--bg-app)',
+                      color: 'var(--text-main)',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setKeyToReveal(null)}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-subtle)',
+                      background: 'transparent',
+                      color: 'var(--text-secondary)',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={revealing}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: '#3b82f6',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {revealing ? 'Verifying...' : 'Unlock Key'}
                   </button>
                 </div>
               </form>

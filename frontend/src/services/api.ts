@@ -167,6 +167,13 @@ export class ApiClient {
     });
   }
 
+  public static revealApiKey(id: string, password: string) {
+    return this.request<{ success: boolean; message: string; apiKey: any }>(`/api-keys/${id}/reveal`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  }
+
   // Server-driven dynamic notifications
   public static getNotifications(limit = 30, offset = 0) {
     return this.request<{
