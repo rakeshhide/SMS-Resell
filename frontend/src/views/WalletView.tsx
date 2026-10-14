@@ -124,8 +124,8 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
         hour: '2-digit',
         minute: '2-digit'
       }),
-      paymentId: entry.payment_id || entry.razorpay_order_id || 'Top-Up Transaction',
-      orderId: entry.razorpay_order_id,
+      paymentId: entry.payment_id || entry.reference_id || entry.razorpay_order_id || 'Manual Top-Up / Admin Credit',
+      orderId: entry.razorpay_order_id || entry.reference_id,
       customerName: currentUser?.fullName || currentUser?.full_name || 'Registered Merchant',
       customerEmail: currentUser?.email || '',
       creditAmount,
@@ -360,7 +360,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
                         ₹{numAfter.toFixed(2)}
                       </td>
                       <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                        {(entry.type === 'TOPUP' || entry.type === 'CREDIT' || entry.payment_id) ? (
+                        {(entry.type === 'TOPUP' || entry.type === 'CREDIT' || entry.type === 'ADMIN_CREDIT' || !!entry.payment_id) ? (
                           <button
                             type="button"
                             onClick={() => handleDownloadInvoice(entry)}
