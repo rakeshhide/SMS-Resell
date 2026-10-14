@@ -83,11 +83,15 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
     }
   };
 
-  const getTypeBadge = (type: string) => {
+  const getTypeBadge = (entry: WalletTransaction) => {
+    const type = entry.type;
     switch (type) {
       case 'TOPUP':
       case 'CREDIT':
-        return { label: 'TOPUP', bg: '#ecfdf5', color: '#047857', isCredit: true };
+        if (entry.payment_id || entry.razorpay_order_id) {
+          return { label: 'RAZORPAY TOPUP', bg: '#ecfdf5', color: '#047857', isCredit: true };
+        }
+        return { label: 'WALLET TOPUP', bg: '#ecfdf5', color: '#047857', isCredit: true };
       case 'OTP_DEBIT':
       case 'DEBIT':
         return { label: 'OTP DEBIT', bg: '#eff6ff', color: '#1d4ed8', isCredit: false };
@@ -299,7 +303,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ onOpenWalletModal }) => 
                 </tr>
               ) : (
                 ledger.map((entry) => {
-                  const badge = getTypeBadge(entry.type);
+                  const badge = getTypeBadge(entry);
                   const numAmount = typeof entry.amount === 'string' ? parseFloat(entry.amount) : entry.amount;
                   const numBefore = typeof entry.balance_before === 'string' ? parseFloat(entry.balance_before) : entry.balance_before;
                   const numAfter = typeof entry.balance_after === 'string' ? parseFloat(entry.balance_after) : entry.balance_after;

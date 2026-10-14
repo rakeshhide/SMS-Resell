@@ -24,6 +24,8 @@ router.get('/settings', AdminController.getSettings);
 router.put('/settings', AdminController.updateSettings);
 
 router.post('/wallet/adjust', AdminController.manualAdjustment);
+router.post('/users/tier', AdminController.setUserTier);
+router.get('/ledger', AdminController.getGlobalLedger);
 router.get('/audit-logs', AdminController.getAuditLogs);
 
 export default router;

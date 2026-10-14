@@ -117,9 +117,14 @@ export class AdminController {
 
       let queryText = `
         SELECT u.id, u.email, u.full_name, u.company_name, u.role, u.status, u.created_at,
-               COALESCE(w.balance, 0) as balance, w.currency
+               COALESCE(w.balance, 0) as balance, w.currency,
+               COALESCE(w.otp_rate, 0.7500) as otp_rate,
+               COALESCE(w.active_tier, 'Starter Tier') as active_tier,
+               COALESCE(pt.min_topup, 1.00) as tier_min_topup,
+               COALESCE(pt.max_topup, NULL) as tier_max_topup
         FROM users u
         LEFT JOIN wallets w ON u.id = w.user_id
+        LEFT JOIN pricing_tiers pt ON pt.id::text = w.active_tier::text
         WHERE 1=1
       `;
       const params: any[] = [];
@@ -137,9 +142,27 @@ export class AdminController {
       const rowsRes = await pool.query(queryText, params);
       const countRes = await pool.query('SELECT COUNT(*) FROM users');
 
+      // Map tier name nicely
+      const usersWithTiers = rowsRes.rows.map(u => {
+        const rate = parseFloat(u.otp_rate) || 0.75;
+        let tierName = 'Starter Tier';
+        const minTop = parseFloat(u.tier_min_topup) || 0;
+        if (minTop >= 10000) tierName = 'Enterprise Tier';
+        else if (minTop >= 5000) tierName = 'Business Tier';
+        else if (minTop >= 2000) tierName = 'Scale Tier';
+        else if (minTop >= 500) tierName = 'Growth Tier';
+        else tierName = 'Starter Tier';
+
+        return {
+          ...u,
+          tier_name: tierName,
+          otp_rate: rate,
+        };
+      });
+
       res.json({
         success: true,
-        users: rowsRes.rows,
+        users: usersWithTiers,
         total: parseInt(countRes.rows[0].count),
       });
     } catch (err: any) {
@@ -455,4 +478,180 @@ export class AdminController {
       res.status(500).json({ success: false, message: 'Failed to fetch audit logs.' });
     }
   }
+
+  /**
+   * Set user pricing tier status and custom OTP rate (Admin)
+   */
+  public static async setUserTier(req: AuthRequest, res: Response): Promise<void> {
+    const client = await pool.connect();
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+
+      const { userId, tierId, otpRate, reason } = req.body;
+      if (!userId) {
+        res.status(400).json({ success: false, message: 'User ID is required.' });
+        return;
+      }
+
+      if (otpRate === undefined || isNaN(parseFloat(otpRate)) || parseFloat(otpRate) <= 0) {
+        res.status(400).json({ success: false, message: 'Valid OTP rate is required.' });
+        return;
+      }
+
+      await client.query('BEGIN');
+
+      const walletRes = await client.query(
+        'SELECT id, balance, otp_rate, active_tier FROM wallets WHERE user_id = $1 FOR UPDATE',
+        [userId]
+      );
+
+      let walletId: string;
+      const parsedRate = parseFloat(otpRate);
+      const assignedTier = tierId || 'CUSTOM';
+
+      if (walletRes.rowCount === 0) {
+        const ins = await client.query(
+          'INSERT INTO wallets (user_id, balance, currency, otp_rate, active_tier) VALUES ($1, 0.0000, $2, $3, $4) RETURNING id',
+          [userId, 'INR', parsedRate, assignedTier]
+        );
+        walletId = ins.rows[0].id;
+      } else {
+        walletId = walletRes.rows[0].id;
+        await client.query(
+          'UPDATE wallets SET otp_rate = $1, active_tier = $2, updated_at = NOW() WHERE id = $3',
+          [parsedRate, assignedTier, walletId]
+        );
+      }
+
+      // Record in audit log
+      await client.query(`
+        INSERT INTO audit_logs (actor_id, action, target_type, target_id, reason, metadata)
+        VALUES ($1, 'SET_USER_TIER_STATUS', 'user_wallet', $2, $3, $4)
+      `, [
+        req.user.id,
+        userId,
+        reason || 'Admin updated user pricing tier status and OTP rate',
+        JSON.stringify({ tierId: assignedTier, otpRate: parsedRate })
+      ]);
+
+      await client.query('COMMIT');
+
+      res.json({
+        success: true,
+        message: `Pricing tier updated to ${parsedRate.toFixed(2)}/OTP successfully.`,
+        data: { userId, tierId: assignedTier, otpRate: parsedRate }
+      });
+    } catch (err: any) {
+      await client.query('ROLLBACK');
+      console.error('[ADMIN] Set user tier error:', err.message);
+      res.status(500).json({ success: false, message: 'Failed to update user pricing tier.' });
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Platform-wide Financial Ledger (Admin)
+   * Shows all financial events: Razorpay Top-ups, Manual Admin Adjustments, OTP Deductions, Refunds
+   */
+  public static async getGlobalLedger(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = Math.min(parseInt(req.query.limit as string) || 25, 100);
+      const offset = (page - 1) * limit;
+      const filter = (req.query.filter as string) || 'ALL'; // ALL | RAZORPAY | ADMIN | OTP | REFUND
+      const search = req.query.search as string;
+
+      let queryText = `
+        SELECT wt.id, wt.wallet_id, wt.user_id, wt.type, wt.amount, wt.balance_before, wt.balance_after,
+               wt.applicable_rate, wt.payment_id, wt.razorpay_order_id, wt.reference_type, wt.reference_id,
+               wt.status, wt.description, wt.created_at,
+               u.full_name as user_name, u.email as user_email
+        FROM wallet_transactions wt
+        LEFT JOIN users u ON wt.user_id = u.id
+        WHERE 1=1
+      `;
+      const params: any[] = [];
+      let idx = 1;
+
+      if (filter === 'RAZORPAY') {
+        queryText += ` AND (wt.type = 'TOPUP' OR wt.payment_id IS NOT NULL)`;
+      } else if (filter === 'ADMIN') {
+        queryText += ` AND (wt.type IN ('ADMIN_CREDIT', 'ADMIN_DEBIT') OR wt.reference_type = 'ADMIN_ADJUSTMENT')`;
+      } else if (filter === 'OTP') {
+        queryText += ` AND (wt.type = 'OTP_DEBIT' OR wt.reference_type = 'OTP_DEDUCTION')`;
+      } else if (filter === 'REFUND') {
+        queryText += ` AND (wt.type = 'REFUND' OR wt.reference_type = 'OTP_REFUND')`;
+      }
+
+      if (search) {
+        queryText += ` AND (
+          u.email ILIKE $${idx} OR 
+          u.full_name ILIKE $${idx} OR 
+          wt.payment_id ILIKE $${idx} OR 
+          wt.reference_id ILIKE $${idx} OR
+          wt.description ILIKE $${idx}
+        )`;
+        params.push(`%${search}%`);
+        idx++;
+      }
+
+      let countQueryText = `
+        SELECT COUNT(*)
+        FROM wallet_transactions wt
+        LEFT JOIN users u ON wt.user_id = u.id
+        WHERE 1=1
+      `;
+      const countParams: any[] = [];
+      let countIdx = 1;
+
+      if (filter === 'RAZORPAY') {
+        countQueryText += ` AND (wt.type = 'TOPUP' OR wt.payment_id IS NOT NULL)`;
+      } else if (filter === 'ADMIN') {
+        countQueryText += ` AND (wt.type IN ('ADMIN_CREDIT', 'ADMIN_DEBIT') OR wt.reference_type = 'ADMIN_ADJUSTMENT')`;
+      } else if (filter === 'OTP') {
+        countQueryText += ` AND (wt.type = 'OTP_DEBIT' OR wt.reference_type = 'OTP_DEDUCTION')`;
+      } else if (filter === 'REFUND') {
+        countQueryText += ` AND (wt.type = 'REFUND' OR wt.reference_type = 'OTP_REFUND')`;
+      }
+
+      if (search) {
+        countQueryText += ` AND (
+          u.email ILIKE $${countIdx} OR 
+          u.full_name ILIKE $${countIdx} OR 
+          wt.payment_id ILIKE $${countIdx} OR 
+          wt.reference_id ILIKE $${countIdx} OR
+          wt.description ILIKE $${countIdx}
+        )`;
+        countParams.push(`%${search}%`);
+        countIdx++;
+      }
+
+      queryText += ` ORDER BY wt.created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`;
+      params.push(limit, offset);
+
+      const rowsResult = await pool.query(queryText, params);
+      const countResult = await pool.query(countQueryText, countParams);
+
+      const total = parseInt(countResult.rows[0].count);
+
+      res.json({
+        success: true,
+        data: rowsResult.rows,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
+    } catch (err: any) {
+      console.error('[ADMIN] Global ledger error:', err.message);
+      res.status(500).json({ success: false, message: 'Failed to retrieve global financial ledger.' });
+    }
+  }
 }
+

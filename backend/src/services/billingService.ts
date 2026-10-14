@@ -179,17 +179,26 @@ export class BillingService {
     const res = await pool.query('SELECT otp_rate, active_tier, highest_topup, balance FROM wallets WHERE user_id = $1', [userId]);
 
     let highestTopup = 0;
+    let savedRate: number | null = null;
+    let savedActiveTier: string | null = null;
 
     if (res.rowCount && res.rows[0]) {
       highestTopup = parseFloat(res.rows[0].highest_topup) || 0;
+      savedRate = res.rows[0].otp_rate ? parseFloat(res.rows[0].otp_rate) : null;
+      savedActiveTier = res.rows[0].active_tier || null;
     }
 
-    // Determine current tier dynamically from active tiers based on user's highestTopup
-    const currentTier = await this.getTierForAmount(highestTopup);
-    const currentTierIndex = tiers.findIndex(t => t.id === currentTier.id);
+    // Determine current tier from tiers table matching savedActiveTier or falling back to highestTopup
+    let currentTier = tiers.find(t => t.id === savedActiveTier);
+    if (!currentTier) {
+      currentTier = await this.getTierForAmount(highestTopup);
+    }
 
-    // Keep database wallet row synchronized with latest tier pricing & tier ID
-    if (res.rowCount && (parseFloat(res.rows[0].otp_rate) !== currentTier.otpPrice || res.rows[0].active_tier !== currentTier.id)) {
+    const currentTierIndex = tiers.findIndex(t => t.id === currentTier!.id);
+    const effectiveRate = savedRate !== null && !isNaN(savedRate) ? savedRate : currentTier.otpPrice;
+
+    // Keep database wallet row synchronized if not explicitly set
+    if (res.rowCount && (savedRate === null || !savedActiveTier)) {
       pool.query(
         'UPDATE wallets SET otp_rate = $1, active_tier = $2, updated_at = NOW() WHERE user_id = $3',
         [currentTier.otpPrice, currentTier.id, userId]
@@ -220,7 +229,7 @@ export class BillingService {
     }
 
     return {
-      otpRate: currentTier.otpPrice,
+      otpRate: effectiveRate,
       activeTier: currentTier.id,
       tierName: currentTier.name || 'Starter Tier',
       highestTopup,

@@ -305,6 +305,27 @@ export class ApiClient {
     });
   }
 
+  public static setUserTier(userId: string, tierId: string, otpRate: number, reason: string) {
+    return this.request<{ success: boolean; message: string; data: any }>('/admin/users/tier', {
+      method: 'POST',
+      body: JSON.stringify({ userId, tierId, otpRate, reason }),
+    });
+  }
+
+  public static getAdminGlobalLedger(page = 1, limit = 25, filter = 'ALL', search = '') {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      filter,
+      search,
+    });
+    return this.request<{
+      success: boolean;
+      data: any[];
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    }>(`/admin/ledger?${params.toString()}`);
+  }
+
   public static getAuditLogs() {
     return this.request<{ success: boolean; logs: any[] }>('/admin/audit-logs');
   }

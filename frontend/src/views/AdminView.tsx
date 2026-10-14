@@ -19,10 +19,18 @@ import {
   MessageSquare,
   Zap,
   RefreshCw,
-  Wallet
+  Wallet,
+  BookOpen,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Search,
+  Sliders,
+  ExternalLink
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { PricingTier, SystemSettings } from '../types';
+import { InvoiceModal } from '../components/InvoiceModal';
+import { InvoiceData } from '../utils/invoiceGenerator';
 import { AdminSkeleton } from '../components/Skeleton';
 import { AdminSupportChat } from '../components/AdminSupportChat';
 import { ToastContainer, ToastMessage } from '../components/Toast';
@@ -32,7 +40,7 @@ export const AdminView: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adminSection, setAdminSection] = useState<'overview' | 'support' | 'users' | 'audit'>('overview');
+  const [adminSection, setAdminSection] = useState<'overview' | 'support' | 'users' | 'ledger' | 'audit'>('overview');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const showToast = (type: 'success' | 'error' | 'info' | 'warning', message: string, title?: string) => {
@@ -65,6 +73,22 @@ export const AdminView: React.FC = () => {
   const [adjustAmount, setAdjustAmount] = useState<number>(100);
   const [adjustReason, setAdjustReason] = useState('');
   const [submittingAdjust, setSubmittingAdjust] = useState(false);
+
+  // Set User Pricing Tier Modal
+  const [userForTierModal, setUserForTierModal] = useState<any | null>(null);
+  const [selectedTierId, setSelectedTierId] = useState<string>('');
+  const [customOtpRate, setCustomOtpRate] = useState<number>(0.75);
+  const [tierOverrideReason, setTierOverrideReason] = useState<string>('');
+  const [submittingTierChange, setSubmittingTierChange] = useState(false);
+
+  // Global Financial Ledger Tab State
+  const [globalLedger, setGlobalLedger] = useState<any[]>([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [ledgerTotalPages, setLedgerTotalPages] = useState(1);
+  const [ledgerFilter, setLedgerFilter] = useState<'ALL' | 'RAZORPAY' | 'ADMIN' | 'OTP' | 'REFUND'>('ALL');
+  const [ledgerSearch, setLedgerSearch] = useState('');
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
 
   useEffect(() => {
     fetchAdminData();
@@ -199,11 +223,95 @@ export const AdminView: React.FC = () => {
       setSelectedUser(null);
       setAdjustReason('');
       fetchAdminData();
+      if (adminSection === 'ledger') fetchGlobalLedger();
     } catch (err: any) {
       showToast('error', err.message || 'Failed to execute adjustment', 'Adjustment Error');
     } finally {
       setSubmittingAdjust(false);
     }
+  };
+
+  const handleOpenSetTier = (user: any) => {
+    setUserForTierModal(user);
+    setSelectedTierId(user.active_tier || (tiers[0]?.id || ''));
+    setCustomOtpRate(user.otp_rate || 0.75);
+    setTierOverrideReason('');
+  };
+
+  const handleSaveUserTier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userForTierModal) return;
+
+    try {
+      setSubmittingTierChange(true);
+      const res = await ApiClient.setUserTier(
+        userForTierModal.id,
+        selectedTierId,
+        customOtpRate,
+        tierOverrideReason || 'Admin updated tier rate'
+      );
+      showToast('success', res.message || 'User pricing tier updated successfully.', 'Tier Updated');
+      setUserForTierModal(null);
+      fetchAdminData();
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to update user tier', 'Tier Error');
+    } finally {
+      setSubmittingTierChange(false);
+    }
+  };
+
+  const fetchGlobalLedger = async (page = ledgerPage, filter = ledgerFilter, search = ledgerSearch) => {
+    try {
+      setLedgerLoading(true);
+      const res = await ApiClient.getAdminGlobalLedger(page, 25, filter, search);
+      if (res?.data) {
+        setGlobalLedger(res.data);
+        if (res.pagination) {
+          setLedgerTotalPages(res.pagination.totalPages || 1);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load global ledger', err);
+      showToast('error', 'Failed to load platform financial ledger', 'Ledger Error');
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (adminSection === 'ledger') {
+      fetchGlobalLedger(ledgerPage, ledgerFilter, ledgerSearch);
+    }
+  }, [adminSection, ledgerPage, ledgerFilter]);
+
+  const handleDownloadInvoice = (entry: any) => {
+    const creditAmount = typeof entry.amount === 'string' ? parseFloat(entry.amount) : entry.amount;
+    const gstAmount = Number((creditAmount * (defaultGst / 100)).toFixed(2));
+    const serviceFeeAmount = Number((creditAmount * (defaultServiceFee / 100)).toFixed(2));
+    const totalPaid = Number((creditAmount + gstAmount + serviceFeeAmount).toFixed(2));
+
+    const invoice: InvoiceData = {
+      invoiceNumber: `TRF-${entry.id.substring(0, 8).toUpperCase()}`,
+      date: new Date(entry.created_at).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      customerName: entry.user_name || 'Valued Developer',
+      customerEmail: entry.user_email || 'developer@turfsy.com',
+      paymentId: entry.payment_id || entry.reference_id || 'Top-Up Transaction',
+      orderId: entry.razorpay_order_id,
+      creditAmount,
+      gstAmount,
+      serviceFeeAmount,
+      totalPaid,
+      gstPercentage: defaultGst,
+      serviceFeePercentage: defaultServiceFee,
+    };
+
+    setSelectedInvoice(invoice);
   };
 
   if (loading) {
@@ -548,6 +656,29 @@ export const AdminView: React.FC = () => {
         >
           <Users size={16} />
           <span>Developer Accounts ({users.length})</span>
+        </button>
+
+        <button
+          onClick={() => setAdminSection('ledger')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 18px',
+            borderRadius: '8px',
+            border: 'none',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+            backgroundColor: adminSection === 'ledger' ? '#059669' : 'var(--bg-surface)',
+            color: adminSection === 'ledger' ? '#ffffff' : 'var(--text-secondary)',
+            boxShadow: adminSection === 'ledger' ? 'var(--shadow-sm)' : 'none'
+          }}
+        >
+          <BookOpen size={16} />
+          <span>Financial Ledger</span>
         </button>
 
         <button
@@ -995,6 +1126,7 @@ export const AdminView: React.FC = () => {
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>User / Org</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>Role</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>Status</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Pricing Tier Status</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>Available Float</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>Created</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600, textAlign: 'right' }}>Actions</th>
@@ -1031,6 +1163,28 @@ export const AdminView: React.FC = () => {
                       {u.status.toUpperCase()}
                     </span>
                   </td>
+                  <td style={{ padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        backgroundColor: '#eff6ff',
+                        color: '#1d4ed8',
+                        width: 'fit-content'
+                      }}>
+                        <Layers size={11} />
+                        <span>{u.tier_name || 'Starter Tier'}</span>
+                      </span>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                        ₹{parseFloat(u.otp_rate || 0.75).toFixed(2)} / OTP
+                      </div>
+                    </div>
+                  </td>
                   <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
                     ₹{parseFloat(u.balance || 0).toFixed(2)}
                   </td>
@@ -1039,6 +1193,26 @@ export const AdminView: React.FC = () => {
                   </td>
                   <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                     <div style={{ display: 'inline-flex', gap: '8px' }}>
+                      <button
+                        onClick={() => handleOpenSetTier(u)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #bfdbfe',
+                          backgroundColor: '#eff6ff',
+                          color: '#1d4ed8',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <Sliders size={12} />
+                        <span>Set Tier</span>
+                      </button>
+
                       <button
                         onClick={() => setSelectedUser(u)}
                         style={{
@@ -1081,6 +1255,144 @@ export const AdminView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Set User Pricing Tier Modal */}
+      {userForTierModal && (
+        <div className="modal-overlay" onClick={() => setUserForTierModal(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: '32px', maxWidth: '480px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <Sliders size={20} color="#3b82f6" />
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>
+                Set User Pricing Tier Status
+              </h3>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+              Configure active tier and per-OTP dispatch tariff for <strong>{userForTierModal.full_name}</strong> ({userForTierModal.email}).
+            </p>
+
+            <form onSubmit={handleSaveUserTier} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Assign Pricing Tier
+                </label>
+                <select
+                  value={selectedTierId}
+                  onChange={(e) => {
+                    const tId = e.target.value;
+                    setSelectedTierId(tId);
+                    const matched = tiers.find(t => t.id === tId);
+                    if (matched) {
+                      setCustomOtpRate(matched.otpPrice);
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-subtle)',
+                    backgroundColor: 'var(--bg-app)',
+                    color: 'var(--text-main)',
+                    marginTop: '6px',
+                    fontSize: '14px'
+                  }}
+                >
+                  {tiers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.label}) — ₹{t.otpPrice.toFixed(2)} / OTP
+                    </option>
+                  ))}
+                  <option value="CUSTOM">Custom Manual Rate</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Active Per-OTP Rate (₹)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  required
+                  value={customOtpRate}
+                  onChange={(e) => setCustomOtpRate(parseFloat(e.target.value) || 0.75)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-subtle)',
+                    backgroundColor: 'var(--bg-app)',
+                    color: 'var(--text-main)',
+                    marginTop: '6px',
+                    fontSize: '14px',
+                    fontFamily: 'var(--font-mono)'
+                  }}
+                />
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                  This rate is deducted per OTP dispatch from the developer float balance.
+                </span>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Reason for Adjustment / Override
+                </label>
+                <textarea
+                  rows={2}
+                  value={tierOverrideReason}
+                  onChange={(e) => setTierOverrideReason(e.target.value)}
+                  placeholder="e.g. Enterprise volume deal agreement / Special promotion..."
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-subtle)',
+                    backgroundColor: 'var(--bg-app)',
+                    color: 'var(--text-main)',
+                    marginTop: '6px',
+                    fontSize: '13px'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setUserForTierModal(null)}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-subtle)',
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingTierChange}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#3b82f6',
+                    color: '#fff',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {submittingTierChange ? 'Updating...' : 'Save Pricing Status'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Manual Wallet Adjustment Modal */}
       {selectedUser && (
@@ -1144,6 +1456,299 @@ export const AdminView: React.FC = () => {
       )}
       </>
     )}
+
+      {/* Platform Financial Ledger Section (Razorpay Online vs Admin Manual vs OTP Deductions) */}
+      {adminSection === 'ledger' && (
+        <div className="surface-card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <BookOpen size={20} color="#059669" />
+                <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>
+                  Platform Financial Ledger
+                </h3>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                Audited ledger of all Razorpay online payments, manual admin credits/debits, and live OTP deductions.
+              </p>
+            </div>
+
+            <button
+              onClick={() => fetchGlobalLedger(ledgerPage, ledgerFilter, ledgerSearch)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-app)',
+                color: 'var(--text-main)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <RefreshCw size={14} />
+              <span>Refresh Ledger</span>
+            </button>
+          </div>
+
+          {/* Filter Bar & Search */}
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {(['ALL', 'RAZORPAY', 'ADMIN', 'OTP', 'REFUND'] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => {
+                    setLedgerFilter(f);
+                    setLedgerPage(1);
+                  }}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    border: '1px solid',
+                    borderColor: ledgerFilter === f ? '#059669' : 'var(--border-subtle)',
+                    backgroundColor: ledgerFilter === f ? '#ecfdf5' : 'var(--bg-app)',
+                    color: ledgerFilter === f ? '#047857' : 'var(--text-secondary)',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {f === 'ALL' && 'All Activity'}
+                  {f === 'RAZORPAY' && 'Razorpay Top-Ups'}
+                  {f === 'ADMIN' && 'Admin Adjustments'}
+                  {f === 'OTP' && 'OTP Deductions'}
+                  {f === 'REFUND' && 'Refunds'}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ position: 'relative', width: '260px' }}>
+              <input
+                type="text"
+                placeholder="Search user, ref ID..."
+                value={ledgerSearch}
+                onChange={(e) => setLedgerSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setLedgerPage(1);
+                    fetchGlobalLedger(1, ledgerFilter, ledgerSearch);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px 8px 32px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--bg-app)',
+                  color: 'var(--text-main)',
+                  fontSize: '12px'
+                }}
+              />
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text-muted)' }} />
+            </div>
+          </div>
+
+          {/* Ledger Table */}
+          <div className="table-responsive">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', minWidth: '850px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>Timestamp</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>Customer</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>Type</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>Ref / Payment ID</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>Description</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>Rate</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>Before</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>Amount</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600, textAlign: 'right' }}>After</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600, textAlign: 'center' }}>Receipt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ledgerLoading ? (
+                  <tr>
+                    <td colSpan={10} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      Loading platform ledger...
+                    </td>
+                  </tr>
+                ) : globalLedger.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      No financial transactions matching the selected criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  globalLedger.map((tx) => {
+                    const isRazorpay = tx.type === 'TOPUP' || !!tx.payment_id;
+                    const isAdminAdj = tx.type === 'ADMIN_CREDIT' || tx.type === 'ADMIN_DEBIT' || tx.reference_type === 'ADMIN_ADJUSTMENT';
+                    const isOtp = tx.type === 'OTP_DEBIT' || tx.reference_type === 'OTP_DEDUCTION';
+                    const isRefund = tx.type === 'REFUND' || tx.reference_type === 'OTP_REFUND';
+
+                    let badgeColor = '#047857';
+                    let badgeBg = '#ecfdf5';
+                    let badgeLabel = tx.type;
+
+                    if (isRazorpay) {
+                      badgeLabel = 'RAZORPAY TOPUP';
+                      badgeBg = '#ecfdf5';
+                      badgeColor = '#047857';
+                    } else if (isAdminAdj) {
+                      badgeLabel = tx.type === 'ADMIN_DEBIT' ? 'ADMIN DEBIT' : 'ADMIN CREDIT';
+                      badgeBg = tx.type === 'ADMIN_DEBIT' ? '#fef2f2' : '#f0fdf4';
+                      badgeColor = tx.type === 'ADMIN_DEBIT' ? '#b91c1c' : '#15803d';
+                    } else if (isOtp) {
+                      badgeLabel = 'OTP DEBIT';
+                      badgeBg = '#eff6ff';
+                      badgeColor = '#1d4ed8';
+                    } else if (isRefund) {
+                      badgeLabel = 'REFUND';
+                      badgeBg = '#fef3c7';
+                      badgeColor = '#b45309';
+                    }
+
+                    const numAmount = parseFloat(tx.amount || 0);
+                    const numBefore = parseFloat(tx.balance_before || 0);
+                    const numAfter = parseFloat(tx.balance_after || 0);
+                    const isCredit = ['TOPUP', 'CREDIT', 'ADMIN_CREDIT', 'REFUND'].includes(tx.type);
+
+                    return (
+                      <tr key={tx.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                        <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                          {new Date(tx.created_at).toLocaleString()}
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{tx.user_name || 'User'}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{tx.user_email}</div>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            backgroundColor: badgeBg,
+                            color: badgeColor
+                          }}>
+                            {isCredit ? <ArrowDownLeft size={11} /> : <ArrowUpRight size={11} />}
+                            <span>{badgeLabel}</span>
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                          {tx.payment_id ? (
+                            <span style={{ color: '#047857', fontWeight: 600 }}>{tx.payment_id}</span>
+                          ) : tx.reference_id ? (
+                            <span>{tx.reference_id}</span>
+                          ) : (
+                            'N/A'
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 14px', color: 'var(--text-main)', maxWidth: '240px', fontSize: '12px' }}>
+                          {tx.description}
+                        </td>
+                        <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          {tx.applicable_rate ? `₹${parseFloat(tx.applicable_rate).toFixed(2)}` : '-'}
+                        </td>
+                        <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                          ₹{numBefore.toFixed(2)}
+                        </td>
+                        <td style={{
+                          padding: '12px 14px',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          color: isCredit ? '#059669' : '#dc2626'
+                        }}>
+                          {isCredit ? '+' : '-'}₹{numAmount.toFixed(2)}
+                        </td>
+                        <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, color: 'var(--text-main)', textAlign: 'right' }}>
+                          ₹{numAfter.toFixed(2)}
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                          {isCredit && (
+                            <button
+                              onClick={() => handleDownloadInvoice(tx)}
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid var(--border-subtle)',
+                                backgroundColor: 'var(--bg-app)',
+                                color: 'var(--text-secondary)',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}
+                              title="Download Tax Invoice"
+                            >
+                              <FileText size={12} />
+                              <span>Invoice</span>
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {ledgerTotalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+              <button
+                disabled={ledgerPage <= 1}
+                onClick={() => setLedgerPage(p => Math.max(1, p - 1))}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                  background: 'transparent',
+                  color: 'var(--text-main)',
+                  fontSize: '12px',
+                  cursor: ledgerPage <= 1 ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Previous
+              </button>
+              <span style={{ display: 'flex', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+                Page {ledgerPage} of {ledgerTotalPages}
+              </span>
+              <button
+                disabled={ledgerPage >= ledgerTotalPages}
+                onClick={() => setLedgerPage(p => Math.min(ledgerTotalPages, p + 1))}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                  background: 'transparent',
+                  color: 'var(--text-main)',
+                  fontSize: '12px',
+                  cursor: ledgerPage >= ledgerTotalPages ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Invoice Modal for Ledger Receipts */}
+      <InvoiceModal
+        isOpen={!!selectedInvoice}
+        invoiceData={selectedInvoice}
+        onClose={() => setSelectedInvoice(null)}
+      />
 
       {/* Compliance Audit Trail */}
       {adminSection === 'audit' && (
