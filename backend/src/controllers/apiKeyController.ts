@@ -8,7 +8,7 @@ import { NotificationService } from '../services/notificationService';
 
 const createKeySchema = z.object({
   name: z.string().min(2, 'Key name must be at least 2 characters').max(60),
-  rateLimitPerMin: z.number().int().min(10).max(600).optional(),
+  rateLimitPerMin: z.number().int().min(10).max(100000).optional(),
 });
 
 const revealKeySchema = z.object({

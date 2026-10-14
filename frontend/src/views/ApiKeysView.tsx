@@ -419,9 +419,9 @@ export const ApiKeysView: React.FC = () => {
                       outline: 'none'
                     }}
                   >
-                    <option value={60}>60 requests / min (Standard)</option>
-                    <option value={120}>120 requests / min (High Throughput)</option>
-                    <option value={300}>300 requests / min (Enterprise)</option>
+                    <option value={10000}>10,000 requests / min (High Volume / Scale)</option>
+                    <option value={60000}>60,000 requests / min (Enterprise Uncapped)</option>
+                    <option value={120}>120 requests / min (Standard)</option>
                   </select>
                 </div>
 

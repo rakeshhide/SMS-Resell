@@ -49,15 +49,7 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// Global Rate Limiter
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, error_code: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests. Please slow down.' }
-});
-app.use('/api/', globalLimiter);
+// Unrestricted high-volume throughput for OTP Developer APIs (No 15-minute / 1000 request throttling)
 
 // Specific Auth Brute Force Protection
 const authLimiter = rateLimit({
