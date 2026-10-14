@@ -1418,6 +1418,21 @@ export const AdminView: React.FC = () => {
                   onChange={(e) => setAdjustAmount(parseFloat(e.target.value) || 0)}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-subtle)', marginTop: '4px' }}
                 />
+                {adjustAmount > 0 && (
+                  <div style={{
+                    marginTop: '8px',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    backgroundColor: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    fontSize: '11px',
+                    color: '#15803d',
+                    lineHeight: '1.4'
+                  }}>
+                    <strong>Transaction Ledger Preview:</strong><br />
+                    Wallet top-up: ₹{adjustAmount.toFixed(2)} (Total paid: ₹{(adjustAmount + Number((adjustAmount * (defaultGst / 100)).toFixed(2)) + Number((adjustAmount * (defaultServiceFee / 100)).toFixed(2))).toFixed(2)} including {defaultGst}% GST ₹{Number((adjustAmount * (defaultGst / 100)).toFixed(2))} & {defaultServiceFee}% service fee ₹{Number((adjustAmount * (defaultServiceFee / 100)).toFixed(2))})
+                  </div>
+                )}
               </div>
 
               <div>

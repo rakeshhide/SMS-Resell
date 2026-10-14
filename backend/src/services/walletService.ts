@@ -331,12 +331,23 @@ export class WalletService {
       const refId = `ADJ_${Date.now()}`;
       const txType = adjustmentAmount >= 0 ? 'ADMIN_CREDIT' : 'ADMIN_DEBIT';
 
+      // Format description with full statutory breakdown if adding balance/topup
+      let txDescription = `Admin Adjustment: ${reason}`;
+      if (adjustmentAmount > 0) {
+        const settings = await BillingService.getSystemSettings();
+        const gstAmount = Number((adjustmentAmount * (settings.defaultGst / 100)).toFixed(2));
+        const feeAmount = Number((adjustmentAmount * (settings.defaultServiceFee / 100)).toFixed(2));
+        const totalPaid = Number((adjustmentAmount + gstAmount + feeAmount).toFixed(2));
+
+        txDescription = `Wallet top-up: ₹${adjustmentAmount.toFixed(2)} (Total paid: ₹${totalPaid.toFixed(2)} including ${settings.defaultGst}% GST ₹${gstAmount.toFixed(2)} & ${settings.defaultServiceFee}% service fee ₹${feeAmount.toFixed(2)}) - ${reason}`;
+      }
+
       await client.query(`
         INSERT INTO wallet_transactions (
           wallet_id, user_id, type, amount, balance_before, balance_after,
           applicable_rate, reference_type, reference_id, status, description
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'ADMIN_ADJUSTMENT', $8, 'COMPLETED', $9)
-      `, [wallet.id, targetUserId, txType, Math.abs(adjustmentAmount), balanceBefore, balanceAfter, currentRate, refId, `Admin Adjustment: ${reason}`]);
+      `, [wallet.id, targetUserId, txType, Math.abs(adjustmentAmount), balanceBefore, balanceAfter, currentRate, refId, txDescription]);
 
       // Record in audit log
       await client.query(`
