@@ -8,7 +8,6 @@ import {
   KeyRound,
   Eye,
   EyeOff,
-  ShieldAlert,
   Clock,
   Loader2,
   RotateCcw,
@@ -30,48 +29,39 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
   darkMode = false,
 }) => {
   const [token, setToken] = useState<string>('');
-  const [verifying, setVerifying] = useState<boolean>(true);
-  const [tokenStatus, setTokenStatus] = useState<'valid' | 'used' | 'expired' | 'superseded' | 'invalid'>('valid');
-  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [loadingCheck, setLoadingCheck] = useState<boolean>(true);
+  const [isValid, setIsValid] = useState<boolean>(false);
 
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
   useEffect(() => {
-    // Extract token from URL search parameters (?token=...)
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
 
     if (!urlToken || urlToken.trim().length < 16) {
-      setVerifying(false);
-      setTokenStatus('invalid');
-      setStatusMessage('No valid password reset token provided. Please request a new reset link.');
+      setLoadingCheck(false);
+      setIsValid(false);
       return;
     }
 
     const cleanToken = urlToken.trim();
     setToken(cleanToken);
 
-    // Actively verify token validity, expiration, and used status against DB
+    // Verify token status
     ApiClient.verifyResetToken(cleanToken)
       .then((res) => {
-        if (!res.valid) {
-          setTokenStatus(res.reason || 'invalid');
-          setStatusMessage(res.message);
-        } else {
-          setTokenStatus('valid');
-        }
+        setIsValid(!!res.valid);
       })
-      .catch((err) => {
-        setTokenStatus('invalid');
-        setStatusMessage(err.message || 'Unable to verify reset link security. Please request a new link.');
+      .catch(() => {
+        setIsValid(false);
       })
       .finally(() => {
-        setVerifying(false);
+        setLoadingCheck(false);
       });
   }, []);
 
@@ -79,39 +69,38 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (!token || tokenStatus !== 'valid') {
-      setError('This password reset link is no longer valid. Please request a new reset link.');
+    if (!token || !isValid) {
+      setError('This reset link has expired. Please request a new one.');
       return;
     }
 
     if (password.length < 8) {
-      setError('New password must be at least 8 characters long.');
+      setError('Password must be at least 8 characters long.');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match. Please verify your entries.');
+      setError('Passwords do not match.');
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       await ApiClient.resetPassword(token, password);
 
-      // Instantly erase the token from the browser address bar for security
+      // Clean the URL
       try {
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch {}
 
-      // Immediately invalidate local token state
       setToken('');
-      setTokenStatus('used');
+      setIsValid(false);
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to reset password. The link may have expired.');
+      setError(err.message || 'Link expired. Please request a new one.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -138,7 +127,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
       <div
         style={{
           width: '100%',
-          maxWidth: '460px',
+          maxWidth: '440px',
           backgroundColor: 'var(--bg-card)',
           borderRadius: '16px',
           border: '1px solid var(--border-subtle)',
@@ -147,83 +136,52 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
         }}
       >
         {/* Header Branding */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ display: 'inline-flex', justifyContent: 'center', marginBottom: '14px' }}>
-            <TurfsyLogo size={42} />
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{ display: 'inline-flex', justifyContent: 'center', marginBottom: '12px' }}>
+            <TurfsyLogo size={40} />
           </div>
           <h1
             style={{
-              fontSize: '22px',
+              fontSize: '20px',
               fontWeight: 800,
               color: 'var(--text-main)',
               letterSpacing: '-0.02em',
-              margin: '0 0 6px 0',
+              margin: '0 0 4px 0',
             }}
           >
             Reset Password
           </h1>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
-            TurfsyOTPs Cryptographic Account Recovery
-          </p>
         </div>
 
-        {/* State 1: Verifying Token Screen */}
-        {verifying ? (
-          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+        {/* State 1: Simple Loading */}
+        {loadingCheck ? (
+          <div style={{ textAlign: 'center', padding: '36px 0' }}>
+            <Loader2
+              size={28}
+              className="animate-spin"
+              style={{ margin: '0 auto 12px auto', color: '#2563eb' }}
+            />
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+              Loading...
+            </p>
+          </div>
+        ) : !isValid && !success ? (
+          /* State 2: Clean Simple Link Expired Screen */
+          <div style={{ textAlign: 'center', padding: '12px 0' }}>
             <div
               style={{
                 width: '56px',
                 height: '56px',
                 borderRadius: '50%',
-                backgroundColor: '#eff6ff',
-                color: '#2563eb',
+                backgroundColor: '#fee2e2',
+                color: '#dc2626',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 18px auto',
+                margin: '0 auto 16px auto',
               }}
             >
-              <Loader2 size={28} className="animate-spin" />
-            </div>
-            <h2
-              style={{
-                fontSize: '16px',
-                fontWeight: 700,
-                color: 'var(--text-main)',
-                margin: '0 0 6px 0',
-              }}
-            >
-              Verifying Security Token...
-            </h2>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
-              Checking reset link validity and 15-minute expiration window.
-            </p>
-          </div>
-        ) : tokenStatus !== 'valid' && !success ? (
-          /* State 2: Expired / Already Used / Invalid Link Screen */
-          <div style={{ textAlign: 'center', padding: '12px 0' }}>
-            <div
-              style={{
-                width: '60px',
-                height: '60px',
-                borderRadius: '50%',
-                backgroundColor: tokenStatus === 'used' || tokenStatus === 'superseded' ? '#fef3c7' : '#fee2e2',
-                color: tokenStatus === 'used' || tokenStatus === 'superseded' ? '#d97706' : '#dc2626',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 18px auto',
-              }}
-            >
-              {tokenStatus === 'used' ? (
-                <ShieldAlert size={32} />
-              ) : tokenStatus === 'superseded' ? (
-                <RotateCcw size={32} />
-              ) : tokenStatus === 'expired' ? (
-                <Clock size={32} />
-              ) : (
-                <AlertCircle size={32} />
-              )}
+              <Clock size={28} />
             </div>
 
             <h2
@@ -231,33 +189,21 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
                 fontSize: '18px',
                 fontWeight: 700,
                 color: 'var(--text-main)',
-                margin: '0 0 10px 0',
+                margin: '0 0 8px 0',
               }}
             >
-              {tokenStatus === 'used'
-                ? 'Reset Link Already Used'
-                : tokenStatus === 'superseded'
-                ? 'Link Expired by Newer Request'
-                : tokenStatus === 'expired'
-                ? 'Reset Link Expired'
-                : 'Invalid Reset Link'}
+              Link Expired
             </h2>
 
             <p
               style={{
                 fontSize: '13px',
                 color: 'var(--text-secondary)',
-                lineHeight: 1.6,
+                lineHeight: 1.5,
                 margin: '0 0 24px 0',
               }}
             >
-              {tokenStatus === 'used'
-                ? 'This password reset link has already been used to change your password and is permanently expired. Each security link can only be used once.'
-                : tokenStatus === 'superseded'
-                ? 'This link was automatically deactivated because a newer password reset request was submitted. For your security, only your most recent reset link is valid. Please check your inbox for the newest email.'
-                : tokenStatus === 'expired'
-                ? 'This password reset link has expired. Password reset links are strictly active for 15 minutes to keep your developer account protected.'
-                : statusMessage || 'This password reset link is invalid or malformed. Please request a new link.'}
+              This password reset link is invalid or has expired.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -266,12 +212,12 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
                 onClick={handleRequestNewLink}
                 style={{
                   width: '100%',
-                  padding: '12px 20px',
+                  padding: '11px 18px',
                   backgroundColor: '#2563eb',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '8px',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   display: 'flex',
@@ -281,8 +227,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
                   boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
                 }}
               >
-                <RotateCcw size={16} />
-                <span>Request New Reset Link</span>
+                <RotateCcw size={15} />
+                <span>Request New Link</span>
               </button>
 
               <button
@@ -290,7 +236,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
                 onClick={onGoToLogin}
                 style={{
                   width: '100%',
-                  padding: '11px 20px',
+                  padding: '10px 18px',
                   backgroundColor: 'transparent',
                   color: 'var(--text-main)',
                   border: '1px solid var(--border-subtle)',
@@ -305,22 +251,22 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
             </div>
           </div>
         ) : success ? (
-          /* State 3: Password Updated Success Screen */
+          /* State 3: Clean Success Screen */
           <div style={{ textAlign: 'center', padding: '12px 0' }}>
             <div
               style={{
-                width: '56px',
-                height: '56px',
+                width: '52px',
+                height: '52px',
                 borderRadius: '50%',
                 backgroundColor: '#ecfdf5',
                 color: '#10b981',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 20px auto',
+                margin: '0 auto 16px auto',
               }}
             >
-              <CheckCircle size={32} />
+              <CheckCircle size={28} />
             </div>
 
             <h2
@@ -328,32 +274,32 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
                 fontSize: '18px',
                 fontWeight: 700,
                 color: 'var(--text-main)',
-                margin: '0 0 8px 0',
+                margin: '0 0 6px 0',
               }}
             >
-              Password Updated Successfully
+              Password Updated
             </h2>
             <p
               style={{
                 fontSize: '13px',
                 color: 'var(--text-secondary)',
                 lineHeight: 1.5,
-                margin: '0 0 28px 0',
+                margin: '0 0 24px 0',
               }}
             >
-              Your account password has been updated. This reset link is now permanently expired. You can sign in immediately.
+              Your password has been changed successfully.
             </p>
 
             <button
               onClick={onGoToLogin}
               style={{
                 width: '100%',
-                padding: '12px 20px',
+                padding: '11px 18px',
                 backgroundColor: '#2563eb',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '8px',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'flex',
@@ -363,29 +309,28 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
                 boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
               }}
             >
-              <span>Sign In to Dashboard</span>
-              <ArrowRight size={16} />
+              <span>Sign In</span>
+              <ArrowRight size={15} />
             </button>
           </div>
         ) : (
-          /* State 4: Valid Token - Form Screen */
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          /* State 4: Clean Form */
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {error && (
               <div
                 style={{
                   display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '10px',
-                  padding: '12px 14px',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 12px',
                   borderRadius: '8px',
                   backgroundColor: '#fef2f2',
                   border: '1px solid #fee2e2',
                   color: '#b91c1c',
-                  fontSize: '13px',
-                  lineHeight: 1.4,
+                  fontSize: '12px',
                 }}
               >
-                <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
                 <span>{error}</span>
               </div>
             )}
@@ -460,7 +405,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
                   marginBottom: '6px',
                 }}
               >
-                Confirm New Password
+                Confirm Password
               </label>
               <div
                 style={{
@@ -495,18 +440,18 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
 
             <button
               type="submit"
-              disabled={loading || !token}
+              disabled={submitting || !token}
               style={{
-                marginTop: '8px',
-                padding: '12px 20px',
+                marginTop: '4px',
+                padding: '11px 18px',
                 backgroundColor: '#2563eb',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '8px',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 600,
-                cursor: loading || !token ? 'not-allowed' : 'pointer',
-                opacity: loading || !token ? 0.7 : 1,
+                cursor: submitting || !token ? 'not-allowed' : 'pointer',
+                opacity: submitting || !token ? 0.7 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -514,11 +459,11 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
                 boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
               }}
             >
-              <span>{loading ? 'Updating Password...' : 'Save New Password'}</span>
-              <ArrowRight size={16} />
+              <span>{submitting ? 'Updating...' : 'Save Password'}</span>
+              <ArrowRight size={15} />
             </button>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
               <button
                 type="button"
                 onClick={onGoHome}
@@ -533,7 +478,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
                   gap: '4px',
                 }}
               >
-                <ArrowLeft size={14} />
+                <ArrowLeft size={13} />
                 <span>Home</span>
               </button>
 
