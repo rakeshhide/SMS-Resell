@@ -8,12 +8,40 @@ export interface EmailOptions {
 }
 
 export class EmailService {
-  private static apiKey = process.env.RESEND_API_KEY || '';
   private static adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'kumarsinghrakesh333@gmail.com';
   private static fromAddress = 'NexOTP Platform <onboarding@resend.dev>';
 
   /**
-   * Core send method via Resend REST API
+   * Resolve Resend API keys in priority failover order:
+   * 1. Primary key
+   * 2. Fallback key 1
+   * 3. Fallback key 2
+   */
+  private static getApiKeys(): string[] {
+    const rawKeys: string[] = [];
+
+    // Support comma-separated list of keys
+    if (process.env.RESEND_API_KEYS) {
+      rawKeys.push(...process.env.RESEND_API_KEYS.split(',').map((k) => k.trim()));
+    }
+
+    if (process.env.RESEND_API_KEY) {
+      rawKeys.push(process.env.RESEND_API_KEY.trim());
+    }
+    if (process.env.RESEND_API_KEY_FALLBACK_1) {
+      rawKeys.push(process.env.RESEND_API_KEY_FALLBACK_1.trim());
+    }
+    if (process.env.RESEND_API_KEY_FALLBACK_2) {
+      rawKeys.push(process.env.RESEND_API_KEY_FALLBACK_2.trim());
+    }
+
+    // Deduplicate and filter out empty entries
+    return Array.from(new Set(rawKeys.filter(Boolean)));
+  }
+
+  /**
+   * Core send method via Resend REST API with automatic multi-key failover:
+   * If rate limit (HTTP 429), quota exhaustion, or any error occurs, it automatically retries with the next key.
    */
   public static async sendEmail(options: EmailOptions): Promise<boolean> {
     const recipients = Array.isArray(options.to) ? options.to : [options.to];
@@ -25,31 +53,60 @@ export class EmailService {
       return false;
     }
 
-    try {
-      const response = await axios.post(
-        'https://api.resend.com/emails',
-        {
-          from: this.fromAddress,
-          to: uniqueRecipients,
-          subject: options.subject,
-          html: options.html,
-          ...(options.replyTo ? { reply_to: options.replyTo } : {}),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          timeout: 10000,
-        }
-      );
-
-      console.log(`[EMAIL_SERVICE] Email sent successfully to [${uniqueRecipients.join(', ')}] ID:`, response.data?.id);
-      return true;
-    } catch (err: any) {
-      console.error('[EMAIL_SERVICE] Failed to send email via Resend:', err.response?.data || err.message);
+    const keys = this.getApiKeys();
+    if (keys.length === 0) {
+      console.error('[EMAIL_SERVICE] No Resend API keys configured.');
       return false;
     }
+
+    let lastError: any = null;
+
+    for (let i = 0; i < keys.length; i++) {
+      const currentKey = keys[i];
+      const maskedKey = currentKey.length > 8 ? `${currentKey.substring(0, 7)}...${currentKey.slice(-4)}` : '***';
+
+      try {
+        const response = await axios.post(
+          'https://api.resend.com/emails',
+          {
+            from: this.fromAddress,
+            to: uniqueRecipients,
+            subject: options.subject,
+            html: options.html,
+            ...(options.replyTo ? { reply_to: options.replyTo } : {}),
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${currentKey}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000,
+          }
+        );
+
+        console.log(
+          `[EMAIL_SERVICE] Email dispatched successfully with key [${i + 1}/${keys.length} - ${maskedKey}] to [${uniqueRecipients.join(', ')}]. Resend ID:`,
+          response.data?.id
+        );
+        return true;
+      } catch (err: any) {
+        lastError = err;
+        const statusCode = err.response?.status;
+        const errData = err.response?.data || err.message;
+
+        console.warn(
+          `[EMAIL_SERVICE] Resend API key [${i + 1}/${keys.length} - ${maskedKey}] failed (Status: ${statusCode || 'Network Error'}):`,
+          errData
+        );
+
+        if (i < keys.length - 1) {
+          console.log(`[EMAIL_SERVICE] Limit or error reached. Automatically failing over to backup Resend API key [${i + 2}/${keys.length}]...`);
+        }
+      }
+    }
+
+    console.error(`[EMAIL_SERVICE] All ${keys.length} Resend API key(s) exhausted. Failed to send email:`, lastError?.response?.data || lastError?.message);
+    return false;
   }
 
   /**
