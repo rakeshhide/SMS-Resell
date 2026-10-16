@@ -8,6 +8,7 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   isSignUpDefault?: boolean;
+  initialMode?: 'signin' | 'signup' | 'forgot';
   onSuccess: (user: User, token: string) => void;
 }
 
@@ -15,10 +16,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   isSignUpDefault = false,
+  initialMode,
   onSuccess,
 }) => {
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot'>(
-    isSignUpDefault ? 'signup' : 'signin'
+    initialMode || (isSignUpDefault ? 'signup' : 'signin')
   );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,11 +32,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setAuthMode(isSignUpDefault ? 'signup' : 'signin');
+      setAuthMode(initialMode || (isSignUpDefault ? 'signup' : 'signin'));
       setError(null);
       setForgotSuccess(false);
     }
-  }, [isOpen, isSignUpDefault]);
+  }, [isOpen, isSignUpDefault, initialMode]);
 
   if (!isOpen) return null;
 

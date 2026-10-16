@@ -393,5 +393,72 @@ export class AuthController {
       res.status(500).json({ success: false, message: 'Failed to reset password.' });
     }
   }
+
+  /**
+   * GET /api/v1/auth/verify-reset-token?token=...
+   * Checks whether a password reset token is active, expired, or already used
+   */
+  public static async verifyResetToken(req: Request, res: Response): Promise<void> {
+    try {
+      const rawToken = typeof req.query.token === 'string' ? req.query.token.trim() : '';
+      if (!rawToken || rawToken.length < 16) {
+        res.status(200).json({
+          success: true,
+          valid: false,
+          reason: 'invalid',
+          message: 'Invalid or missing password reset link. Please request a new link.'
+        });
+        return;
+      }
+
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+      const tokenRes = await pool.query(
+        'SELECT id, expires_at, used_at FROM password_reset_tokens WHERE token_hash = $1',
+        [tokenHash]
+      );
+
+      if (tokenRes.rowCount === 0) {
+        res.status(200).json({
+          success: true,
+          valid: false,
+          reason: 'invalid',
+          message: 'This password reset link is invalid or has expired. Please request a new link.'
+        });
+        return;
+      }
+
+      const tokenRecord = tokenRes.rows[0];
+
+      if (tokenRecord.used_at !== null) {
+        res.status(200).json({
+          success: true,
+          valid: false,
+          reason: 'used',
+          message: 'This password reset link has already been used and is no longer valid. Please request a new one.'
+        });
+        return;
+      }
+
+      if (new Date(tokenRecord.expires_at) < new Date()) {
+        res.status(200).json({
+          success: true,
+          valid: false,
+          reason: 'expired',
+          message: 'This password reset link has expired (15 minutes limit). Please request a new one.'
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        valid: true,
+        message: 'Password reset link is verified and active.'
+      });
+    } catch (err: any) {
+      console.error('[AUTH] Verify reset token error:', err.message);
+      res.status(500).json({ success: false, valid: false, message: 'Failed to verify reset token.' });
+    }
+  }
 }
 

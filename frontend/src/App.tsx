@@ -32,6 +32,7 @@ export function App() {
   // Modals
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authModalIsSignUp, setAuthModalIsSignUp] = useState<boolean>(false);
+  const [authModalInitialMode, setAuthModalInitialMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [walletModalOpen, setWalletModalOpen] = useState<boolean>(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
@@ -116,6 +117,15 @@ export function App() {
               history.pushState('', document.title, '/');
             } catch {}
             setAuthModalIsSignUp(false);
+            setAuthModalInitialMode('signin');
+            setAuthModalOpen(true);
+          }}
+          onForgotPassword={() => {
+            setIsResetPasswordRoute(false);
+            try {
+              history.pushState('', document.title, '/');
+            } catch {}
+            setAuthModalInitialMode('forgot');
             setAuthModalOpen(true);
           }}
           onGoHome={() => {
@@ -150,6 +160,7 @@ export function App() {
         <LandingPageView
           onOpenAuth={(isSignUp = false) => {
             setAuthModalIsSignUp(isSignUp);
+            setAuthModalInitialMode(isSignUp ? 'signup' : 'signin');
             setAuthModalOpen(true);
           }}
           onGoToDashboard={() => setViewingLanding(false)}
@@ -238,6 +249,7 @@ export function App() {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         isSignUpDefault={authModalIsSignUp}
+        initialMode={authModalInitialMode}
         onSuccess={handleAuthSuccess}
       />
 

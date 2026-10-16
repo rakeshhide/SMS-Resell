@@ -83,6 +83,12 @@ export class ApiClient {
     });
   }
 
+  public static verifyResetToken(token: string) {
+    return this.request<{ success: boolean; valid: boolean; reason?: 'invalid' | 'used' | 'expired'; message: string }>(
+      `/auth/verify-reset-token?token=${encodeURIComponent(token)}`
+    );
+  }
+
   public static getMe() {
     return this.request<{ success: boolean; user: any }>('/auth/me');
   }

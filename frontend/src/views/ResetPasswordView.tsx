@@ -1,20 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, KeyRound, Eye, EyeOff } from 'lucide-react';
+import {
+  Lock,
+  CheckCircle,
+  AlertCircle,
+  ArrowRight,
+  ArrowLeft,
+  KeyRound,
+  Eye,
+  EyeOff,
+  ShieldAlert,
+  Clock,
+  Loader2,
+  RotateCcw,
+} from 'lucide-react';
 import { TurfsyLogo } from '../components/TurfsyLogo';
 import { ApiClient } from '../services/api';
 
 interface ResetPasswordViewProps {
   onGoToLogin: () => void;
+  onForgotPassword?: () => void;
   onGoHome: () => void;
   darkMode?: boolean;
 }
 
 export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
   onGoToLogin,
+  onForgotPassword,
   onGoHome,
   darkMode = false,
 }) => {
   const [token, setToken] = useState<string>('');
+  const [verifying, setVerifying] = useState<boolean>(true);
+  const [tokenStatus, setTokenStatus] = useState<'valid' | 'used' | 'expired' | 'invalid'>('valid');
+  const [statusMessage, setStatusMessage] = useState<string>('');
+
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -26,19 +45,42 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
     // Extract token from URL search parameters (?token=...)
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
-    if (urlToken) {
-      setToken(urlToken.trim());
-    } else {
-      setError('No password reset token provided. Please request a new reset link.');
+
+    if (!urlToken || urlToken.trim().length < 16) {
+      setVerifying(false);
+      setTokenStatus('invalid');
+      setStatusMessage('No valid password reset token provided. Please request a new reset link.');
+      return;
     }
+
+    const cleanToken = urlToken.trim();
+    setToken(cleanToken);
+
+    // Actively verify token validity, expiration, and used status against DB
+    ApiClient.verifyResetToken(cleanToken)
+      .then((res) => {
+        if (!res.valid) {
+          setTokenStatus(res.reason || 'invalid');
+          setStatusMessage(res.message);
+        } else {
+          setTokenStatus('valid');
+        }
+      })
+      .catch((err) => {
+        setTokenStatus('invalid');
+        setStatusMessage(err.message || 'Unable to verify reset link security. Please request a new link.');
+      })
+      .finally(() => {
+        setVerifying(false);
+      });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!token) {
-      setError('Missing or invalid reset token. Please request a new reset link.');
+    if (!token || tokenStatus !== 'valid') {
+      setError('This password reset link is no longer valid. Please request a new reset link.');
       return;
     }
 
@@ -56,11 +98,28 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
 
     try {
       await ApiClient.resetPassword(token, password);
+
+      // Instantly erase the token from the browser address bar for security
+      try {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch {}
+
+      // Immediately invalidate local token state
+      setToken('');
+      setTokenStatus('used');
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Failed to reset password. The link may have expired.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestNewLink = () => {
+    if (onForgotPassword) {
+      onForgotPassword();
+    } else {
+      onGoToLogin();
     }
   };
 
@@ -104,12 +163,143 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
             Reset Password
           </h1>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
-            Enter and confirm your new secure account password.
+            TurfsyOTPs Cryptographic Account Recovery
           </p>
         </div>
 
-        {/* Success Screen */}
-        {success ? (
+        {/* State 1: Verifying Token Screen */}
+        {verifying ? (
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: '#eff6ff',
+                color: '#2563eb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 18px auto',
+              }}
+            >
+              <Loader2 size={28} className="animate-spin" />
+            </div>
+            <h2
+              style={{
+                fontSize: '16px',
+                fontWeight: 700,
+                color: 'var(--text-main)',
+                margin: '0 0 6px 0',
+              }}
+            >
+              Verifying Security Token...
+            </h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+              Checking reset link validity and 15-minute expiration window.
+            </p>
+          </div>
+        ) : tokenStatus !== 'valid' && !success ? (
+          /* State 2: Expired / Already Used / Invalid Link Screen */
+          <div style={{ textAlign: 'center', padding: '12px 0' }}>
+            <div
+              style={{
+                width: '60px',
+                height: '60px',
+                borderRadius: '50%',
+                backgroundColor: tokenStatus === 'used' ? '#fef3c7' : '#fee2e2',
+                color: tokenStatus === 'used' ? '#d97706' : '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 18px auto',
+              }}
+            >
+              {tokenStatus === 'used' ? (
+                <ShieldAlert size={32} />
+              ) : tokenStatus === 'expired' ? (
+                <Clock size={32} />
+              ) : (
+                <AlertCircle size={32} />
+              )}
+            </div>
+
+            <h2
+              style={{
+                fontSize: '18px',
+                fontWeight: 700,
+                color: 'var(--text-main)',
+                margin: '0 0 10px 0',
+              }}
+            >
+              {tokenStatus === 'used'
+                ? 'Reset Link Already Used'
+                : tokenStatus === 'expired'
+                ? 'Reset Link Expired'
+                : 'Invalid Reset Link'}
+            </h2>
+
+            <p
+              style={{
+                fontSize: '13px',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.6,
+                margin: '0 0 24px 0',
+              }}
+            >
+              {tokenStatus === 'used'
+                ? 'This password reset link has already been used to change your password and is permanently expired. Each security link can only be used once.'
+                : tokenStatus === 'expired'
+                ? 'This password reset link has expired. Password reset links are strictly active for 15 minutes to keep your developer account protected.'
+                : statusMessage || 'This password reset link is invalid or malformed. Please request a new link.'}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={handleRequestNewLink}
+                style={{
+                  width: '100%',
+                  padding: '12px 20px',
+                  backgroundColor: '#2563eb',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
+                }}
+              >
+                <RotateCcw size={16} />
+                <span>Request New Reset Link</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onGoToLogin}
+                style={{
+                  width: '100%',
+                  padding: '11px 20px',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-main)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Back to Sign In
+              </button>
+            </div>
+          </div>
+        ) : success ? (
+          /* State 3: Password Updated Success Screen */
           <div style={{ textAlign: 'center', padding: '12px 0' }}>
             <div
               style={{
@@ -145,7 +335,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
                 margin: '0 0 28px 0',
               }}
             >
-              Your account password has been updated. You can now authenticate with your new credentials.
+              Your account password has been updated. This reset link is now permanently expired. You can sign in immediately.
             </p>
 
             <button
@@ -172,7 +362,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
             </button>
           </div>
         ) : (
-          /* Form Screen */
+          /* State 4: Valid Token - Form Screen */
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             {error && (
               <div
