@@ -37,10 +37,12 @@ export class WalletService {
     );
 
     if (res.rowCount === 0) {
-      // Auto-initialize wallet if missing
+      // Auto-initialize wallet if missing using dynamic starter tier
+      const tiers = await BillingService.getActiveTiers();
+      const starterTier = tiers[0] || { id: 'TIER_1', otpPrice: 0.80 };
       res = await pool.query(
-        'INSERT INTO wallets (user_id, balance, currency, otp_rate, active_tier) VALUES ($1, 0.0000, $2, 0.7500, \'TIER_1\') RETURNING id, balance, currency, otp_rate, active_tier, highest_topup',
-        [userId, 'INR']
+        'INSERT INTO wallets (user_id, balance, currency, otp_rate, active_tier, highest_topup) VALUES ($1, 0.0000, $2, $3, $4, 0.0000) RETURNING id, balance, currency, otp_rate, active_tier, highest_topup',
+        [userId, 'INR', starterTier.otpPrice, starterTier.id]
       );
     }
 
@@ -227,20 +229,22 @@ export class WalletService {
 
       let walletId: string;
       let balanceBefore = 0;
-      let currentRate = 0.75;
-      let activeTier = 'TIER_1';
+      const tiers = await BillingService.getActiveTiers();
+      const starterTier = tiers[0] || { id: 'TIER_1', otpPrice: 0.80 };
+      let currentRate = starterTier.otpPrice;
+      let activeTier = starterTier.id;
 
       if (walletRes.rowCount === 0) {
         const newWallet = await client.query(
-          'INSERT INTO wallets (user_id, balance, currency, otp_rate, active_tier, highest_topup) VALUES ($1, 0.0000, $2, 0.7500, \'TIER_1\', $3) RETURNING id',
-          [userId, 'INR', creditAmount]
+          'INSERT INTO wallets (user_id, balance, currency, otp_rate, active_tier, highest_topup) VALUES ($1, 0.0000, $2, $3, $4, $5) RETURNING id',
+          [userId, 'INR', starterTier.otpPrice, starterTier.id, creditAmount]
         );
         walletId = newWallet.rows[0].id;
       } else {
         walletId = walletRes.rows[0].id;
         balanceBefore = parseFloat(walletRes.rows[0].balance);
-        currentRate = parseFloat(walletRes.rows[0].otp_rate) || 0.75;
-        activeTier = walletRes.rows[0].active_tier || 'TIER_1';
+        currentRate = parseFloat(walletRes.rows[0].otp_rate) || starterTier.otpPrice;
+        activeTier = walletRes.rows[0].active_tier || starterTier.id;
       }
 
       const balanceAfter = Number((balanceBefore + creditAmount).toFixed(4));

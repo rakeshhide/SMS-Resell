@@ -118,7 +118,7 @@ export class AdminController {
       let queryText = `
         SELECT u.id, u.email, u.full_name, u.company_name, u.role, u.status, u.created_at,
                COALESCE(w.balance, 0) as balance, w.currency,
-               COALESCE(w.otp_rate, 0.7500) as otp_rate,
+               COALESCE(w.otp_rate, (SELECT otp_price FROM pricing_tiers WHERE is_active = true ORDER BY min_topup ASC LIMIT 1), 0.8000) as otp_rate,
                COALESCE(w.active_tier, 'Starter Tier') as active_tier,
                COALESCE(pt.min_topup, 1.00) as tier_min_topup,
                COALESCE(pt.max_topup, NULL) as tier_max_topup
@@ -144,7 +144,7 @@ export class AdminController {
 
       // Map tier name nicely
       const usersWithTiers = rowsRes.rows.map(u => {
-        const rate = parseFloat(u.otp_rate) || 0.75;
+        const rate = parseFloat(u.otp_rate) || 0.80;
         let tierName = 'Starter Tier';
         const minTop = parseFloat(u.tier_min_topup) || 0;
         if (minTop >= 10000) tierName = 'Enterprise Tier';

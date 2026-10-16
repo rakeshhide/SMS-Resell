@@ -66,11 +66,19 @@ export class AuthController {
 
         const newUser = userRes.rows[0];
 
-        // Create initial wallet
+        // Fetch dynamic Starter Tier from pricing_tiers
+        const starterTierRes = await client.query(
+          'SELECT id, otp_price FROM pricing_tiers WHERE is_active = true ORDER BY min_topup ASC LIMIT 1'
+        );
+        const starterTier = starterTierRes.rows[0];
+        const initialOtpRate = starterTier ? parseFloat(starterTier.otp_price) : 0.80;
+        const initialTierId = starterTier ? starterTier.id : 'TIER_1';
+
+        // Create initial wallet with dynamic active starter tier
         await client.query(`
-          INSERT INTO wallets (user_id, balance, currency)
-          VALUES ($1, 0.0000, 'INR')
-        `, [newUser.id]);
+          INSERT INTO wallets (user_id, balance, currency, otp_rate, active_tier, highest_topup)
+          VALUES ($1, 0.0000, 'INR', $2, $3, 0.0000)
+        `, [newUser.id, initialOtpRate, initialTierId]);
 
         await client.query('COMMIT');
 
