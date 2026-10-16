@@ -309,7 +309,7 @@ export class EmailService {
           </p>
 
           <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 24px 0;">
-            Click the secure button below to choose a new password. This link is valid for <strong>1 hour</strong> and can only be used once.
+            Click the secure button below to choose a new password. This link is valid for <strong>15 minutes</strong> and will expire immediately once used.
           </p>
 
           <div style="text-align: center; margin: 30px 0;">

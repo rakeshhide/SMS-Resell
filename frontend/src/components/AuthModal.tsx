@@ -129,7 +129,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               Check Your Inbox
             </h3>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 24px 0' }}>
-              A secure password reset link has been dispatched to <strong>{email}</strong>. The link expires in 1 hour.
+              If an account exists for <strong>{email}</strong>, a secure password recovery link has been dispatched. The link is valid for 15 minutes.
             </p>
             <button
               type="button"

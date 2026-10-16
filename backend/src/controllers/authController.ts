@@ -272,7 +272,7 @@ export class AuthController {
       const rawToken = crypto.randomBytes(32).toString('hex');
       // Store token hash using SHA-256 in DB to prevent DB leakage attacks
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour validity
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // Exactly 15 minutes validity
 
       // Invalidate existing unused reset tokens for this user
       await pool.query(
@@ -339,7 +339,7 @@ export class AuthController {
       if (tokenRecord.used_at !== null) {
         res.status(400).json({
           success: false,
-          message: 'This password reset link has already been used. Please request a new one.'
+          message: 'This password reset link has already been used and is no longer valid. Please request a new one.'
         });
         return;
       }
@@ -347,7 +347,7 @@ export class AuthController {
       if (new Date(tokenRecord.expires_at) < new Date()) {
         res.status(400).json({
           success: false,
-          message: 'This password reset link has expired (1 hour limit). Please request a new one.'
+          message: 'This password reset link has expired (15 minutes limit). Please request a new one.'
         });
         return;
       }
@@ -358,14 +358,22 @@ export class AuthController {
       try {
         await client.query('BEGIN');
 
+        // Update user's password hash
         await client.query(
           'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
           [passwordHash, tokenRecord.user_id]
         );
 
+        // Instantly invalidate the used reset token
         await client.query(
           'UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1',
           [tokenRecord.id]
+        );
+
+        // Instantly invalidate all other pending reset tokens for this user so they cannot be reused
+        await client.query(
+          'UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL',
+          [tokenRecord.user_id]
         );
 
         await client.query('COMMIT');
