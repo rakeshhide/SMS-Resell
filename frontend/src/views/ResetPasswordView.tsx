@@ -31,7 +31,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
 }) => {
   const [token, setToken] = useState<string>('');
   const [verifying, setVerifying] = useState<boolean>(true);
-  const [tokenStatus, setTokenStatus] = useState<'valid' | 'used' | 'expired' | 'invalid'>('valid');
+  const [tokenStatus, setTokenStatus] = useState<'valid' | 'used' | 'expired' | 'superseded' | 'invalid'>('valid');
   const [statusMessage, setStatusMessage] = useState<string>('');
 
   const [password, setPassword] = useState<string>('');
@@ -207,8 +207,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
                 width: '60px',
                 height: '60px',
                 borderRadius: '50%',
-                backgroundColor: tokenStatus === 'used' ? '#fef3c7' : '#fee2e2',
-                color: tokenStatus === 'used' ? '#d97706' : '#dc2626',
+                backgroundColor: tokenStatus === 'used' || tokenStatus === 'superseded' ? '#fef3c7' : '#fee2e2',
+                color: tokenStatus === 'used' || tokenStatus === 'superseded' ? '#d97706' : '#dc2626',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -217,6 +217,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
             >
               {tokenStatus === 'used' ? (
                 <ShieldAlert size={32} />
+              ) : tokenStatus === 'superseded' ? (
+                <RotateCcw size={32} />
               ) : tokenStatus === 'expired' ? (
                 <Clock size={32} />
               ) : (
@@ -234,6 +236,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
             >
               {tokenStatus === 'used'
                 ? 'Reset Link Already Used'
+                : tokenStatus === 'superseded'
+                ? 'Link Expired by Newer Request'
                 : tokenStatus === 'expired'
                 ? 'Reset Link Expired'
                 : 'Invalid Reset Link'}
@@ -249,6 +253,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
             >
               {tokenStatus === 'used'
                 ? 'This password reset link has already been used to change your password and is permanently expired. Each security link can only be used once.'
+                : tokenStatus === 'superseded'
+                ? 'This link was automatically deactivated because a newer password reset request was submitted. For your security, only your most recent reset link is valid. Please check your inbox for the newest email.'
                 : tokenStatus === 'expired'
                 ? 'This password reset link has expired. Password reset links are strictly active for 15 minutes to keep your developer account protected.'
                 : statusMessage || 'This password reset link is invalid or malformed. Please request a new link.'}

@@ -274,9 +274,9 @@ export class AuthController {
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // Exactly 15 minutes validity
 
-      // Invalidate existing unused reset tokens for this user
+      // Instantly invalidate ALL existing unused reset tokens for this user so only the newest link works
       await pool.query(
-        'UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL',
+        'UPDATE password_reset_tokens SET used_at = NOW(), expires_at = NOW() WHERE user_id = $1 AND used_at IS NULL',
         [user.id]
       );
 
@@ -322,7 +322,7 @@ export class AuthController {
       const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
 
       const tokenRes = await pool.query(
-        'SELECT id, user_id, expires_at, used_at FROM password_reset_tokens WHERE token_hash = $1',
+        'SELECT id, user_id, created_at, expires_at, used_at FROM password_reset_tokens WHERE token_hash = $1',
         [tokenHash]
       );
 
@@ -337,9 +337,16 @@ export class AuthController {
       const tokenRecord = tokenRes.rows[0];
 
       if (tokenRecord.used_at !== null) {
+        const newerRes = await pool.query(
+          'SELECT id FROM password_reset_tokens WHERE user_id = $1 AND created_at > $2 LIMIT 1',
+          [tokenRecord.user_id, tokenRecord.created_at]
+        );
+        const isSuperseded = (newerRes.rowCount ?? 0) > 0;
         res.status(400).json({
           success: false,
-          message: 'This password reset link has already been used and is no longer valid. Please request a new one.'
+          message: isSuperseded
+            ? 'This password reset link was automatically expired because a newer link was requested. Please check your email for the latest link.'
+            : 'This password reset link has already been used and is no longer valid. Please request a new one.'
         });
         return;
       }
@@ -366,13 +373,13 @@ export class AuthController {
 
         // Instantly invalidate the used reset token
         await client.query(
-          'UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1',
+          'UPDATE password_reset_tokens SET used_at = NOW(), expires_at = NOW() WHERE id = $1',
           [tokenRecord.id]
         );
 
         // Instantly invalidate all other pending reset tokens for this user so they cannot be reused
         await client.query(
-          'UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL',
+          'UPDATE password_reset_tokens SET used_at = NOW(), expires_at = NOW() WHERE user_id = $1 AND used_at IS NULL',
           [tokenRecord.user_id]
         );
 
@@ -396,7 +403,7 @@ export class AuthController {
 
   /**
    * GET /api/v1/auth/verify-reset-token?token=...
-   * Checks whether a password reset token is active, expired, or already used
+   * Checks whether a password reset token is active, expired, superseded, or already used
    */
   public static async verifyResetToken(req: Request, res: Response): Promise<void> {
     try {
@@ -414,7 +421,7 @@ export class AuthController {
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
 
       const tokenRes = await pool.query(
-        'SELECT id, expires_at, used_at FROM password_reset_tokens WHERE token_hash = $1',
+        'SELECT id, user_id, created_at, expires_at, used_at FROM password_reset_tokens WHERE token_hash = $1',
         [tokenHash]
       );
 
@@ -431,11 +438,18 @@ export class AuthController {
       const tokenRecord = tokenRes.rows[0];
 
       if (tokenRecord.used_at !== null) {
+        const newerRes = await pool.query(
+          'SELECT id FROM password_reset_tokens WHERE user_id = $1 AND created_at > $2 LIMIT 1',
+          [tokenRecord.user_id, tokenRecord.created_at]
+        );
+        const isSuperseded = (newerRes.rowCount ?? 0) > 0;
         res.status(200).json({
           success: true,
           valid: false,
-          reason: 'used',
-          message: 'This password reset link has already been used and is no longer valid. Please request a new one.'
+          reason: isSuperseded ? 'superseded' : 'used',
+          message: isSuperseded
+            ? 'This password reset link was automatically expired because a newer reset link was requested. Please use the newest link sent to your email.'
+            : 'This password reset link has already been used and is no longer valid. Please request a new one.'
         });
         return;
       }
