@@ -69,6 +69,20 @@ export class ApiClient {
     });
   }
 
+  public static forgotPassword(email: string) {
+    return this.request<{ success: boolean; message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  public static resetPassword(token: string, password: string) {
+    return this.request<{ success: boolean; message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  }
+
   public static getMe() {
     return this.request<{ success: boolean; user: any }>('/auth/me');
   }

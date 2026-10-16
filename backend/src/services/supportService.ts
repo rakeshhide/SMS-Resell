@@ -1,5 +1,6 @@
 import { pool } from '../config/db';
 import { NotificationService } from './notificationService';
+import { EmailService } from './emailService';
 
 export interface SupportTicket {
   id: string;
@@ -78,6 +79,25 @@ export class SupportService {
       const message = msgRes.rows[0];
 
       await client.query('COMMIT');
+
+      // Dispatch async email notification to both Admin (kumarsinghrakesh333@gmail.com) and User
+      pool.query('SELECT email, full_name FROM users WHERE id = $1', [userId])
+        .then(async (userRes) => {
+          const user = userRes.rows[0];
+          if (user && user.email) {
+            await EmailService.sendSupportTicketEmail({
+              userEmail: user.email,
+              userName: user.full_name || 'Developer',
+              ticketNumber: ticket.ticketNumber,
+              subject: ticket.subject,
+              category: ticket.category,
+              priority: ticket.priority,
+              message: initialMessage.trim()
+            });
+          }
+        })
+        .catch((err) => console.error('[EMAIL] Failed to dispatch support ticket email:', err.message));
+
       return { ticket, message };
     } catch (err) {
       await client.query('ROLLBACK');

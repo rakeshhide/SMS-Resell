@@ -13,6 +13,7 @@ import { AdminView } from './views/AdminView';
 import { SupportView } from './views/SupportView';
 import { LandingPageView } from './views/LandingPageView';
 import { LegalView, LegalTab } from './views/LegalView';
+import { ResetPasswordView } from './views/ResetPasswordView';
 import { AuthModal } from './components/AuthModal';
 import { WalletRechargeModal } from './components/WalletRechargeModal';
 import { User } from './types';
@@ -23,6 +24,9 @@ export function App() {
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [viewingLanding, setViewingLanding] = useState<boolean>(true);
   const [legalViewTab, setLegalViewTab] = useState<LegalTab | null>(null);
+  const [isResetPasswordRoute, setIsResetPasswordRoute] = useState<boolean>(() => {
+    return window.location.pathname === '/reset-password' || new URLSearchParams(window.location.search).has('token');
+  });
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
   // Modals
@@ -32,8 +36,11 @@ export function App() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check URL hash for direct policy routing
-    const handleHash = () => {
+    // Check URL hash for direct policy routing or reset-password
+    const handleRoute = () => {
+      const isReset = window.location.pathname === '/reset-password' || new URLSearchParams(window.location.search).has('token');
+      setIsResetPasswordRoute(isReset);
+
       const hash = window.location.hash.replace('#', '').toLowerCase();
       if (['terms', 'privacy', 'aup', 'refund'].includes(hash)) {
         setLegalViewTab(hash as LegalTab);
@@ -41,8 +48,9 @@ export function App() {
         setLegalViewTab(null);
       }
     };
-    handleHash();
-    window.addEventListener('hashchange', handleHash);
+    handleRoute();
+    window.addEventListener('hashchange', handleRoute);
+    window.addEventListener('popstate', handleRoute);
 
     // Check initial user session
     ApiClient.getMe().then((res) => {
@@ -56,7 +64,10 @@ export function App() {
       setViewingLanding(true);
     });
 
-    return () => window.removeEventListener('hashchange', handleHash);
+    return () => {
+      window.removeEventListener('hashchange', handleRoute);
+      window.removeEventListener('popstate', handleRoute);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -96,7 +107,28 @@ export function App() {
 
   return (
     <div className={darkMode ? 'dark-mode' : ''} style={{ minHeight: '100vh', backgroundColor: 'var(--bg-app)' }}>
-      {legalViewTab !== null ? (
+      {isResetPasswordRoute ? (
+        <ResetPasswordView
+          darkMode={darkMode}
+          onGoToLogin={() => {
+            setIsResetPasswordRoute(false);
+            try {
+              history.pushState('', document.title, '/');
+            } catch {}
+            setAuthModalIsSignUp(false);
+            setAuthModalOpen(true);
+          }}
+          onGoHome={() => {
+            setIsResetPasswordRoute(false);
+            try {
+              history.pushState('', document.title, '/');
+            } catch {}
+            if (!user) {
+              setViewingLanding(true);
+            }
+          }}
+        />
+      ) : legalViewTab !== null ? (
         <LegalView
           initialTab={legalViewTab}
           onBack={() => {

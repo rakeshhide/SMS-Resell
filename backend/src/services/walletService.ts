@@ -2,6 +2,7 @@ import { pool } from '../config/db';
 import { PoolClient } from 'pg';
 import { BillingService } from './billingService';
 import { NotificationService } from './notificationService';
+import { EmailService } from './emailService';
 
 export interface DeductResult {
   success: boolean;
@@ -278,6 +279,36 @@ export class WalletService {
         metadata: { paymentId, orderId, creditAmount, balanceAfter }
       }).catch((err) => console.error('[NOTIFICATION] Failed to create wallet credit notice:', err.message));
 
+      // Asynchronous email notification to both Admin and User
+      pool.query('SELECT email, full_name FROM users WHERE id = $1', [userId])
+        .then(async (userRes) => {
+          const user = userRes.rows[0];
+          if (user && user.email) {
+            const payRes = await pool.query(
+              'SELECT amount, gst_amount, service_fee_amount FROM payments WHERE razorpay_payment_id = $1 OR razorpay_order_id = $2',
+              [paymentId, orderId]
+            );
+            const payRow = payRes.rows[0];
+            const gstAmount = payRow?.gst_amount ? parseFloat(payRow.gst_amount) : Number((creditAmount * 0.18).toFixed(2));
+            const serviceFee = payRow?.service_fee_amount ? parseFloat(payRow.service_fee_amount) : Number((creditAmount * 0.03).toFixed(2));
+            const totalPaid = payRow?.amount ? parseFloat(payRow.amount) : Number((creditAmount + gstAmount + serviceFee).toFixed(2));
+
+            await EmailService.sendWalletTopupEmail({
+              userEmail: user.email,
+              userName: user.full_name || 'Valued User',
+              creditAmount,
+              totalPaid,
+              gstAmount,
+              serviceFee,
+              paymentId,
+              newBalance: balanceAfter,
+              unlockedRate: newOtpRate,
+              source: 'RAZORPAY'
+            });
+          }
+        })
+        .catch((err) => console.error('[EMAIL] Failed to dispatch topup email:', err.message));
+
       return { success: true, balanceAfter, applicableRate: newOtpRate };
     } catch (err: any) {
       await client.query('ROLLBACK');
@@ -371,6 +402,34 @@ export class WalletService {
         actionLabel: 'View Ledger',
         actionUrl: '/wallet'
       }).catch((err) => console.error('[NOTIFICATION] Failed to create admin adjustment notice:', err.message));
+
+      // Asynchronous email notification when balance is topped up by admin
+      if (adjustmentAmount > 0) {
+        pool.query('SELECT email, full_name FROM users WHERE id = $1', [targetUserId])
+          .then(async (userRes) => {
+            const user = userRes.rows[0];
+            if (user && user.email) {
+              const settings = await BillingService.getSystemSettings();
+              const gstAmount = Number((adjustmentAmount * (settings.defaultGst / 100)).toFixed(2));
+              const feeAmount = Number((adjustmentAmount * (settings.defaultServiceFee / 100)).toFixed(2));
+              const totalPaid = Number((adjustmentAmount + gstAmount + feeAmount).toFixed(2));
+
+              await EmailService.sendWalletTopupEmail({
+                userEmail: user.email,
+                userName: user.full_name || 'Valued User',
+                creditAmount: adjustmentAmount,
+                totalPaid,
+                gstAmount,
+                serviceFee: feeAmount,
+                paymentId: refId,
+                newBalance: balanceAfter,
+                unlockedRate: currentRate,
+                source: 'ADMIN_MANUAL'
+              });
+            }
+          })
+          .catch((err) => console.error('[EMAIL] Failed to dispatch admin topup email:', err.message));
+      }
 
       return { success: true, newBalance: balanceAfter };
     } catch (err: any) {
