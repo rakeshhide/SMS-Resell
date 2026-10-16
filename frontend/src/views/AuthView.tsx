@@ -12,11 +12,8 @@ import {
   EyeOff,
   Zap,
   ShieldCheck,
-  CodeXml,
   Wallet,
-  Clock,
   Loader2,
-  KeyRound,
 } from 'lucide-react';
 import { TurfsyLogo } from '../components/TurfsyLogo';
 import { ApiClient } from '../services/api';
@@ -105,7 +102,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
           flex: '1 1 50%',
           background: 'linear-gradient(145deg, #090d16 0%, #0f172a 60%, #172554 100%)',
           color: '#ffffff',
-          padding: '48px 48px',
+          padding: '56px 64px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -149,7 +146,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               background: 'rgba(255, 255, 255, 0.06)',
               border: '1px solid rgba(255, 255, 255, 0.12)',
               color: '#e2e8f0',
-              padding: '8px 16px',
+              padding: '9px 18px',
               borderRadius: '999px',
               fontSize: '13px',
               fontWeight: 600,
@@ -157,7 +154,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               alignItems: 'center',
               gap: '8px',
               cursor: 'pointer',
-              marginBottom: '36px',
+              marginBottom: '40px',
               transition: 'all 0.2s ease',
             }}
           >
@@ -165,10 +162,10 @@ export const AuthView: React.FC<AuthViewProps> = ({
             <span>Back to TurfsyOTPs Home</span>
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
-            <TurfsyLogo size={46} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+            <TurfsyLogo size={50} />
             <div>
-              <div style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', color: '#ffffff' }}>
+              <div style={{ fontSize: '26px', fontWeight: 800, letterSpacing: '-0.02em', color: '#ffffff' }}>
                 TurfsyOTPs
               </div>
               <div style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>
@@ -179,12 +176,12 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
           <h2
             style={{
-              fontSize: '28px',
+              fontSize: '32px',
               fontWeight: 800,
               lineHeight: 1.25,
               letterSpacing: '-0.03em',
               color: '#ffffff',
-              maxWidth: '480px',
+              maxWidth: '520px',
               margin: '0 0 16px 0',
             }}
           >
@@ -195,7 +192,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               fontSize: '15px',
               color: '#94a3b8',
               lineHeight: 1.6,
-              maxWidth: '460px',
+              maxWidth: '480px',
               margin: 0,
             }}
           >
@@ -210,8 +207,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
             zIndex: 2,
             display: 'flex',
             flexDirection: 'column',
-            gap: '20px',
-            margin: '36px 0',
+            gap: '18px',
+            margin: '40px 0',
           }}
         >
           <div
@@ -219,7 +216,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               display: 'flex',
               alignItems: 'flex-start',
               gap: '14px',
-              padding: '16px 18px',
+              padding: '16px 20px',
               borderRadius: '12px',
               backgroundColor: 'rgba(255, 255, 255, 0.04)',
               border: '1px solid rgba(255, 255, 255, 0.06)',
@@ -227,8 +224,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
           >
             <div
               style={{
-                width: '38px',
-                height: '38px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '8px',
                 backgroundColor: 'rgba(37, 99, 235, 0.2)',
                 color: '#60a5fa',
@@ -255,7 +252,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               display: 'flex',
               alignItems: 'flex-start',
               gap: '14px',
-              padding: '16px 18px',
+              padding: '16px 20px',
               borderRadius: '12px',
               backgroundColor: 'rgba(255, 255, 255, 0.04)',
               border: '1px solid rgba(255, 255, 255, 0.06)',
@@ -263,8 +260,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
           >
             <div
               style={{
-                width: '38px',
-                height: '38px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '8px',
                 backgroundColor: 'rgba(16, 185, 129, 0.2)',
                 color: '#34d399',
@@ -281,7 +278,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 Bank-Grade Cryptographic Security
               </div>
               <div style={{ fontSize: '13px', color: '#94a3b8', lineHeight: 1.4 }}>
-                Secure SHA-256 hashed API keys, automated brute-force protection, and strict ledger auditing.
+                Secure SHA-256 hashed API keys, automated brute-force defense, and strict ledger auditing.
               </div>
             </div>
           </div>
@@ -291,7 +288,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               display: 'flex',
               alignItems: 'flex-start',
               gap: '14px',
-              padding: '16px 18px',
+              padding: '16px 20px',
               borderRadius: '12px',
               backgroundColor: 'rgba(255, 255, 255, 0.04)',
               border: '1px solid rgba(255, 255, 255, 0.06)',
@@ -299,8 +296,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
           >
             <div
               style={{
-                width: '38px',
-                height: '38px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '8px',
                 backgroundColor: 'rgba(245, 158, 11, 0.2)',
                 color: '#fbbf24',
@@ -314,10 +311,10 @@ export const AuthView: React.FC<AuthViewProps> = ({
             </div>
             <div>
               <div style={{ fontSize: '14px', fontWeight: 700, color: '#f8fafc', marginBottom: '3px' }}>
-                Dynamic Volume Pricing
+                Flexible Developer Wallet
               </div>
               <div style={{ fontSize: '13px', color: '#94a3b8', lineHeight: 1.4 }}>
-                Automated rate tiering starting down to ₹0.20 per delivery with real-time Razorpay top-ups.
+                Transparent pay-as-you-go pricing with instant Razorpay top-ups and zero recurring monthly fees.
               </div>
             </div>
           </div>
@@ -347,7 +344,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Dedicated Authentication Form */}
+      {/* RIGHT COLUMN: Dedicated Seamless Authentication Section (Spacious, No boxed card) */}
       <div
         className="auth-form-column"
         style={{
@@ -356,71 +353,67 @@ export const AuthView: React.FC<AuthViewProps> = ({
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: '36px 24px',
+          padding: '48px 36px',
           overflowY: 'auto',
           position: 'relative',
         }}
       >
-        {/* Mobile Header Bar */}
+        {/* Seamless Inner Container (Expanded to 480px, no artificial card border) */}
         <div
-          className="auth-mobile-header"
           style={{
             width: '100%',
-            maxWidth: '440px',
+            maxWidth: '480px',
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '28px',
+            flexDirection: 'column',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <TurfsyLogo size={36} />
-            <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>
-              TurfsyOTPs
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={onGoHome}
+          {/* Top Brand / Home Navigation Bar */}
+          <div
             style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-muted)',
-              fontSize: '13px',
-              fontWeight: 600,
-              cursor: 'pointer',
               display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              gap: '4px',
+              marginBottom: '32px',
             }}
           >
-            <ArrowLeft size={14} />
-            <span>Home</span>
-          </button>
-        </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <TurfsyLogo size={36} />
+              <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+                TurfsyOTPs
+              </span>
+            </div>
 
-        {/* Card Container */}
-        <div
-          style={{
-            width: '100%',
-            maxWidth: '440px',
-            backgroundColor: 'var(--bg-card)',
-            borderRadius: '16px',
-            border: '1px solid var(--border-subtle)',
-            padding: '32px 28px',
-            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.06)',
-          }}
-        >
-          {/* Segmented Mode Control (Sign In vs Create Account) */}
+            <button
+              type="button"
+              onClick={onGoHome}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 10px',
+                borderRadius: '6px',
+              }}
+            >
+              <ArrowLeft size={14} />
+              <span>Back to Home</span>
+            </button>
+          </div>
+
+          {/* Seamless Mode Switcher (Sign In vs Create Account) */}
           {mode !== 'forgot' && (
             <div
               style={{
                 display: 'flex',
-                backgroundColor: 'var(--bg-app)',
+                backgroundColor: 'var(--bg-card)',
                 borderRadius: '10px',
                 padding: '4px',
-                marginBottom: '28px',
+                marginBottom: '32px',
                 border: '1px solid var(--border-subtle)',
               }}
             >
@@ -429,10 +422,10 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 onClick={() => switchMode('signin')}
                 style={{
                   flex: 1,
-                  padding: '9px 14px',
+                  padding: '11px 16px',
                   borderRadius: '7px',
                   border: 'none',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   fontWeight: mode === 'signin' ? 700 : 500,
                   color: mode === 'signin' ? '#ffffff' : 'var(--text-muted)',
                   backgroundColor: mode === 'signin' ? '#2563eb' : 'transparent',
@@ -448,10 +441,10 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 onClick={() => switchMode('signup')}
                 style={{
                   flex: 1,
-                  padding: '9px 14px',
+                  padding: '11px 16px',
                   borderRadius: '7px',
                   border: 'none',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   fontWeight: mode === 'signup' ? 700 : 500,
                   color: mode === 'signup' ? '#ffffff' : 'var(--text-muted)',
                   backgroundColor: mode === 'signup' ? '#2563eb' : 'transparent',
@@ -466,28 +459,28 @@ export const AuthView: React.FC<AuthViewProps> = ({
           )}
 
           {/* Form Title & Subtitle */}
-          <div style={{ marginBottom: '22px' }}>
+          <div style={{ marginBottom: '24px' }}>
             <h1
               style={{
-                fontSize: '22px',
+                fontSize: '24px',
                 fontWeight: 800,
                 color: 'var(--text-main)',
                 letterSpacing: '-0.02em',
-                margin: '0 0 6px 0',
+                margin: '0 0 8px 0',
               }}
             >
               {mode === 'signin'
                 ? 'Welcome Back'
                 : mode === 'signup'
-                ? 'Get Started with TurfsyOTPs'
+                ? 'Create Your Developer Account'
                 : 'Recover Your Account'}
             </h1>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
               {mode === 'signin'
-                ? 'Sign in to access your API keys, SMS balance, and telemetry.'
+                ? 'Enter your credentials to access your API keys, SMS balance, and telemetry.'
                 : mode === 'signup'
-                ? 'Create a developer account to generate API keys and dispatch OTPs.'
-                : 'Enter your account email to receive a secure password recovery link.'}
+                ? 'Sign up to generate instant API keys and dispatch high-speed OTPs.'
+                : 'Enter your registered email address and we will dispatch a password reset link.'}
             </p>
           </div>
 
@@ -498,14 +491,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: '10px',
-                padding: '12px 14px',
+                padding: '12px 16px',
                 borderRadius: '8px',
                 backgroundColor: '#fef2f2',
                 border: '1px solid #fee2e2',
                 color: '#b91c1c',
                 fontSize: '13px',
                 lineHeight: 1.4,
-                marginBottom: '18px',
+                marginBottom: '20px',
               }}
             >
               <AlertCircle size={17} style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -515,11 +508,11 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
           {/* Forgot Password Success Message */}
           {mode === 'forgot' && forgotSuccess ? (
-            <div style={{ textAlign: 'center', padding: '16px 0' }}>
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
               <div
                 style={{
-                  width: '52px',
-                  height: '52px',
+                  width: '56px',
+                  height: '56px',
                   borderRadius: '50%',
                   backgroundColor: '#ecfdf5',
                   color: '#10b981',
@@ -529,25 +522,25 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   margin: '0 auto 16px auto',
                 }}
               >
-                <CheckCircle2 size={28} />
+                <CheckCircle2 size={30} />
               </div>
 
               <h2
                 style={{
-                  fontSize: '17px',
+                  fontSize: '18px',
                   fontWeight: 700,
                   color: 'var(--text-main)',
-                  margin: '0 0 6px 0',
+                  margin: '0 0 8px 0',
                 }}
               >
                 Recovery Link Dispatched
               </h2>
               <p
                 style={{
-                  fontSize: '13px',
+                  fontSize: '14px',
                   color: 'var(--text-secondary)',
                   lineHeight: 1.5,
-                  margin: '0 0 24px 0',
+                  margin: '0 0 28px 0',
                 }}
               >
                 If an account exists for <strong>{email}</strong>, we have dispatched a password reset link. The link is valid for 15 minutes.
@@ -558,12 +551,12 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 onClick={() => switchMode('signin')}
                 style={{
                   width: '100%',
-                  padding: '11px 18px',
+                  padding: '12px 20px',
                   backgroundColor: '#2563eb',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '8px',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   display: 'flex',
@@ -573,13 +566,13 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
                 }}
               >
-                <ArrowLeft size={15} />
+                <ArrowLeft size={16} />
                 <span>Back to Sign In</span>
               </button>
             </div>
           ) : (
-            /* Main Form */
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            /* Main Form (Spacious inputs, no small boxed border) */
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               {/* Full Name & Company Name (Sign Up only) */}
               {mode === 'signup' && (
                 <>
@@ -601,14 +594,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '10px',
-                        backgroundColor: 'var(--bg-app)',
+                        gap: '12px',
+                        backgroundColor: 'var(--bg-card)',
                         border: '1px solid var(--border-subtle)',
                         borderRadius: '8px',
-                        padding: '10px 14px',
+                        padding: '12px 14px',
                       }}
                     >
-                      <UserIcon size={16} color="var(--text-muted)" />
+                      <UserIcon size={17} color="var(--text-muted)" />
                       <input
                         type="text"
                         required
@@ -619,7 +612,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                           border: 'none',
                           background: 'transparent',
                           outline: 'none',
-                          fontSize: '13px',
+                          fontSize: '14px',
                           width: '100%',
                           color: 'var(--text-main)',
                         }}
@@ -645,14 +638,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '10px',
-                        backgroundColor: 'var(--bg-app)',
+                        gap: '12px',
+                        backgroundColor: 'var(--bg-card)',
                         border: '1px solid var(--border-subtle)',
                         borderRadius: '8px',
-                        padding: '10px 14px',
+                        padding: '12px 14px',
                       }}
                     >
-                      <Building size={16} color="var(--text-muted)" />
+                      <Building size={17} color="var(--text-muted)" />
                       <input
                         type="text"
                         placeholder="Acme Corp"
@@ -662,7 +655,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                           border: 'none',
                           background: 'transparent',
                           outline: 'none',
-                          fontSize: '13px',
+                          fontSize: '14px',
                           width: '100%',
                           color: 'var(--text-main)',
                         }}
@@ -691,14 +684,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    backgroundColor: 'var(--bg-app)',
+                    gap: '12px',
+                    backgroundColor: 'var(--bg-card)',
                     border: '1px solid var(--border-subtle)',
                     borderRadius: '8px',
-                    padding: '10px 14px',
+                    padding: '12px 14px',
                   }}
                 >
-                  <Mail size={16} color="var(--text-muted)" />
+                  <Mail size={17} color="var(--text-muted)" />
                   <input
                     type="email"
                     required
@@ -709,7 +702,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       border: 'none',
                       background: 'transparent',
                       outline: 'none',
-                      fontSize: '13px',
+                      fontSize: '14px',
                       width: '100%',
                       color: 'var(--text-main)',
                     }}
@@ -740,7 +733,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                           background: 'none',
                           border: 'none',
                           color: '#2563eb',
-                          fontSize: '12px',
+                          fontSize: '13px',
                           fontWeight: 600,
                           cursor: 'pointer',
                           padding: 0,
@@ -754,14 +747,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '10px',
-                      backgroundColor: 'var(--bg-app)',
+                      gap: '12px',
+                      backgroundColor: 'var(--bg-card)',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: '8px',
-                      padding: '10px 14px',
+                      padding: '12px 14px',
                     }}
                   >
-                    <Lock size={16} color="var(--text-muted)" />
+                    <Lock size={17} color="var(--text-muted)" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
@@ -773,7 +766,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                         border: 'none',
                         background: 'transparent',
                         outline: 'none',
-                        fontSize: '13px',
+                        fontSize: '14px',
                         width: '100%',
                         color: 'var(--text-main)',
                       }}
@@ -789,7 +782,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                         color: 'var(--text-muted)',
                       }}
                     >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                     </button>
                   </div>
                 </div>
@@ -800,8 +793,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 type="submit"
                 disabled={loading}
                 style={{
-                  marginTop: '6px',
-                  padding: '12px 20px',
+                  marginTop: '8px',
+                  padding: '13px 20px',
                   backgroundColor: '#2563eb',
                   color: '#ffffff',
                   border: 'none',
@@ -837,9 +830,9 @@ export const AuthView: React.FC<AuthViewProps> = ({
               </button>
 
               {/* Bottom Mode Switcher */}
-              <div style={{ textAlign: 'center', marginTop: '12px' }}>
+              <div style={{ textAlign: 'center', marginTop: '14px' }}>
                 {mode === 'signin' ? (
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
                     Don't have an account?{' '}
                     <button
                       type="button"
@@ -851,13 +844,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
                         fontWeight: 700,
                         cursor: 'pointer',
                         padding: 0,
+                        fontSize: '14px',
                       }}
                     >
                       Create account free
                     </button>
                   </p>
                 ) : mode === 'signup' ? (
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                  <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
                     Already have an account?{' '}
                     <button
                       type="button"
@@ -869,6 +863,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                         fontWeight: 700,
                         cursor: 'pointer',
                         padding: 0,
+                        fontSize: '14px',
                       }}
                     >
                       Sign In
@@ -897,35 +892,35 @@ export const AuthView: React.FC<AuthViewProps> = ({
               </div>
             </form>
           )}
-        </div>
 
-        {/* Security & Compliance Footer */}
-        <div style={{ marginTop: '24px', textAlign: 'center' }}>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
-            Protected with TLS 1.3 & AES-256 encryption. By continuing you accept the{' '}
-            <a
-              href="#terms"
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.hash = 'terms';
-              }}
-              style={{ color: '#2563eb', textDecoration: 'none' }}
-            >
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a
-              href="#privacy"
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.hash = 'privacy';
-              }}
-              style={{ color: '#2563eb', textDecoration: 'none' }}
-            >
-              Privacy Policy
-            </a>
-            .
-          </p>
+          {/* Security & Compliance Notice */}
+          <div style={{ marginTop: '36px', textAlign: 'center' }}>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              Protected with TLS 1.3 & AES-256 encryption. By continuing you accept the{' '}
+              <a
+                href="#terms"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.hash = 'terms';
+                }}
+                style={{ color: '#2563eb', textDecoration: 'none' }}
+              >
+                Terms of Service
+              </a>{' '}
+              and{' '}
+              <a
+                href="#privacy"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.hash = 'privacy';
+                }}
+                style={{ color: '#2563eb', textDecoration: 'none' }}
+              >
+                Privacy Policy
+              </a>
+              .
+            </p>
+          </div>
         </div>
       </div>
 
@@ -937,12 +932,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
           }
           .auth-form-column {
             flex: 1 1 100% !important;
-            padding: 24px 16px !important;
-          }
-        }
-        @media (min-width: 1025px) {
-          .auth-mobile-header {
-            display: none !important;
+            padding: 36px 20px !important;
           }
         }
       `}</style>
