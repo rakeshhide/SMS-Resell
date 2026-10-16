@@ -14,7 +14,7 @@ import { SupportView } from './views/SupportView';
 import { LandingPageView } from './views/LandingPageView';
 import { LegalView, LegalTab } from './views/LegalView';
 import { ResetPasswordView } from './views/ResetPasswordView';
-import { AuthModal } from './components/AuthModal';
+import { AuthView, AuthMode } from './views/AuthView';
 import { WalletRechargeModal } from './components/WalletRechargeModal';
 import { User } from './types';
 import { ApiClient } from './services/api';
@@ -27,26 +27,43 @@ export function App() {
   const [isResetPasswordRoute, setIsResetPasswordRoute] = useState<boolean>(() => {
     return window.location.pathname === '/reset-password' || new URLSearchParams(window.location.search).has('token');
   });
+
+  const [authRouteMode, setAuthRouteMode] = useState<AuthMode | null>(() => {
+    const p = window.location.pathname.toLowerCase();
+    const h = window.location.hash.replace('#', '').toLowerCase();
+    if (p === '/login' || h === 'login') return 'signin';
+    if (p === '/signup' || h === 'signup' || p === '/register' || h === 'register') return 'signup';
+    if (p === '/forgot-password' || h === 'forgot') return 'forgot';
+    return null;
+  });
+
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
   // Modals
-  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
-  const [authModalIsSignUp, setAuthModalIsSignUp] = useState<boolean>(false);
-  const [authModalInitialMode, setAuthModalInitialMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [walletModalOpen, setWalletModalOpen] = useState<boolean>(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check URL hash for direct policy routing or reset-password
+    // Check URL hash for direct policy routing or reset-password or auth pages
     const handleRoute = () => {
       const isReset = window.location.pathname === '/reset-password' || new URLSearchParams(window.location.search).has('token');
       setIsResetPasswordRoute(isReset);
 
+      const p = window.location.pathname.toLowerCase();
       const hash = window.location.hash.replace('#', '').toLowerCase();
+
       if (['terms', 'privacy', 'aup', 'refund'].includes(hash)) {
         setLegalViewTab(hash as LegalTab);
+        setAuthRouteMode(null);
       } else {
         setLegalViewTab(null);
+        if (p === '/login' || hash === 'login') {
+          setAuthRouteMode('signin');
+        } else if (p === '/signup' || hash === 'signup' || p === '/register' || hash === 'register') {
+          setAuthRouteMode('signup');
+        } else if (p === '/forgot-password' || hash === 'forgot') {
+          setAuthRouteMode('forgot');
+        }
       }
     };
     handleRoute();
@@ -58,6 +75,7 @@ export function App() {
       if (res?.user) {
         setUser(res.user);
         setViewingLanding(false);
+        setAuthRouteMode(null);
       } else {
         setViewingLanding(true);
       }
@@ -74,13 +92,21 @@ export function App() {
   const handleLogout = () => {
     ApiClient.clearToken();
     setUser(null);
+    setAuthRouteMode(null);
     setViewingLanding(true);
+    try {
+      history.pushState('', document.title, '/');
+    } catch {}
   };
 
   const handleAuthSuccess = (authenticatedUser: User) => {
     setUser(authenticatedUser);
+    setAuthRouteMode(null);
     setViewingLanding(false);
     setCurrentTab('dashboard');
+    try {
+      history.pushState('', document.title, '/');
+    } catch {}
   };
 
   const handleWalletSuccess = (newBalance: number) => {
@@ -113,23 +139,21 @@ export function App() {
           darkMode={darkMode}
           onGoToLogin={() => {
             setIsResetPasswordRoute(false);
+            setAuthRouteMode('signin');
             try {
-              history.pushState('', document.title, '/');
+              history.pushState('', document.title, '/login');
             } catch {}
-            setAuthModalIsSignUp(false);
-            setAuthModalInitialMode('signin');
-            setAuthModalOpen(true);
           }}
           onForgotPassword={() => {
             setIsResetPasswordRoute(false);
+            setAuthRouteMode('forgot');
             try {
-              history.pushState('', document.title, '/');
+              history.pushState('', document.title, '/login');
             } catch {}
-            setAuthModalInitialMode('forgot');
-            setAuthModalOpen(true);
           }}
           onGoHome={() => {
             setIsResetPasswordRoute(false);
+            setAuthRouteMode(null);
             try {
               history.pushState('', document.title, '/');
             } catch {}
@@ -156,12 +180,26 @@ export function App() {
           }}
           darkMode={darkMode}
         />
+      ) : authRouteMode !== null && !user ? (
+        <AuthView
+          initialMode={authRouteMode}
+          onSuccess={handleAuthSuccess}
+          onGoHome={() => {
+            setAuthRouteMode(null);
+            setViewingLanding(true);
+            try {
+              history.pushState('', document.title, '/');
+            } catch {}
+          }}
+          darkMode={darkMode}
+        />
       ) : viewingLanding ? (
         <LandingPageView
           onOpenAuth={(isSignUp = false) => {
-            setAuthModalIsSignUp(isSignUp);
-            setAuthModalInitialMode(isSignUp ? 'signup' : 'signin');
-            setAuthModalOpen(true);
+            setAuthRouteMode(isSignUp ? 'signup' : 'signin');
+            try {
+              history.pushState('', document.title, isSignUp ? '/signup' : '/login');
+            } catch {}
           }}
           onGoToDashboard={() => setViewingLanding(false)}
           isLoggedIn={!!user}
@@ -244,15 +282,7 @@ export function App() {
         </div>
       )}
 
-      {/* Global Modals */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        isSignUpDefault={authModalIsSignUp}
-        initialMode={authModalInitialMode}
-        onSuccess={handleAuthSuccess}
-      />
-
+      {/* Global Wallet Recharge Modal */}
       <WalletRechargeModal
         isOpen={walletModalOpen}
         onClose={() => setWalletModalOpen(false)}
