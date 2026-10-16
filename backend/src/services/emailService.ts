@@ -9,7 +9,7 @@ export interface EmailOptions {
 
 export class EmailService {
   private static adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'kumarsinghrakesh333@gmail.com';
-  private static fromAddress = 'NexOTP Platform <onboarding@resend.dev>';
+  private static fromAddress = 'TurfsyOTPs <onboarding@resend.dev>';
 
   /**
    * Resolve Resend API keys in priority failover order:
@@ -143,7 +143,7 @@ export class EmailService {
     const htmlBody = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background-color: #0f172a; padding: 24px 32px; text-align: left;">
-          <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">NexOTP Communications</h1>
+          <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">TurfsyOTPs Communications</h1>
           <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">Transaction & Financial Ledger Notification</p>
         </div>
         
@@ -196,7 +196,7 @@ export class EmailService {
         </div>
 
         <div style="background-color: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
-          NexOTP High-Throughput Developer Infrastructure. Automated Transaction Notification.
+          TurfsyOTPs High-Throughput Developer Infrastructure. Automated Transaction Notification.
         </div>
       </div>
     `;
@@ -204,7 +204,7 @@ export class EmailService {
     // Send to both: Admin notification email and customer's email
     await this.sendEmail({
       to: [this.adminEmail, userEmail],
-      subject: `[NexOTP] Wallet Recharged: ₹${creditAmount.toFixed(2)} by ${userName || userEmail}`,
+      subject: `[TurfsyOTPs] Wallet Recharged: ₹${creditAmount.toFixed(2)} by ${userName || userEmail}`,
       html: htmlBody,
     });
   }
@@ -235,7 +235,7 @@ export class EmailService {
     const htmlBody = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background-color: #0f172a; padding: 24px 32px; text-align: left;">
-          <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">NexOTP Support Center</h1>
+          <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">TurfsyOTPs Support Center</h1>
           <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">Inquiry & Complaint Raised Notification</p>
         </div>
         
@@ -268,7 +268,7 @@ export class EmailService {
         </div>
 
         <div style="background-color: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
-          NexOTP Support Operations. Our engineering team reviews inquiries continuously.
+          TurfsyOTPs Support Operations. Our engineering team reviews inquiries continuously.
         </div>
       </div>
     `;
@@ -276,7 +276,7 @@ export class EmailService {
     // Send to both: Admin email and user email
     await this.sendEmail({
       to: [this.adminEmail, userEmail],
-      subject: `[NexOTP Ticket ${ticketNumber}] ${subject} - from ${userName || userEmail}`,
+      subject: `[TurfsyOTPs Ticket ${ticketNumber}] ${subject} - from ${userName || userEmail}`,
       html: htmlBody,
       replyTo: userEmail,
     });
@@ -297,7 +297,7 @@ export class EmailService {
     const htmlBody = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background-color: #0f172a; padding: 24px 32px; text-align: left;">
-          <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">NexOTP Security</h1>
+          <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">TurfsyOTPs Security</h1>
           <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">Account Credential Recovery</p>
         </div>
         
@@ -305,7 +305,7 @@ export class EmailService {
           <h2 style="font-size: 18px; color: #0f172a; margin: 0 0 12px 0;">Password Reset Request</h2>
           <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0;">
             Hello ${userName || 'Valued User'},<br />
-            We received a request to reset the password for your NexOTP developer account associated with <strong>${userEmail}</strong>.
+            We received a request to reset the password for your TurfsyOTPs developer account associated with <strong>${userEmail}</strong>.
           </p>
 
           <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 24px 0;">
@@ -329,14 +329,14 @@ export class EmailService {
         </div>
 
         <div style="background-color: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
-          NexOTP Automated Security Infrastructure.
+          TurfsyOTPs Automated Security Infrastructure.
         </div>
       </div>
     `;
 
     await this.sendEmail({
       to: userEmail,
-      subject: '[NexOTP] Reset Your Account Password',
+      subject: '[TurfsyOTPs] Reset Your Account Password',
       html: htmlBody,
     });
   }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Mail, User as UserIcon, Building, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, User as UserIcon, Building, ArrowRight, ArrowLeft, CheckCircle2, X } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { User } from '../types';
 import { TurfsyLogo } from './TurfsyLogo';
@@ -85,11 +85,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               background: 'none',
               border: 'none',
               color: 'var(--text-muted)',
-              fontSize: '18px',
               cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '4px',
             }}
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 

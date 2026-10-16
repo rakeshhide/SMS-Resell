@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { KeyRound, Plus, Copy, Check, Trash2, AlertTriangle, ShieldAlert, Eye, EyeOff, Lock } from 'lucide-react';
+import { KeyRound, Plus, Copy, Check, Trash2, AlertTriangle, ShieldAlert, Eye, EyeOff, Lock, X } from 'lucide-react';
 import { ApiKey } from '../types';
 import { ApiClient } from '../services/api';
 import { ApiKeysSkeleton, SkeletonTableRows } from '../components/Skeleton';
@@ -282,7 +282,20 @@ export const ApiKeysView: React.FC = () => {
                 {createdKeySecret ? 'API Key Generated' : 'Generate New API Key'}
               </h3>
               {!createdKeySecret && (
-                <button onClick={() => setShowCreateModal(false)} style={{ color: 'var(--text-muted)', fontSize: '18px' }}>✕</button>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '4px'
+                  }}
+                >
+                  <X size={18} />
+                </button>
               )}
             </div>
 
@@ -478,12 +491,14 @@ export const ApiKeysView: React.FC = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  fontSize: '18px',
                   color: 'var(--text-muted)',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px'
                 }}
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 

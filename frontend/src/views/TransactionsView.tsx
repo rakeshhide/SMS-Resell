@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, RefreshCw, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Eye } from 'lucide-react';
+import { Search, Filter, RefreshCw, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Eye, X } from 'lucide-react';
 import { OtpTransaction } from '../types';
 import { ApiClient } from '../services/api';
 import { TransactionsSkeleton, SkeletonTableRows } from '../components/Skeleton';
@@ -291,7 +291,20 @@ export const TransactionsView: React.FC = () => {
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>Transaction Details</h3>
-              <button onClick={() => setSelectedTx(null)} style={{ color: 'var(--text-muted)', fontSize: '18px', fontWeight: 700 }}>✕</button>
+              <button
+                onClick={() => setSelectedTx(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px'
+                }}
+              >
+                <X size={18} />
+              </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '14px' }}>
