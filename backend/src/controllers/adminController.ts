@@ -5,6 +5,7 @@ import { pool } from '../config/db';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { WalletService } from '../services/walletService';
 import { BillingService } from '../services/billingService';
+import { EmailService } from '../services/emailService';
 
 const updatePricingSchema = z.object({
   providerBaseCost: z.number().min(0.01),
@@ -75,6 +76,20 @@ export class AdminController {
 
       const pricing = await BillingService.getActivePricing();
 
+      const isFloatSufficient = fast2smsLiveBalance !== null ? fast2smsLiveBalance >= requiredFast2smsBalance : true;
+      const floatDeficit = fast2smsLiveBalance !== null ? Math.max(0, parseFloat((requiredFast2smsBalance - fast2smsLiveBalance).toFixed(2))) : 0;
+
+      // If Fast2SMS balance is insufficient to cover all user account balances, trigger alert email to kumarsinghrakesh333@gmail.com
+      if (!isFloatSufficient && fast2smsLiveBalance !== null) {
+        EmailService.sendFast2smsBalanceAlert({
+          requiredBalance: requiredFast2smsBalance,
+          liveBalance: fast2smsLiveBalance,
+          deficit: floatDeficit,
+          totalAccountOtps,
+          reason: 'FLOAT_DEFICIT'
+        }).catch((err) => console.error('[ADMIN] Failed to dispatch Fast2SMS alert email:', err.message));
+      }
+
       res.json({
         success: true,
         stats: {
@@ -94,8 +109,8 @@ export class AdminController {
             requiredWalletBalance: requiredFast2smsBalance,
             liveWalletBalance: fast2smsLiveBalance,
             liveSmsCount: fast2smsSmsCount,
-            isFloatSufficient: fast2smsLiveBalance !== null ? fast2smsLiveBalance >= requiredFast2smsBalance : true,
-            floatDeficit: fast2smsLiveBalance !== null ? Math.max(0, parseFloat((requiredFast2smsBalance - fast2smsLiveBalance).toFixed(2))) : 0
+            isFloatSufficient,
+            floatDeficit
           }
         }
       });

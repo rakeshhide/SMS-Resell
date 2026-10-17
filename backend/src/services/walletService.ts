@@ -3,6 +3,7 @@ import { PoolClient } from 'pg';
 import { BillingService } from './billingService';
 import { NotificationService } from './notificationService';
 import { EmailService } from './emailService';
+import { Fast2smsBalanceChecker } from './fast2smsBalanceChecker';
 
 export interface DeductResult {
   success: boolean;
@@ -313,6 +314,11 @@ export class WalletService {
         })
         .catch((err) => console.error('[EMAIL] Failed to dispatch topup email:', err.message));
 
+      // Asynchronously verify that Fast2SMS float remains sufficient for all users
+      Fast2smsBalanceChecker.checkFloatAndAlert(pool).catch((err) => {
+        console.error('[FLOAT_CHECK] Post-recharge Fast2SMS float check warning:', err.message);
+      });
+
       return { success: true, balanceAfter, applicableRate: newOtpRate };
     } catch (err: any) {
       await client.query('ROLLBACK');
@@ -433,6 +439,11 @@ export class WalletService {
             }
           })
           .catch((err) => console.error('[EMAIL] Failed to dispatch admin topup email:', err.message));
+
+        // Asynchronously verify that Fast2SMS float remains sufficient for all users
+        Fast2smsBalanceChecker.checkFloatAndAlert(pool).catch((err) => {
+          console.error('[FLOAT_CHECK] Post-adjustment Fast2SMS float check warning:', err.message);
+        });
       }
 
       return { success: true, newBalance: balanceAfter };

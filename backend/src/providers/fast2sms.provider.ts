@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { SMSProvider, SendOTPParams, ProviderSendResult } from './smsProvider.interface';
+import { EmailService } from '../services/emailService';
 
 export class Fast2SMSProvider implements SMSProvider {
   public readonly name = 'primary_telecom_route';
@@ -116,6 +117,19 @@ export class Fast2SMSProvider implements SMSProvider {
       // 1. Upstream route balance exhausted (Fast2SMS 416)
       if (statusCodeNum === 416 || lowerMsg.includes('sufficient wallet balance')) {
         console.error('[SMS_GATEWAY] Critical Alert: Upstream route replenishment required (Fast2SMS 416)');
+
+        // Dispatch immediate critical email alert to kumarsinghrakesh333@gmail.com
+        EmailService.sendFast2smsBalanceAlert({
+          requiredBalance: 0,
+          liveBalance: 0,
+          deficit: 0,
+          totalAccountOtps: 0,
+          reason: 'DISPATCH_REJECTED',
+          force: true,
+        }).catch((alertErr) => {
+          console.error('[SMS_GATEWAY] Failed to dispatch 416 balance alert email:', alertErr.message);
+        });
+
         return {
           success: false,
           providerRefId: `ERR_${Date.now()}`,

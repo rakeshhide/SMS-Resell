@@ -340,4 +340,106 @@ export class EmailService {
       html: htmlBody,
     });
   }
+
+  // Throttling timestamp to avoid inbox flooding (15-minute cooldown)
+  private static lastFast2smsAlertTime = 0;
+
+  /**
+   * 4. Send Fast2SMS Balance Deficit & Depletion Alert
+   * Dispatched immediately to kumarsinghrakesh333@gmail.com when Fast2SMS balance is insufficient
+   * to cover all user account balances, or when live SMS dispatch returns insufficient balance (416).
+   */
+  public static async sendFast2smsBalanceAlert(params: {
+    requiredBalance: number;
+    liveBalance: number | null;
+    deficit: number;
+    totalAccountOtps: number;
+    reason: 'FLOAT_DEFICIT' | 'DISPATCH_REJECTED';
+    force?: boolean;
+  }): Promise<void> {
+    const { requiredBalance, liveBalance, deficit, totalAccountOtps, reason, force = false } = params;
+
+    // Cooldown check (15 minutes) unless forced
+    const now = Date.now();
+    if (!force && now - this.lastFast2smsAlertTime < 15 * 60 * 1000) {
+      console.log('[EMAIL_SERVICE] Fast2SMS balance alert throttled (last alert sent within 15 mins).');
+      return;
+    }
+    this.lastFast2smsAlertTime = now;
+
+    const liveFormatted = liveBalance !== null ? `₹${liveBalance.toFixed(2)}` : 'Unknown / Query Failed';
+    const requiredFormatted = `₹${requiredBalance.toFixed(2)}`;
+    const deficitFormatted = `₹${deficit.toFixed(2)}`;
+
+    const isDispatchError = reason === 'DISPATCH_REJECTED';
+
+    const subject = isDispatchError
+      ? `[URGENT TurfsyOTPs] Fast2SMS Gateway Balance Depleted - OTP Dispatch Failing`
+      : `[URGENT TurfsyOTPs] Fast2SMS Float Deficit - Insufficient Balance for User Accounts`;
+
+    const htmlBody = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #fee2e2; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08);">
+        <div style="background-color: #991b1b; padding: 24px 32px; text-align: left;">
+          <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">TurfsyOTPs Infrastructure Alert</h1>
+          <p style="color: #fca5a5; font-size: 13px; margin: 4px 0 0 0;">Critical Gateway Float & Upstream Balance Notification</p>
+        </div>
+        
+        <div style="padding: 32px;">
+          <div style="background-color: #fef2f2; border: 1px solid #fee2e2; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <strong style="color: #991b1b; font-size: 14px; display: block; margin-bottom: 6px;">
+              ${isDispatchError ? 'Live Gateway Rejection (Error 416)' : 'Insufficient Floating Balance Warning'}
+            </strong>
+            <p style="color: #7f1d1d; font-size: 13px; margin: 0; line-height: 1.5;">
+              ${isDispatchError
+                ? 'Fast2SMS returned an insufficient wallet balance error (416) during an active OTP transmission. Outgoing OTPs are failing.'
+                : 'Fast2SMS live wallet balance is lower than the total float required to serve every active user based on their wallet balances. Immediate recharge is necessary to prevent delivery disruption.'}
+            </p>
+          </div>
+
+          <h2 style="font-size: 16px; color: #0f172a; margin: 0 0 16px 0;">Float & Balance Breakdown</h2>
+
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+            <tbody>
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px 0; font-size: 13px; color: #64748b;">Live Fast2SMS Balance</td>
+                <td style="padding: 10px 0; font-size: 14px; font-weight: 700; color: #dc2626; text-align: right;">${liveFormatted}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px 0; font-size: 13px; color: #64748b;">Outstanding User Capacity</td>
+                <td style="padding: 10px 0; font-size: 14px; font-weight: 600; color: #0f172a; text-align: right;">${totalAccountOtps.toLocaleString()} OTPs</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 10px 0; font-size: 13px; color: #64748b;">Required Fast2SMS Balance (@ ₹0.45/OTP)</td>
+                <td style="padding: 10px 0; font-size: 14px; font-weight: 700; color: #0f172a; text-align: right;">${requiredFormatted}</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 0 0 0; font-size: 13px; font-weight: 700; color: #991b1b;">Current Float Deficit</td>
+                <td style="padding: 12px 0 0 0; font-size: 16px; font-weight: 800; color: #991b1b; text-align: right;">${deficitFormatted}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="text-align: center; margin: 28px 0 12px 0;">
+            <a href="https://www.fast2sms.com" style="display: inline-block; background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);">
+              Recharge Fast2SMS Balance
+            </a>
+          </div>
+
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 20px 0 0 0; text-align: center;">
+            This automated alert was dispatched to system administrator (${this.adminEmail}).
+          </p>
+        </div>
+
+        <div style="background-color: #f8fafc; padding: 16px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
+          TurfsyOTPs Telecom Health & Safety Infrastructure.
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({
+      to: this.adminEmail,
+      subject,
+      html: htmlBody,
+    });
+  }
 }
