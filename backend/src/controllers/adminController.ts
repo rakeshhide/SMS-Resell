@@ -6,6 +6,7 @@ import { AuthRequest } from '../middlewares/authMiddleware';
 import { WalletService } from '../services/walletService';
 import { BillingService } from '../services/billingService';
 import { EmailService } from '../services/emailService';
+import { Fast2smsBalanceChecker } from '../services/fast2smsBalanceChecker';
 
 const updatePricingSchema = z.object({
   providerBaseCost: z.number().min(0.01),
@@ -81,13 +82,18 @@ export class AdminController {
 
       // If Fast2SMS balance is insufficient to cover all user account balances, trigger alert email to kumarsinghrakesh333@gmail.com
       if (!isFloatSufficient && fast2smsLiveBalance !== null) {
-        EmailService.sendFast2smsBalanceAlert({
-          requiredBalance: requiredFast2smsBalance,
-          liveBalance: fast2smsLiveBalance,
-          deficit: floatDeficit,
-          totalAccountOtps,
-          reason: 'FLOAT_DEFICIT'
-        }).catch((err) => console.error('[ADMIN] Failed to dispatch Fast2SMS alert email:', err.message));
+        try {
+          // On Vercel serverless, asynchronous operations must be awaited before res.json()
+          await EmailService.sendFast2smsBalanceAlert({
+            requiredBalance: requiredFast2smsBalance,
+            liveBalance: fast2smsLiveBalance,
+            deficit: floatDeficit,
+            totalAccountOtps,
+            reason: 'FLOAT_DEFICIT'
+          });
+        } catch (err: any) {
+          console.error('[ADMIN] Failed to dispatch Fast2SMS alert email:', err.message);
+        }
       }
 
       res.json({
@@ -666,6 +672,27 @@ export class AdminController {
     } catch (err: any) {
       console.error('[ADMIN] Global ledger error:', err.message);
       res.status(500).json({ success: false, message: 'Failed to retrieve global financial ledger.' });
+    }
+  }
+
+  /**
+   * On-demand check of Fast2SMS float and immediate alert email dispatch to admin
+   */
+  public static async triggerFast2smsFloatCheck(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const forceEmail = req.body?.force !== false; // Default true for direct test/check trigger
+      const result = await Fast2smsBalanceChecker.checkFloatAndAlert(pool, forceEmail);
+
+      res.json({
+        success: true,
+        message: result.isSufficient
+          ? 'Fast2SMS balance is sufficient to cover all active user balances.'
+          : `Deficit detected: ₹${result.deficit}. Alert email has been dispatched to kumarsinghrakesh333@gmail.com.`,
+        data: result
+      });
+    } catch (err: any) {
+      console.error('[ADMIN] Trigger Fast2SMS check error:', err.message);
+      res.status(500).json({ success: false, message: 'Failed to verify Fast2SMS float.' });
     }
   }
 }

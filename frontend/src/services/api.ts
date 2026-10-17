@@ -248,6 +248,13 @@ export class ApiClient {
     return this.request<{ success: boolean; stats: any }>('/admin/overview');
   }
 
+  public static checkFast2smsFloat(force = true) {
+    return this.request<{ success: boolean; message: string; data: any }>('/admin/check-fast2sms-float', {
+      method: 'POST',
+      body: JSON.stringify({ force }),
+    });
+  }
+
   public static listUsers(page = 1, limit = 20, search = '') {
     return this.request<{ success: boolean; users: any[]; total: number }>(`/admin/users?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
   }

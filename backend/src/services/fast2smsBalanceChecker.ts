@@ -53,16 +53,18 @@ export class Fast2smsBalanceChecker {
 
       // 4. Alert if deficit detected
       if (!isSufficient && liveBalance !== null) {
-        EmailService.sendFast2smsBalanceAlert({
-          requiredBalance,
-          liveBalance,
-          deficit,
-          totalAccountOtps,
-          reason: 'FLOAT_DEFICIT',
-          force: forceEmail,
-        }).catch((emailErr) => {
+        try {
+          await EmailService.sendFast2smsBalanceAlert({
+            requiredBalance,
+            liveBalance,
+            deficit,
+            totalAccountOtps,
+            reason: 'FLOAT_DEFICIT',
+            force: forceEmail,
+          });
+        } catch (emailErr: any) {
           console.error('[FAST2SMS_CHECKER] Failed to dispatch balance alert email:', emailErr.message);
-        });
+        }
       }
 
       return {

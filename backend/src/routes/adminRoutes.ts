@@ -27,5 +27,6 @@ router.post('/wallet/adjust', AdminController.manualAdjustment);
 router.post('/users/tier', AdminController.setUserTier);
 router.get('/ledger', AdminController.getGlobalLedger);
 router.get('/audit-logs', AdminController.getAuditLogs);
+router.post('/check-fast2sms-float', AdminController.triggerFast2smsFloatCheck);
 
 export default router;

@@ -119,16 +119,18 @@ export class Fast2SMSProvider implements SMSProvider {
         console.error('[SMS_GATEWAY] Critical Alert: Upstream route replenishment required (Fast2SMS 416)');
 
         // Dispatch immediate critical email alert to kumarsinghrakesh333@gmail.com
-        EmailService.sendFast2smsBalanceAlert({
-          requiredBalance: 0,
-          liveBalance: 0,
-          deficit: 0,
-          totalAccountOtps: 0,
-          reason: 'DISPATCH_REJECTED',
-          force: true,
-        }).catch((alertErr) => {
+        try {
+          await EmailService.sendFast2smsBalanceAlert({
+            requiredBalance: 0,
+            liveBalance: 0,
+            deficit: 0,
+            totalAccountOtps: 0,
+            reason: 'DISPATCH_REJECTED',
+            force: true,
+          });
+        } catch (alertErr: any) {
           console.error('[SMS_GATEWAY] Failed to dispatch 416 balance alert email:', alertErr.message);
-        });
+        }
 
         return {
           success: false,

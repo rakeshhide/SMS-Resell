@@ -25,7 +25,8 @@ import {
   ArrowUpRight,
   Search,
   Sliders,
-  ExternalLink
+  ExternalLink,
+  Mail
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { PricingTier, SystemSettings } from '../types';
@@ -89,6 +90,33 @@ export const AdminView: React.FC = () => {
   const [ledgerFilter, setLedgerFilter] = useState<'ALL' | 'RAZORPAY' | 'ADMIN' | 'OTP' | 'REFUND'>('ALL');
   const [ledgerSearch, setLedgerSearch] = useState('');
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
+  const [triggeringAlert, setTriggeringAlert] = useState(false);
+
+  const handleCheckAndDispatchFast2smsAlert = async () => {
+    try {
+      setTriggeringAlert(true);
+      showToast('info', 'Verifying carrier solvency and dispatching email to admin...', 'Checking Gateway');
+      const res = await ApiClient.checkFast2smsFloat(true);
+      if (res.data) {
+        setStats((prev: any) => ({
+          ...prev,
+          fast2sms: {
+            ...prev?.fast2sms,
+            requiredWalletBalance: res.data.requiredBalance,
+            liveWalletBalance: res.data.liveBalance,
+            totalAccountOtps: res.data.totalAccountOtps,
+            isFloatSufficient: res.data.isSufficient,
+            floatDeficit: res.data.deficit
+          }
+        }));
+      }
+      showToast('success', res.message, 'Email Alert Dispatched');
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to dispatch alert email', 'Alert Error');
+    } finally {
+      setTriggeringAlert(false);
+    }
+  };
 
   useEffect(() => {
     fetchAdminData();
@@ -413,29 +441,54 @@ export const AdminView: React.FC = () => {
             </div>
           </div>
 
-          <button
-            onClick={() => {
-              fetchAdminData();
-              showToast('info', 'Refreshing gateway metrics and live Fast2SMS balance...', 'Syncing');
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: '1px solid var(--border-subtle)',
-              backgroundColor: 'var(--bg-app)',
-              color: 'var(--text-main)',
-              fontSize: '12px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <RefreshCw size={14} />
-            <span>Sync Live Balance</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => {
+                fetchAdminData();
+                showToast('info', 'Refreshing gateway metrics and live Fast2SMS balance...', 'Syncing');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-app)',
+                color: 'var(--text-main)',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <RefreshCw size={14} />
+              <span>Sync Live Balance</span>
+            </button>
+
+            <button
+              disabled={triggeringAlert}
+              onClick={handleCheckAndDispatchFast2smsAlert}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: '1px solid rgba(220, 38, 38, 0.3)',
+                backgroundColor: 'rgba(220, 38, 38, 0.08)',
+                color: '#dc2626',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: triggeringAlert ? 'not-allowed' : 'pointer',
+                opacity: triggeringAlert ? 0.7 : 1,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Mail size={14} />
+              <span>{triggeringAlert ? 'Dispatching Alert...' : 'Send Alert Email to Admin'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Breakdown Stats Grid */}
@@ -566,10 +619,32 @@ export const AdminView: React.FC = () => {
           ) : (
             <>
               <AlertTriangle size={20} color="#dc2626" />
-              <div style={{ fontSize: '13px', color: 'var(--text-main)', fontWeight: 600 }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-main)', fontWeight: 600, flex: 1 }}>
                 <strong style={{ color: '#dc2626', marginRight: '6px' }}>Float Replenishment Recommended:</strong>
                 You need to maintain ₹{(stats?.fast2sms?.requiredWalletBalance || 0).toFixed(2)} in Fast2SMS (Deficit: ₹{(stats?.fast2sms?.floatDeficit || 0).toFixed(2)}).
               </div>
+              <button
+                disabled={triggeringAlert}
+                onClick={handleCheckAndDispatchFast2smsAlert}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid #dc2626',
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: triggeringAlert ? 'not-allowed' : 'pointer',
+                  opacity: triggeringAlert ? 0.7 : 1,
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <Mail size={13} />
+                <span>{triggeringAlert ? 'Dispatching...' : 'Dispatch Alert to kumarsinghrakesh333@gmail.com'}</span>
+              </button>
             </>
           )}
         </div>

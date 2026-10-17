@@ -1,0 +1,21 @@
+# TurfsyOTPs
+
+> Developer-first OTP (One-Time Password) and transactional messaging REST API provider in India.
+
+## Core Value Proposition
+- High-throughput telecom gateway connectivity in India.
+- Transparent pay-as-you-go wallet billing via Razorpay with zero monthly subscriptions.
+- Automatic failure reversals: failed carrier deliveries are refunded to user wallet immediately.
+- Average internal dispatch latency under 150ms.
+- SHA-256 cryptographic API key hashing with zero plaintext secret retention.
+
+## Technical Specifications
+- Base URL: https://apinexusotp.vercel.app/api/v1
+- Endpoint: POST /otp/send
+- Auth: Bearer sk_live_...
+- Payload: {"phone": "9876543210", "otp": "482910"}
+- Response: {"success": true, "message": "OTP request accepted", "transaction_id": "TXN_...", "latency_ms": 142}
+
+## Pricing
+- Wallet-based deduction with dynamic tiered rates.
+- No setup fees, no monthly software minimums.
