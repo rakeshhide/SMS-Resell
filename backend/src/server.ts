@@ -83,6 +83,7 @@ app.get('/health', async (req: Request, res: Response) => {
 });
 
 import { BillingService } from './services/billingService';
+import { Fast2smsBalanceChecker } from './services/fast2smsBalanceChecker';
 
 // Public dynamic pricing route (including volume tiers & settings)
 app.get('/api/v1/pricing', async (req: Request, res: Response) => {
@@ -93,6 +94,22 @@ app.get('/api/v1/pricing', async (req: Request, res: Response) => {
     res.json({ success: true, pricing, tiers, settings });
   } catch (err: any) {
     res.status(500).json({ success: false, message: 'Failed to retrieve pricing' });
+  }
+});
+
+// Automated Cron / External Webhook Check for Fast2SMS Carrier Balance
+app.get('/api/v1/cron/check-balance', async (req: Request, res: Response) => {
+  try {
+    const force = req.query.force === 'true';
+    const result = await Fast2smsBalanceChecker.checkFloatAndAlert(pool, force);
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      result
+    });
+  } catch (err: any) {
+    console.error('[CRON] Fast2SMS balance check error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
