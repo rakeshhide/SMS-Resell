@@ -23,7 +23,12 @@ export async function authenticateJWT(req: AuthRequest, res: Response, next: Nex
   }
 
   const token = authHeader.split(' ')[1];
-  const jwtSecret = process.env.JWT_SECRET || 'super_secret_jwt_key_enterprise_otp_platform_2026_x98f4a';
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret) {
+    res.status(500).json({ success: false, message: 'Internal server security configuration error.' });
+    return;
+  }
 
   try {
     const decoded = jwt.verify(token, jwtSecret) as { userId: string };

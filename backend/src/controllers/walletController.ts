@@ -314,7 +314,13 @@ export class WalletController {
   public static async razorpayWebhook(req: Request, res: Response): Promise<void> {
     try {
       const signature = req.headers['x-razorpay-signature'] as string;
-      const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'rzp_test_webhook_secret';
+      const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+      if (!secret) {
+        console.error('[WEBHOOK] RAZORPAY_WEBHOOK_SECRET is not configured');
+        res.status(500).json({ error: 'Webhook secret is not configured' });
+        return;
+      }
 
       if (!signature) {
         res.status(400).json({ error: 'Missing webhook signature header' });

@@ -82,7 +82,10 @@ export class AuthController {
 
         await client.query('COMMIT');
 
-        const jwtSecret = process.env.JWT_SECRET || 'super_secret_jwt_key_enterprise_otp_platform_2026_x98f4a';
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+          throw new Error('JWT_SECRET environment variable is not defined');
+        }
         const token = jwt.sign(
           { userId: newUser.id, role: newUser.role },
           jwtSecret,
@@ -159,7 +162,10 @@ export class AuthController {
         return;
       }
 
-      const jwtSecret = process.env.JWT_SECRET || 'super_secret_jwt_key_enterprise_otp_platform_2026_x98f4a';
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        throw new Error('JWT_SECRET environment variable is not defined');
+      }
       const token = jwt.sign(
         { userId: user.id, role: user.role },
         jwtSecret,
