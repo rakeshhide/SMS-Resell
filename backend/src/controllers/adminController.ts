@@ -163,16 +163,19 @@ export class AdminController {
       const rowsRes = await pool.query(queryText, params);
       const countRes = await pool.query('SELECT COUNT(*) FROM users');
 
-      // Map tier name nicely
       const usersWithTiers = rowsRes.rows.map(u => {
         const rate = parseFloat(u.otp_rate) || 0.80;
         let tierName = 'Starter Tier';
-        const minTop = parseFloat(u.tier_min_topup) || 0;
-        if (minTop >= 10000) tierName = 'Enterprise Tier';
-        else if (minTop >= 5000) tierName = 'Business Tier';
-        else if (minTop >= 2000) tierName = 'Scale Tier';
-        else if (minTop >= 500) tierName = 'Growth Tier';
-        else tierName = 'Starter Tier';
+        if (u.active_tier === 'CUSTOM' || rate < 0.60) {
+          tierName = 'Custom VIP Tier';
+        } else {
+          const minTop = parseFloat(u.tier_min_topup) || 0;
+          if (minTop >= 10000) tierName = 'Enterprise Tier';
+          else if (minTop >= 5000) tierName = 'Business Tier';
+          else if (minTop >= 2000) tierName = 'Scale Tier';
+          else if (minTop >= 500) tierName = 'Growth Tier';
+          else tierName = 'Starter Tier';
+        }
 
         return {
           ...u,

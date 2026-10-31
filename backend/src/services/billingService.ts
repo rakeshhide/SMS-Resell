@@ -188,21 +188,26 @@ export class BillingService {
       savedActiveTier = res.rows[0].active_tier || null;
     }
 
-    // Determine current tier from tiers table matching savedActiveTier or falling back to highestTopup
     let currentTier = tiers.find(t => t.id === savedActiveTier);
     if (!currentTier) {
       currentTier = await this.getTierForAmount(highestTopup);
     }
 
-    const currentTierIndex = tiers.findIndex(t => t.id === currentTier!.id);
     const effectiveRate = savedRate !== null && !isNaN(savedRate) ? savedRate : currentTier.otpPrice;
 
-    // Keep database wallet row synchronized if not explicitly set
     if (res.rowCount && (savedRate === null || !savedActiveTier)) {
       pool.query(
         'UPDATE wallets SET otp_rate = $1, active_tier = $2, updated_at = NOW() WHERE user_id = $3',
         [currentTier.otpPrice, currentTier.id, userId]
       ).catch((e) => console.error('[BILLING_SERVICE] Wallet tier sync error:', e.message));
+    }
+
+    let tierName = currentTier.name || 'Starter Tier';
+    if (savedActiveTier === 'CUSTOM' || effectiveRate < 0.60) {
+      tierName = 'Custom VIP Tier';
+    } else if (Math.abs(currentTier.otpPrice - effectiveRate) > 0.001) {
+      const matchingTier = tiers.find(t => Math.abs(t.otpPrice - effectiveRate) < 0.001);
+      tierName = matchingTier ? (matchingTier.name || 'Custom Tier') : 'Custom Tier';
     }
 
     let nextTierInfo: {
@@ -213,25 +218,30 @@ export class BillingService {
       tierName: string;
     } | null = null;
 
-    if (currentTierIndex >= 0 && currentTierIndex < tiers.length - 1) {
-      const next = tiers[currentTierIndex + 1];
-      const amountRequired = Math.max(0, next.minTopup - highestTopup);
-      const span = next.minTopup - currentTier.minTopup;
-      const progress = span > 0 ? Math.min(100, Math.max(0, ((highestTopup - currentTier.minTopup) / span) * 100)) : 0;
+    const eligibleNextTiers = tiers
+      .filter(t => t.otpPrice < effectiveRate && t.minTopup > highestTopup)
+      .sort((a, b) => a.minTopup - b.minTopup);
+
+    if (eligibleNextTiers.length > 0) {
+      const next = eligibleNextTiers[0];
+      const amountRequired = next.minTopup;
+      const progress = next.minTopup > 0
+        ? Math.min(100, Math.max(0, Math.round((highestTopup / next.minTopup) * 100)))
+        : 0;
 
       nextTierInfo = {
         otpPrice: next.otpPrice,
         minTopup: next.minTopup,
         amountRequired: Number(amountRequired.toFixed(2)),
-        progressPercentage: Math.round(progress),
-        tierName: next.name || `Tier ${currentTierIndex + 2}`,
+        progressPercentage: progress,
+        tierName: next.name || 'Next Tier',
       };
     }
 
     return {
       otpRate: effectiveRate,
       activeTier: currentTier.id,
-      tierName: currentTier.name || 'Starter Tier',
+      tierName,
       highestTopup,
       nextTier: nextTierInfo,
     };

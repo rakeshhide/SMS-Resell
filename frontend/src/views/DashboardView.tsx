@@ -254,12 +254,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           )}
         </div>
 
-        {/* Visual Progress Bar to Next Tier */}
         {walletInfo?.nextTier ? (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
               <span>
-                Top up <strong style={{ color: 'var(--text-main)' }}>₹{walletInfo.nextTier.amountRequired.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong> more to unlock the next pricing tier.
+                Recharge <strong style={{ color: 'var(--text-main)' }}>₹{walletInfo.nextTier.minTopup.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong> or more to unlock the next pricing tier.
               </span>
               <span style={{ fontWeight: 600, color: '#3b82f6' }}>
                 {walletInfo.nextTier.progressPercentage}% Progress
@@ -285,7 +284,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         ) : (
           <div style={{ fontSize: '12px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <CheckCircle2 size={14} />
-            <span>Highest Enterprise Volume Tier Unlocked (Maximum discount applied: ₹0.60 / OTP)</span>
+            <span>
+              {walletInfo?.otpRate && walletInfo.otpRate < 0.60
+                ? `Lowest Custom VIP Rate Active (₹${walletInfo.otpRate.toFixed(2)} / OTP) — Exclusive route pricing applied across all dispatches.`
+                : 'Highest Enterprise Volume Tier Unlocked (Maximum discount applied: ₹0.60 / OTP)'}
+            </span>
           </div>
         )}
       </div>
@@ -442,7 +445,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-muted)', marginLeft: '6px' }}>/ OTP</span>
           </div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Top-up volume discount tier
+            {walletInfo?.otpRate && walletInfo.otpRate < 0.60
+              ? 'Special custom route tariff'
+              : 'Top-up volume discount tier'}
           </div>
         </div>
       </div>
