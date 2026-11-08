@@ -1,57 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <defs>
-    <!-- Background Gradient -->
-    <linearGradient id="turfsyBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0f172a" />
-      <stop offset="50%" stop-color="#1e1b4b" />
-      <stop offset="100%" stop-color="#1d4ed8" />
-    </linearGradient>
+  <!-- Rounded White Badge Base -->
+  <rect width="64" height="64" rx="16" fill="#ffffff" />
+  <rect width="62" height="62" x="1" y="1" rx="15" stroke="rgba(0, 0, 0, 0.08)" stroke-width="1.2" />
 
-    <!-- Bubble Glow Gradient -->
-    <linearGradient id="bubbleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#38bdf8" />
-      <stop offset="100%" stop-color="#2563eb" />
-    </linearGradient>
+  <!-- Smartphone Body Outer Outline -->
+  <rect x="17" y="8" width="30" height="48" rx="7.5" fill="#ffffff" stroke="#051e46" stroke-width="3" />
 
-    <!-- Accent Gradient -->
-    <linearGradient id="lightningGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#38bdf8" />
-      <stop offset="100%" stop-color="#ffffff" />
-    </linearGradient>
+  <!-- Top Ear Speaker Pill -->
+  <line x1="28" y1="13" x2="36" y2="13" stroke="#051e46" stroke-width="2.5" stroke-linecap="round" />
 
-    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="1.5" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
-  </defs>
+  <!-- 3 OTP Code Dots -->
+  <circle cx="25" cy="29.5" r="2.5" fill="#051e46" />
+  <circle cx="32" cy="29.5" r="2.5" fill="#051e46" />
+  <circle cx="39" cy="29.5" r="2.5" fill="#051e46" />
 
-  <!-- Base App Badge with Glass Inset -->
-  <rect width="64" height="64" rx="16" fill="url(#turfsyBg)" />
-  <rect width="62" height="62" x="1" y="1" rx="15" stroke="rgba(255, 255, 255, 0.16)" stroke-width="1.5" />
+  <!-- Bottom Chin Divider -->
+  <line x1="17" y1="45" x2="47" y2="45" stroke="#051e46" stroke-width="2.2" />
 
-  <!-- Main SMS Message Bubble (Filled Translucent) -->
-  <path
-    d="M14 17C14 13.686 16.686 11 20 11H44C47.314 11 50 13.686 50 17V33C50 36.314 47.314 39 44 39H26L18 46V39H20C16.686 39 14 36.314 14 33V17Z"
-    fill="url(#bubbleGrad)"
-    fill-opacity="0.22"
-    stroke="url(#bubbleGrad)"
-    stroke-width="2.5"
-    stroke-linejoin="round"
-  />
+  <!-- Home / Fingerprint Sensor -->
+  <circle cx="32" cy="50.5" r="2" fill="#051e46" />
 
-  <!-- High-Speed Instant OTP Flash Lightning -->
-  <path
-    d="M34 17L23 30H32L28 43L41 28H32L34 17Z"
-    fill="url(#lightningGrad)"
-    filter="url(#softGlow)"
-  />
-
-  <!-- SMS Carrier Signal / Verification Dots -->
-  <circle cx="21" cy="21" r="2" fill="#38bdf8" />
-  <circle cx="21" cy="27" r="2" fill="#38bdf8" opacity="0.8" />
-  <circle cx="21" cy="33" r="2" fill="#38bdf8" opacity="0.6" />
-
-  <!-- Green Active Gateway Live Pulse -->
-  <circle cx="48" cy="14" r="4.5" fill="#10b981" />
-  <circle cx="48" cy="14" r="2.2" fill="#ffffff" />
+  <!-- Overlapping Green Verified Checkmark Badge -->
+  <circle cx="44.5" cy="45.5" r="10.5" fill="#ffffff" />
+  <circle cx="44.5" cy="45.5" r="8.8" fill="#00a516" />
+  <path d="M40.5 45.8L43.2 48.5L48.8 42.8" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
 </svg>

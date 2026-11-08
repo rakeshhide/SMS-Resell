@@ -14,58 +14,78 @@ export const TurfsyLogo: React.FC<TurfsyLogoProps> = ({ size = 36, className = '
           width: `${size}px`,
           height: `${size}px`,
           borderRadius: `${Math.round(size * 0.28)}px`,
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #2563eb 100%)',
+          backgroundColor: '#ffffff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 4px 16px rgba(37, 99, 235, 0.35)',
+          boxShadow: '0 3px 12px rgba(5, 30, 70, 0.18)',
           overflow: 'hidden',
           position: 'relative',
           flexShrink: 0,
-          border: '1px solid rgba(255, 255, 255, 0.15)'
+          border: '1px solid rgba(5, 30, 70, 0.1)'
         }}
       >
-        {/* SMS Message Bubble & High-Speed Instant OTP Flash */}
         <svg
           viewBox="0 0 64 64"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           style={{
-            width: '82%',
-            height: '82%',
+            width: '92%',
+            height: '92%',
             display: 'block'
           }}
         >
-          <defs>
-            <linearGradient id="logoBubbleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#38bdf8" />
-              <stop offset="100%" stop-color="#2563eb" />
-            </linearGradient>
-            <linearGradient id="logoLightning" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#ffffff" />
-              <stop offset="100%" stop-color="#38bdf8" />
-            </linearGradient>
-          </defs>
+          {/* Smartphone Body Outline */}
+          <rect
+            x="17"
+            y="7.5"
+            width="30"
+            height="49"
+            rx="7.5"
+            fill="#ffffff"
+            stroke="#051e46"
+            strokeWidth="3.2"
+          />
 
-          {/* SMS Chat / Messaging Outline */}
+          {/* Top Ear Speaker Pill */}
+          <line
+            x1="27.5"
+            y1="12.5"
+            x2="36.5"
+            y2="12.5"
+            stroke="#051e46"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+          />
+
+          {/* 3 OTP Verification Code Dots */}
+          <circle cx="24.5" cy="29.5" r="2.6" fill="#051e46" />
+          <circle cx="32" cy="29.5" r="2.6" fill="#051e46" />
+          <circle cx="39.5" cy="29.5" r="2.6" fill="#051e46" />
+
+          {/* Bottom Chin Divider */}
+          <line
+            x1="17"
+            y1="45"
+            x2="47"
+            y2="45"
+            stroke="#051e46"
+            strokeWidth="2.2"
+          />
+
+          {/* Home / Sensor Circle */}
+          <circle cx="32" cy="50.8" r="2.1" fill="#051e46" />
+
+          {/* Overlapping Green Verified Badge with White Outer Ring */}
+          <circle cx="44.5" cy="45.5" r="10.8" fill="#ffffff" />
+          <circle cx="44.5" cy="45.5" r="9.2" fill="#00a516" />
           <path
-            d="M13 16C13 12.686 15.686 10 19 10H45C48.314 10 51 12.686 51 16V34C51 37.314 48.314 40 45 40H26L18 47V40H19C15.686 40 13 37.314 13 34V16Z"
-            fill="url(#logoBubbleGrad)"
-            fillOpacity="0.25"
-            stroke="url(#logoBubbleGrad)"
-            strokeWidth="2.8"
+            d="M40.2 45.8L43.2 48.8L49 42.6"
+            stroke="#ffffff"
+            strokeWidth="2.4"
+            strokeLinecap="round"
             strokeLinejoin="round"
           />
-
-          {/* High-Throughput Delivery Lightning (OTP Transmission) */}
-          <path
-            d="M35 15L22 30H32L28 45L43 27H32L35 15Z"
-            fill="url(#logoLightning)"
-          />
-
-          {/* Dynamic Active Signal Badge */}
-          <circle cx="49" cy="13" r="4" fill="#10b981" />
-          <circle cx="49" cy="13" r="2" fill="#ffffff" />
         </svg>
       </div>
 
@@ -80,7 +100,7 @@ export const TurfsyLogo: React.FC<TurfsyLogoProps> = ({ size = 36, className = '
               lineHeight: 1.1
             }}
           >
-            turfsy<span style={{ color: '#38bdf8' }}>OTPs</span>
+            turfsy<span style={{ color: '#2563eb' }}>OTPs</span>
           </span>
           <span
             style={{
