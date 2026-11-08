@@ -1,4 +1,5 @@
-import axios from 'axios';
+import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
 export interface EmailOptions {
   to: string | string[];
@@ -9,43 +10,33 @@ export interface EmailOptions {
 
 export class EmailService {
   private static adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'kumarsinghrakesh333@gmail.com';
-  private static fromAddress = 'TurfsyOTPs <onboarding@resend.dev>';
+  private static fromAddress = process.env.SMTP_FROM || 'TurfsyOTPs <info@turfsyotps.dev>';
+  private static transporter: Transporter | null = null;
 
-  /**
-   * Resolve Resend API keys in priority failover order:
-   * 1. Primary key
-   * 2. Fallback key 1
-   * 3. Fallback key 2
-   */
-  private static getApiKeys(): string[] {
-    const rawKeys: string[] = [];
+  private static getTransporter(): Transporter {
+    if (this.transporter) return this.transporter;
 
-    // Support comma-separated list of keys
-    if (process.env.RESEND_API_KEYS) {
-      rawKeys.push(...process.env.RESEND_API_KEYS.split(',').map((k) => k.trim()));
-    }
+    this.transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.zoho.in',
+      port: parseInt(process.env.SMTP_PORT || '465', 10),
+      secure: process.env.SMTP_SECURE !== 'false',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+      socketTimeout: 10000,
+      greetingTimeout: 10000,
+      connectionTimeout: 10000,
+    });
 
-    if (process.env.RESEND_API_KEY) {
-      rawKeys.push(process.env.RESEND_API_KEY.trim());
-    }
-    if (process.env.RESEND_API_KEY_FALLBACK_1) {
-      rawKeys.push(process.env.RESEND_API_KEY_FALLBACK_1.trim());
-    }
-    if (process.env.RESEND_API_KEY_FALLBACK_2) {
-      rawKeys.push(process.env.RESEND_API_KEY_FALLBACK_2.trim());
-    }
-
-    // Deduplicate and filter out empty entries
-    return Array.from(new Set(rawKeys.filter(Boolean)));
+    return this.transporter;
   }
 
-  /**
-   * Core send method via Resend REST API with automatic multi-key failover:
-   * If rate limit (HTTP 429), quota exhaustion, or any error occurs, it automatically retries with the next key.
-   */
   public static async sendEmail(options: EmailOptions): Promise<boolean> {
     const recipients = Array.isArray(options.to) ? options.to : [options.to];
-    // Filter out duplicate or empty addresses
     const uniqueRecipients = Array.from(new Set(recipients.filter(Boolean)));
 
     if (uniqueRecipients.length === 0) {
@@ -53,66 +44,33 @@ export class EmailService {
       return false;
     }
 
-    const keys = this.getApiKeys();
-    if (keys.length === 0) {
-      console.error('[EMAIL_SERVICE] No Resend API keys configured.');
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error('[EMAIL_SERVICE] SMTP credentials not configured (SMTP_USER / SMTP_PASS).');
       return false;
     }
 
-    let lastError: any = null;
+    try {
+      const transport = this.getTransporter();
 
-    for (let i = 0; i < keys.length; i++) {
-      const currentKey = keys[i];
-      const maskedKey = currentKey.length > 8 ? `${currentKey.substring(0, 7)}...${currentKey.slice(-4)}` : '***';
+      const info = await transport.sendMail({
+        from: this.fromAddress,
+        to: uniqueRecipients.join(', '),
+        subject: options.subject,
+        html: options.html,
+        ...(options.replyTo ? { replyTo: options.replyTo } : {}),
+      });
 
-      try {
-        const response = await axios.post(
-          'https://api.resend.com/emails',
-          {
-            from: this.fromAddress,
-            to: uniqueRecipients,
-            subject: options.subject,
-            html: options.html,
-            ...(options.replyTo ? { reply_to: options.replyTo } : {}),
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${currentKey}`,
-              'Content-Type': 'application/json',
-            },
-            timeout: 10000,
-          }
-        );
-
-        console.log(
-          `[EMAIL_SERVICE] Email dispatched successfully with key [${i + 1}/${keys.length} - ${maskedKey}] to [${uniqueRecipients.join(', ')}]. Resend ID:`,
-          response.data?.id
-        );
-        return true;
-      } catch (err: any) {
-        lastError = err;
-        const statusCode = err.response?.status;
-        const errData = err.response?.data || err.message;
-
-        console.warn(
-          `[EMAIL_SERVICE] Resend API key [${i + 1}/${keys.length} - ${maskedKey}] failed (Status: ${statusCode || 'Network Error'}):`,
-          errData
-        );
-
-        if (i < keys.length - 1) {
-          console.log(`[EMAIL_SERVICE] Limit or error reached. Automatically failing over to backup Resend API key [${i + 2}/${keys.length}]...`);
-        }
-      }
+      console.log(
+        `[EMAIL_SERVICE] Email dispatched successfully via Zoho SMTP to [${uniqueRecipients.join(', ')}]. MessageID: ${info.messageId}`
+      );
+      return true;
+    } catch (err: any) {
+      console.error('[EMAIL_SERVICE] Zoho SMTP send failed:', err.message || err);
+      this.transporter = null;
+      return false;
     }
-
-    console.error(`[EMAIL_SERVICE] All ${keys.length} Resend API key(s) exhausted. Failed to send email:`, lastError?.response?.data || lastError?.message);
-    return false;
   }
 
-  /**
-   * 1. Send Wallet Top-Up Notification
-   * Dispatched to both: Admin (kumarsinghrakesh333@gmail.com) and User
-   */
   public static async sendWalletTopupEmail(params: {
     userEmail: string;
     userName: string;
@@ -135,7 +93,7 @@ export class EmailService {
       paymentId,
       newBalance,
       unlockedRate,
-      source
+      source,
     } = params;
 
     const sourceLabel = source === 'RAZORPAY' ? 'Razorpay Online Gateway' : 'Admin Manual Top-up';
@@ -144,43 +102,43 @@ export class EmailService {
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background-color: #0f172a; padding: 24px 32px; text-align: left;">
           <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">TurfsyOTPs Communications</h1>
-          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">Transaction & Financial Ledger Notification</p>
+          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">Transaction &amp; Financial Ledger Notification</p>
         </div>
         
         <div style="padding: 32px;">
-          <div style="display: inline-block; background-color: #ecfdf5; color: #047857; font-size: 12px; font-weight: 700; padding: 4px 10px; borderRadius: 6px; margin-bottom: 16px;">
+          <div style="display: inline-block; background-color: #ecfdf5; color: #047857; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; margin-bottom: 16px;">
             WALLET RECHARGE CONFIRMED
           </div>
 
           <h2 style="font-size: 18px; color: #0f172a; margin: 0 0 12px 0;">Hello ${userName || 'Valued Developer'},</h2>
           <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 24px 0;">
-            A wallet recharge of <strong>₹${creditAmount.toFixed(2)}</strong> has been credited to your floating balance via ${sourceLabel}.
+            A wallet recharge of <strong>&#8377;${creditAmount.toFixed(2)}</strong> has been credited to your floating balance via ${sourceLabel}.
           </p>
 
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px;">
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 10px 0; color: #64748b;">Credited Float Amount</td>
-              <td style="padding: 10px 0; font-weight: 700; color: #0f172a; text-align: right; font-family: monospace;">₹${creditAmount.toFixed(2)}</td>
+              <td style="padding: 10px 0; font-weight: 700; color: #0f172a; text-align: right; font-family: monospace;">&#8377;${creditAmount.toFixed(2)}</td>
             </tr>
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 10px 0; color: #64748b;">Statutory GST (18%)</td>
-              <td style="padding: 10px 0; color: #0f172a; text-align: right; font-family: monospace;">₹${gstAmount.toFixed(2)}</td>
+              <td style="padding: 10px 0; color: #0f172a; text-align: right; font-family: monospace;">&#8377;${gstAmount.toFixed(2)}</td>
             </tr>
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 10px 0; color: #64748b;">Platform Service Fee (3%)</td>
-              <td style="padding: 10px 0; color: #0f172a; text-align: right; font-family: monospace;">₹${serviceFee.toFixed(2)}</td>
+              <td style="padding: 10px 0; color: #0f172a; text-align: right; font-family: monospace;">&#8377;${serviceFee.toFixed(2)}</td>
             </tr>
             <tr style="border-bottom: 1px solid #e2e8f0;">
               <td style="padding: 12px 0; font-weight: 700; color: #0f172a;">Total Amount Paid</td>
-              <td style="padding: 12px 0; font-weight: 800; color: #2563eb; text-align: right; font-family: monospace; font-size: 15px;">₹${totalPaid.toFixed(2)}</td>
+              <td style="padding: 12px 0; font-weight: 800; color: #2563eb; text-align: right; font-family: monospace; font-size: 15px;">&#8377;${totalPaid.toFixed(2)}</td>
             </tr>
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 10px 0; color: #64748b;">New Wallet Float</td>
-              <td style="padding: 10px 0; font-weight: 700; color: #10b981; text-align: right; font-family: monospace;">₹${newBalance.toFixed(2)}</td>
+              <td style="padding: 10px 0; font-weight: 700; color: #10b981; text-align: right; font-family: monospace;">&#8377;${newBalance.toFixed(2)}</td>
             </tr>
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 10px 0; color: #64748b;">Active OTP Dispatch Rate</td>
-              <td style="padding: 10px 0; font-weight: 700; color: #0f172a; text-align: right; font-family: monospace;">₹${unlockedRate.toFixed(2)} / OTP</td>
+              <td style="padding: 10px 0; font-weight: 700; color: #0f172a; text-align: right; font-family: monospace;">&#8377;${unlockedRate.toFixed(2)} / OTP</td>
             </tr>
             <tr>
               <td style="padding: 10px 0; color: #64748b;">Reference / Payment ID</td>
@@ -190,7 +148,7 @@ export class EmailService {
 
           <div style="text-align: center; margin-top: 32px;">
             <a href="${process.env.FRONTEND_URL || 'https://turfsy.vercel.app'}/wallet" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
-              View Financial Ledger & Invoice
+              View Financial Ledger &amp; Invoice
             </a>
           </div>
         </div>
@@ -201,18 +159,13 @@ export class EmailService {
       </div>
     `;
 
-    // Send to both: Admin notification email and customer's email
     await this.sendEmail({
       to: [this.adminEmail, userEmail],
-      subject: `[TurfsyOTPs] Wallet Recharged: ₹${creditAmount.toFixed(2)} by ${userName || userEmail}`,
+      subject: `[TurfsyOTPs] Wallet Recharged: &#8377;${creditAmount.toFixed(2)} by ${userName || userEmail}`,
       html: htmlBody,
     });
   }
 
-  /**
-   * 2. Send Support Ticket / Complaint Notification
-   * Dispatched to both: Admin (kumarsinghrakesh333@gmail.com) and User
-   */
   public static async sendSupportTicketEmail(params: {
     userEmail: string;
     userName: string;
@@ -222,21 +175,13 @@ export class EmailService {
     priority: string;
     message: string;
   }): Promise<void> {
-    const {
-      userEmail,
-      userName,
-      ticketNumber,
-      subject,
-      category,
-      priority,
-      message
-    } = params;
+    const { userEmail, userName, ticketNumber, subject, category, priority, message } = params;
 
     const htmlBody = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
         <div style="background-color: #0f172a; padding: 24px 32px; text-align: left;">
           <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">TurfsyOTPs Support Center</h1>
-          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">Inquiry & Complaint Raised Notification</p>
+          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">Inquiry &amp; Complaint Raised Notification</p>
         </div>
         
         <div style="padding: 32px;">
@@ -253,7 +198,7 @@ export class EmailService {
             <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">Subject</div>
             <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 14px;">${subject}</div>
 
-            <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">Category & Priority</div>
+            <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">Category &amp; Priority</div>
             <div style="font-size: 13px; color: #334155; margin-bottom: 14px;">Category: <strong>${category}</strong> | Priority: <strong>${priority}</strong></div>
 
             <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">Message Content</div>
@@ -273,7 +218,6 @@ export class EmailService {
       </div>
     `;
 
-    // Send to both: Admin email and user email
     await this.sendEmail({
       to: [this.adminEmail, userEmail],
       subject: `[TurfsyOTPs Ticket ${ticketNumber}] ${subject} - from ${userName || userEmail}`,
@@ -282,9 +226,6 @@ export class EmailService {
     });
   }
 
-  /**
-   * 3. Send Password Reset Email with Secure Token Link
-   */
   public static async sendPasswordResetEmail(params: {
     userEmail: string;
     userName: string;
@@ -319,7 +260,7 @@ export class EmailService {
           </div>
 
           <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin: 24px 0 0 0;">
-            If the button doesn't work, copy and paste this link into your browser:<br />
+            If the button does not work, copy and paste this link into your browser:<br />
             <a href="${resetUrl}" style="color: #2563eb; word-break: break-all;">${resetUrl}</a>
           </p>
 
@@ -341,14 +282,8 @@ export class EmailService {
     });
   }
 
-  // Throttling timestamp to avoid inbox flooding (15-minute cooldown)
   private static lastFast2smsAlertTime = 0;
 
-  /**
-   * 4. Send Fast2SMS Balance Deficit & Depletion Alert
-   * Dispatched immediately to kumarsinghrakesh333@gmail.com when Fast2SMS balance is insufficient
-   * to cover all user account balances, or when live SMS dispatch returns insufficient balance (416).
-   */
   public static async sendFast2smsBalanceAlert(params: {
     requiredBalance: number;
     liveBalance: number | null;
@@ -359,7 +294,6 @@ export class EmailService {
   }): Promise<void> {
     const { requiredBalance, liveBalance, deficit, totalAccountOtps, reason, force = false } = params;
 
-    // Cooldown check (15 minutes) unless forced
     const now = Date.now();
     if (!force && now - this.lastFast2smsAlertTime < 15 * 60 * 1000) {
       console.log('[EMAIL_SERVICE] Fast2SMS balance alert throttled (last alert sent within 15 mins).');
@@ -367,21 +301,21 @@ export class EmailService {
     }
     this.lastFast2smsAlertTime = now;
 
-    const liveFormatted = liveBalance !== null ? `₹${liveBalance.toFixed(2)}` : 'Unknown / Query Failed';
-    const requiredFormatted = `₹${requiredBalance.toFixed(2)}`;
-    const deficitFormatted = `₹${deficit.toFixed(2)}`;
+    const liveFormatted = liveBalance !== null ? `&#8377;${liveBalance.toFixed(2)}` : 'Unknown / Query Failed';
+    const requiredFormatted = `&#8377;${requiredBalance.toFixed(2)}`;
+    const deficitFormatted = `&#8377;${deficit.toFixed(2)}`;
 
     const isDispatchError = reason === 'DISPATCH_REJECTED';
 
     const subject = isDispatchError
-      ? `[URGENT TurfsyOTPs] Fast2SMS Gateway Balance Depleted - OTP Dispatch Failing`
-      : `[URGENT TurfsyOTPs] Fast2SMS Float Deficit - Insufficient Balance for User Accounts`;
+      ? '[URGENT TurfsyOTPs] SMS Gateway Balance Depleted - OTP Dispatch Failing'
+      : '[URGENT TurfsyOTPs] Float Deficit - Insufficient Balance for User Accounts';
 
     const htmlBody = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #fee2e2; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08);">
         <div style="background-color: #991b1b; padding: 24px 32px; text-align: left;">
           <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">TurfsyOTPs Infrastructure Alert</h1>
-          <p style="color: #fca5a5; font-size: 13px; margin: 4px 0 0 0;">Critical Gateway Float & Upstream Balance Notification</p>
+          <p style="color: #fca5a5; font-size: 13px; margin: 4px 0 0 0;">Critical Gateway Float &amp; Upstream Balance Notification</p>
         </div>
         
         <div style="padding: 32px;">
@@ -390,18 +324,20 @@ export class EmailService {
               ${isDispatchError ? 'Live Gateway Rejection (Error 416)' : 'Insufficient Floating Balance Warning'}
             </strong>
             <p style="color: #7f1d1d; font-size: 13px; margin: 0; line-height: 1.5;">
-              ${isDispatchError
-                ? 'Fast2SMS returned an insufficient wallet balance error (416) during an active OTP transmission. Outgoing OTPs are failing.'
-                : 'Fast2SMS live wallet balance is lower than the total float required to serve every active user based on their wallet balances. Immediate recharge is necessary to prevent delivery disruption.'}
+              ${
+                isDispatchError
+                  ? 'The SMS gateway returned an insufficient wallet balance error (416) during an active OTP transmission. Outgoing OTPs are failing.'
+                  : 'SMS gateway live wallet balance is lower than the total float required to serve every active user based on their wallet balances. Immediate recharge is necessary to prevent delivery disruption.'
+              }
             </p>
           </div>
 
-          <h2 style="font-size: 16px; color: #0f172a; margin: 0 0 16px 0;">Float & Balance Breakdown</h2>
+          <h2 style="font-size: 16px; color: #0f172a; margin: 0 0 16px 0;">Float &amp; Balance Breakdown</h2>
 
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
             <tbody>
               <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 10px 0; font-size: 13px; color: #64748b;">Live Fast2SMS Balance</td>
+                <td style="padding: 10px 0; font-size: 13px; color: #64748b;">Live Gateway Balance</td>
                 <td style="padding: 10px 0; font-size: 14px; font-weight: 700; color: #dc2626; text-align: right;">${liveFormatted}</td>
               </tr>
               <tr style="border-bottom: 1px solid #f1f5f9;">
@@ -409,7 +345,7 @@ export class EmailService {
                 <td style="padding: 10px 0; font-size: 14px; font-weight: 600; color: #0f172a; text-align: right;">${totalAccountOtps.toLocaleString()} OTPs</td>
               </tr>
               <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 10px 0; font-size: 13px; color: #64748b;">Required Fast2SMS Balance (@ ₹0.45/OTP)</td>
+                <td style="padding: 10px 0; font-size: 13px; color: #64748b;">Required Gateway Balance (@ &#8377;0.45/OTP)</td>
                 <td style="padding: 10px 0; font-size: 14px; font-weight: 700; color: #0f172a; text-align: right;">${requiredFormatted}</td>
               </tr>
               <tr>
@@ -419,19 +355,13 @@ export class EmailService {
             </tbody>
           </table>
 
-          <div style="text-align: center; margin: 28px 0 12px 0;">
-            <a href="https://www.fast2sms.com" style="display: inline-block; background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);">
-              Recharge Fast2SMS Balance
-            </a>
-          </div>
-
           <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 20px 0 0 0; text-align: center;">
             This automated alert was dispatched to system administrator (${this.adminEmail}).
           </p>
         </div>
 
         <div style="background-color: #f8fafc; padding: 16px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
-          TurfsyOTPs Telecom Health & Safety Infrastructure.
+          TurfsyOTPs Telecom Health &amp; Safety Infrastructure.
         </div>
       </div>
     `;
