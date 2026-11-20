@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import https from 'https';
 
 export interface EmailOptions {
   to: string | string[];
@@ -11,12 +12,12 @@ export interface EmailOptions {
 export class EmailService {
   private static adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'kumarsinghrakesh333@gmail.com';
   private static fromAddress = process.env.SMTP_FROM || 'TurfsyOTPs <info@turfsyotps.dev>';
-  private static transporter: Transporter | null = null;
+  private static zohoTransporter: Transporter | null = null;
 
-  private static getTransporter(): Transporter {
-    if (this.transporter) return this.transporter;
+  private static getZohoTransporter(): Transporter {
+    if (this.zohoTransporter) return this.zohoTransporter;
 
-    this.transporter = nodemailer.createTransport({
+    this.zohoTransporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.zoho.in',
       port: parseInt(process.env.SMTP_PORT || '465', 10),
       secure: process.env.SMTP_SECURE !== 'false',
@@ -27,12 +28,98 @@ export class EmailService {
       pool: true,
       maxConnections: 5,
       maxMessages: 100,
-      socketTimeout: 10000,
-      greetingTimeout: 10000,
-      connectionTimeout: 10000,
+      socketTimeout: 12000,
+      greetingTimeout: 12000,
+      connectionTimeout: 12000,
     });
 
-    return this.transporter;
+    return this.zohoTransporter;
+  }
+
+  private static async sendViaZoho(
+    uniqueRecipients: string[],
+    options: EmailOptions
+  ): Promise<boolean> {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return false;
+
+    try {
+      const transport = this.getZohoTransporter();
+      const info = await transport.sendMail({
+        from: this.fromAddress,
+        to: uniqueRecipients.join(', '),
+        subject: options.subject,
+        html: options.html,
+        ...(options.replyTo ? { replyTo: options.replyTo } : {}),
+      });
+      console.log(
+        `[EMAIL_SERVICE] Dispatched via Zoho SMTP to [${uniqueRecipients.join(', ')}]. MessageID: ${info.messageId}`
+      );
+      return true;
+    } catch (err: any) {
+      console.error('[EMAIL_SERVICE] Zoho SMTP failed:', err.message || err);
+      this.zohoTransporter = null;
+      return false;
+    }
+  }
+
+  private static async sendViaBrevo(
+    uniqueRecipients: string[],
+    options: EmailOptions
+  ): Promise<boolean> {
+    const apiKey = process.env.BREVO_API_KEY;
+    if (!apiKey) return false;
+
+    const toList = uniqueRecipients.map((email) => ({ email }));
+
+    const payload = JSON.stringify({
+      sender: { name: 'TurfsyOTPs', email: 'info@turfsyotps.dev' },
+      to: toList,
+      subject: options.subject,
+      htmlContent: options.html,
+      ...(options.replyTo ? { replyTo: { email: options.replyTo } } : {}),
+    });
+
+    return new Promise((resolve) => {
+      const req = https.request(
+        {
+          hostname: 'api.brevo.com',
+          path: '/v3/smtp/email',
+          method: 'POST',
+          headers: {
+            'api-key': apiKey,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(payload),
+          },
+        },
+        (res) => {
+          let body = '';
+          res.on('data', (chunk) => (body += chunk));
+          res.on('end', () => {
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              const parsed = JSON.parse(body || '{}');
+              console.log(
+                `[EMAIL_SERVICE] Dispatched via Brevo REST to [${uniqueRecipients.join(', ')}]. MessageID: ${parsed.messageId || 'N/A'}`
+              );
+              resolve(true);
+            } else {
+              console.error(`[EMAIL_SERVICE] Brevo REST failed (${res.statusCode}):`, body);
+              resolve(false);
+            }
+          });
+        }
+      );
+      req.on('error', (err) => {
+        console.error('[EMAIL_SERVICE] Brevo REST request error:', err.message);
+        resolve(false);
+      });
+      req.setTimeout(12000, () => {
+        console.error('[EMAIL_SERVICE] Brevo REST request timed out.');
+        req.destroy();
+        resolve(false);
+      });
+      req.write(payload);
+      req.end();
+    });
   }
 
   public static async sendEmail(options: EmailOptions): Promise<boolean> {
@@ -44,31 +131,15 @@ export class EmailService {
       return false;
     }
 
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.error('[EMAIL_SERVICE] SMTP credentials not configured (SMTP_USER / SMTP_PASS).');
-      return false;
-    }
+    const zohoOk = await this.sendViaZoho(uniqueRecipients, options);
+    if (zohoOk) return true;
 
-    try {
-      const transport = this.getTransporter();
+    console.log('[EMAIL_SERVICE] Failing over to Brevo REST API...');
+    const brevoOk = await this.sendViaBrevo(uniqueRecipients, options);
+    if (brevoOk) return true;
 
-      const info = await transport.sendMail({
-        from: this.fromAddress,
-        to: uniqueRecipients.join(', '),
-        subject: options.subject,
-        html: options.html,
-        ...(options.replyTo ? { replyTo: options.replyTo } : {}),
-      });
-
-      console.log(
-        `[EMAIL_SERVICE] Email dispatched successfully via Zoho SMTP to [${uniqueRecipients.join(', ')}]. MessageID: ${info.messageId}`
-      );
-      return true;
-    } catch (err: any) {
-      console.error('[EMAIL_SERVICE] Zoho SMTP send failed:', err.message || err);
-      this.transporter = null;
-      return false;
-    }
+    console.error('[EMAIL_SERVICE] All providers exhausted. Email not delivered.');
+    return false;
   }
 
   public static async sendWalletTopupEmail(params: {
