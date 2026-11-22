@@ -67,6 +67,14 @@ export const AdminView: React.FC = () => {
   const [suspendReason, setSuspendReason] = useState<string>('');
   const [submittingSuspend, setSubmittingSuspend] = useState<boolean>(false);
 
+  // Reactivate User Modal State
+  const [reactivatingUser, setReactivatingUser] = useState<any | null>(null);
+  const [submittingReactivate, setSubmittingReactivate] = useState<boolean>(false);
+
+  // Delete Tier Confirmation State
+  const [deletingTierId, setDeletingTierId] = useState<string | null>(null);
+  const [submittingDeleteTier, setSubmittingDeleteTier] = useState<boolean>(false);
+
   const showToast = (type: 'success' | 'error' | 'info' | 'warning', message: string, title?: string) => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, type, message, title }]);
@@ -209,14 +217,18 @@ export const AdminView: React.FC = () => {
     }
   };
 
-  const handleDeleteTier = async (tierId: string) => {
-    if (!window.confirm('Are you sure you want to delete this pricing tier?')) return;
+  const handleConfirmDeleteTier = async () => {
+    if (!deletingTierId) return;
     try {
-      await ApiClient.deleteAdminPricingTier(tierId);
+      setSubmittingDeleteTier(true);
+      await ApiClient.deleteAdminPricingTier(deletingTierId);
       showToast('success', 'Pricing tier deleted successfully.', 'Tier Deleted');
+      setDeletingTierId(null);
       fetchAdminData();
     } catch (err: any) {
       showToast('error', err.message || 'Failed to delete tier', 'Tier Error');
+    } finally {
+      setSubmittingDeleteTier(false);
     }
   };
 
@@ -324,14 +336,18 @@ export const AdminView: React.FC = () => {
     }
   };
 
-  const handleReactivateUser = async (user: any) => {
-    if (!window.confirm(`Are you sure you want to reactivate developer ${user.full_name || user.email}?`)) return;
+  const handleConfirmReactivateUser = async () => {
+    if (!reactivatingUser) return;
     try {
-      await ApiClient.toggleUserStatus(user.id, 'active');
-      showToast('success', `User ${user.full_name || user.email} reactivated successfully.`, 'Account Reactivated');
+      setSubmittingReactivate(true);
+      await ApiClient.toggleUserStatus(reactivatingUser.id, 'active');
+      showToast('success', `User ${reactivatingUser.full_name || reactivatingUser.email} reactivated successfully.`, 'Account Reactivated');
+      setReactivatingUser(null);
       fetchAdminData();
     } catch (err: any) {
       showToast('error', err.message || 'Failed to reactivate user', 'Error');
+    } finally {
+      setSubmittingReactivate(false);
     }
   };
 
@@ -1147,7 +1163,7 @@ export const AdminView: React.FC = () => {
                         <span>Edit</span>
                       </button>
                       <button
-                        onClick={() => handleDeleteTier(tier.id)}
+                        onClick={() => setDeletingTierId(tier.id)}
                         style={{
                           padding: '6px 10px',
                           borderRadius: '6px',
@@ -1320,6 +1336,70 @@ export const AdminView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Pricing Tier Modal */}
+      {deletingTierId && (
+        <div className="modal-overlay" onClick={() => setDeletingTierId(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: '32px', maxWidth: '440px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                backgroundColor: '#fee2e2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#dc2626'
+              }}>
+                <Trash2 size={20} />
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                Delete Pricing Tier
+              </h3>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: '1.5' }}>
+              Are you sure you want to permanently delete this pricing tier? Existing accounts on this tier will retain their current custom tariffs, but new accounts will no longer match this tier.
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setDeletingTierId(null)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-subtle)',
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteTier}
+                disabled={submittingDeleteTier}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#dc2626',
+                  color: '#fff',
+                  fontWeight: 700,
+                  cursor: submittingDeleteTier ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {submittingDeleteTier ? 'Deleting...' : 'Delete Tier'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </>
     )}
 
@@ -1381,7 +1461,7 @@ export const AdminView: React.FC = () => {
                       }}>
                         {u.status.toUpperCase()}
                       </span>
-                      {u.status === 'suspended' && u.suspend_reason && (
+                      {u.status === 'suspended' && (
                         <div style={{
                           fontSize: '11px',
                           color: '#b91c1c',
@@ -1392,7 +1472,7 @@ export const AdminView: React.FC = () => {
                           maxWidth: '220px',
                           lineHeight: '1.3'
                         }}>
-                          <span style={{ fontWeight: 600 }}>Reason:</span> {u.suspend_reason}
+                          <span style={{ fontWeight: 600 }}>Reason:</span> {u.suspend_reason || 'Administrative policy review'}
                         </div>
                       )}
                     </div>
@@ -1482,7 +1562,7 @@ export const AdminView: React.FC = () => {
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleReactivateUser(u)}
+                            onClick={() => setReactivatingUser(u)}
                             style={{
                               padding: '6px 12px',
                               borderRadius: '6px',
@@ -1806,6 +1886,84 @@ export const AdminView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reactivate Developer Account Modal */}
+      {reactivatingUser && (
+        <div className="modal-overlay" onClick={() => setReactivatingUser(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: '32px', maxWidth: '480px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                backgroundColor: '#ecfdf5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#059669'
+              }}>
+                <UserCheck size={20} />
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                Reactivate Developer Account
+              </h3>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
+              Are you sure you want to restore full platform access for <strong>{reactivatingUser.full_name}</strong> ({reactivatingUser.email})?
+            </p>
+
+            <div style={{
+              padding: '12px 14px',
+              borderRadius: '8px',
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fee2e2',
+              fontSize: '12px',
+              color: '#991b1b',
+              lineHeight: 1.4,
+              marginBottom: '20px'
+            }}>
+              <strong style={{ display: 'block', marginBottom: '2px', color: '#7f1d1d' }}>Current Suspension Reason:</strong>
+              {reactivatingUser.suspend_reason || 'Administrative policy review'}
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setReactivatingUser(null)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-subtle)',
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReactivateUser}
+                disabled={submittingReactivate}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#059669',
+                  color: '#fff',
+                  fontWeight: 700,
+                  cursor: submittingReactivate ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {submittingReactivate ? 'Reactivating...' : 'Confirm Reactivation'}
+              </button>
+            </div>
           </div>
         </div>
       )}
