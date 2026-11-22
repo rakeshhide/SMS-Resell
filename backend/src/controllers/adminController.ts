@@ -782,7 +782,7 @@ export class AdminController {
       const params = status ? [status] : [];
 
       const result = await pool.query(
-        `SELECT id, full_name, email, company, reason, status, created_at, reviewed_at
+        `SELECT id, full_name, email, company, reason, status, invite_token, token_expires_at, claimed_at, created_at, reviewed_at
          FROM invite_requests
          ${filter}
          ORDER BY created_at DESC
@@ -866,6 +866,20 @@ export class AdminController {
       res.json({ success: true, message: `Request ${action}.`, request: result.rows[0] });
     } catch (err: any) {
       res.status(500).json({ success: false, message: 'Failed to review request.' });
+    }
+  }
+
+  public static async deleteInviteRequest(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const result = await pool.query('DELETE FROM invite_requests WHERE id = $1 RETURNING id', [id]);
+      if (result.rowCount === 0) {
+        res.status(404).json({ success: false, message: 'Request not found.' });
+        return;
+      }
+      res.json({ success: true, message: 'Invite request deleted successfully.' });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: 'Failed to delete invite request.' });
     }
   }
 }

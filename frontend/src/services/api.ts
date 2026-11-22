@@ -160,6 +160,12 @@ export class ApiClient {
     });
   }
 
+  public static deleteInviteRequest(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/admin/invite-requests/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Wallet
   public static getWalletBalance() {
     return this.request<{

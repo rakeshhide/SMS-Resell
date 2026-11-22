@@ -34,6 +34,7 @@ router.post('/platform-controls', AdminController.updatePlatformControls);
 // Invite Requests
 router.get('/invite-requests', AdminController.listInviteRequests);
 router.patch('/invite-requests/:id', AdminController.reviewInviteRequest);
+router.delete('/invite-requests/:id', AdminController.deleteInviteRequest);
 
 router.post('/wallet/adjust', AdminController.manualAdjustment);
 router.post('/users/tier', AdminController.setUserTier);

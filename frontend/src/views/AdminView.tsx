@@ -32,7 +32,8 @@ import {
   Check,
   X,
   Clock,
-  Lock
+  Lock,
+  Copy
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { PricingTier, SystemSettings } from '../types';
@@ -61,10 +62,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ onMaintenanceModeChange })
   const [inviteMessage, setInviteMessage] = useState<string>('');
   const [savingPlatformControls, setSavingPlatformControls] = useState<boolean>(false);
 
-  // Invite Requests State
   const [inviteRequests, setInviteRequests] = useState<any[]>([]);
   const [inviteFilter, setInviteFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [processingInviteId, setProcessingInviteId] = useState<string | null>(null);
+  const [deleteInviteModal, setDeleteInviteModal] = useState<any | null>(null);
+  const [deletingInviteId, setDeletingInviteId] = useState<string | null>(null);
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
 
   // Suspend User Modal State
   const [suspendingUser, setSuspendingUser] = useState<any | null>(null);
@@ -314,6 +317,34 @@ export const AdminView: React.FC<AdminViewProps> = ({ onMaintenanceModeChange })
     } finally {
       setProcessingInviteId(null);
     }
+  };
+
+  const handleDeleteInvite = async (id: string) => {
+    try {
+      setDeletingInviteId(id);
+      const res = await ApiClient.deleteInviteRequest(id);
+      showToast('success', res.message || 'Invite request deleted successfully.', 'Deleted');
+      setDeleteInviteModal(null);
+      const refreshed = await ApiClient.getInviteRequests();
+      if (refreshed?.success && Array.isArray(refreshed.requests)) {
+        setInviteRequests(refreshed.requests);
+      }
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to delete invite request', 'Error');
+    } finally {
+      setDeletingInviteId(null);
+    }
+  };
+
+  const handleCopyInviteLink = (req: any) => {
+    if (!req.invite_token) return;
+    const url = `${window.location.origin}/login?mode=signup&invite=${req.invite_token}&email=${encodeURIComponent(req.email)}`;
+    navigator.clipboard.writeText(url);
+    setCopiedInviteId(req.id);
+    showToast('success', 'Activation link copied to clipboard.', 'Link Copied');
+    setTimeout(() => {
+      setCopiedInviteId((cur) => (cur === req.id ? null : cur));
+    }, 2500);
   };
 
   const handleOpenSuspendModal = (user: any) => {
@@ -2732,33 +2763,77 @@ export const AdminView: React.FC<AdminViewProps> = ({ onMaintenanceModeChange })
                               fontWeight: 700,
                               backgroundColor:
                                 req.status === 'approved'
-                                  ? '#ecfdf5'
+                                  ? (req.claimed_at ? '#f0fdf4' : '#ecfdf5')
                                   : req.status === 'rejected'
                                   ? '#fef2f2'
                                   : '#fffbeb',
                               color:
                                 req.status === 'approved'
-                                  ? '#047857'
+                                  ? (req.claimed_at ? '#15803d' : '#047857')
                                   : req.status === 'rejected'
                                   ? '#b91c1c'
                                   : '#b45309'
                             }}
                           >
-                            {req.status.toUpperCase()}
+                            {req.status === 'approved' && req.claimed_at ? 'CLAIMED' : req.status.toUpperCase()}
                           </span>
                         </td>
                         <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                          {req.status === 'pending' ? (
-                            <div style={{ display: 'inline-flex', gap: '8px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                            {req.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleReviewInvite(req.id, 'approved')}
+                                  disabled={processingInviteId === req.id}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #bbf7d0',
+                                    backgroundColor: '#f0fdf4',
+                                    color: '#15803d',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <Check size={13} />
+                                  <span>Approve</span>
+                                </button>
+                                <button
+                                  onClick={() => handleReviewInvite(req.id, 'rejected')}
+                                  disabled={processingInviteId === req.id}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #fecaca',
+                                    backgroundColor: '#fef2f2',
+                                    color: '#b91c1c',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <X size={13} />
+                                  <span>Reject</span>
+                                </button>
+                              </>
+                            )}
+
+                            {req.status === 'approved' && req.invite_token && !req.claimed_at && (
                               <button
-                                onClick={() => handleReviewInvite(req.id, 'approved')}
-                                disabled={processingInviteId === req.id}
+                                onClick={() => handleCopyInviteLink(req)}
                                 style={{
                                   padding: '6px 12px',
                                   borderRadius: '6px',
-                                  border: '1px solid #bbf7d0',
-                                  backgroundColor: '#f0fdf4',
-                                  color: '#15803d',
+                                  border: '1px solid #bfdbfe',
+                                  backgroundColor: '#eff6ff',
+                                  color: '#2563eb',
                                   fontSize: '12px',
                                   fontWeight: 700,
                                   cursor: 'pointer',
@@ -2766,36 +2841,35 @@ export const AdminView: React.FC<AdminViewProps> = ({ onMaintenanceModeChange })
                                   alignItems: 'center',
                                   gap: '4px'
                                 }}
+                                title="Copy direct setup link"
                               >
-                                <Check size={13} />
-                                <span>Approve</span>
+                                <Copy size={13} />
+                                <span>{copiedInviteId === req.id ? 'Copied' : 'Copy Link'}</span>
                               </button>
-                              <button
-                                onClick={() => handleReviewInvite(req.id, 'rejected')}
-                                disabled={processingInviteId === req.id}
-                                style={{
-                                  padding: '6px 12px',
-                                  borderRadius: '6px',
-                                  border: '1px solid #fecaca',
-                                  backgroundColor: '#fef2f2',
-                                  color: '#b91c1c',
-                                  fontSize: '12px',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px'
-                                }}
-                              >
-                                <X size={13} />
-                                <span>Reject</span>
-                              </button>
-                            </div>
-                          ) : (
-                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                              Reviewed
-                            </span>
-                          )}
+                            )}
+
+                            <button
+                              onClick={() => setDeleteInviteModal(req)}
+                              disabled={deletingInviteId === req.id}
+                              style={{
+                                padding: '6px 10px',
+                                borderRadius: '6px',
+                                border: '1px solid #fee2e2',
+                                backgroundColor: '#fff5f5',
+                                color: '#dc2626',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                              title="Delete request"
+                            >
+                              <Trash2 size={13} />
+                              <span>Delete</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -2808,6 +2882,70 @@ export const AdminView: React.FC<AdminViewProps> = ({ onMaintenanceModeChange })
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteInviteModal && (
+        <div className="modal-overlay" onClick={() => setDeleteInviteModal(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: '32px', maxWidth: '460px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                backgroundColor: '#fee2e2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#dc2626'
+              }}>
+                <Trash2 size={20} />
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                Delete Invite Request
+              </h3>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: '1.5' }}>
+              Are you sure you want to permanently delete the developer invitation request from <strong>{deleteInviteModal.full_name}</strong> ({deleteInviteModal.email})? This action cannot be undone.
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setDeleteInviteModal(null)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-subtle)',
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteInvite(deleteInviteModal.id)}
+                disabled={deletingInviteId === deleteInviteModal.id}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  cursor: deletingInviteId === deleteInviteModal.id ? 'not-allowed' : 'pointer',
+                  opacity: deletingInviteId === deleteInviteModal.id ? 0.7 : 1
+                }}
+              >
+                {deletingInviteId === deleteInviteModal.id ? 'Deleting...' : 'Confirm Delete'}
+              </button>
             </div>
           </div>
         </div>
