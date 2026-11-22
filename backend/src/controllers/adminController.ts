@@ -212,12 +212,22 @@ export class AdminController {
             suspend_reason = $2,
             updated_at = NOW()
         WHERE id = $3
-        RETURNING id, email, status, suspend_reason
+        RETURNING id, full_name, email, status, suspend_reason
       `, [status, status === 'suspended' ? (suspendReason || null) : null, userId]);
 
       if (resUpdate.rowCount === 0) {
         res.status(404).json({ success: false, message: 'User not found' });
         return;
+      }
+
+      const updatedUser = resUpdate.rows[0];
+
+      if (status === 'suspended') {
+        EmailService.sendAccountSuspendedEmail({
+          userEmail: updatedUser.email,
+          userName: updatedUser.full_name || 'Developer',
+          reason: suspendReason || 'Administrative compliance review'
+        }).catch((e) => console.error('[ADMIN] Failed to send suspension email:', e));
       }
 
       await pool.query(`
@@ -228,7 +238,7 @@ export class AdminController {
       res.json({
         success: true,
         message: `User status changed to ${status}`,
-        user: resUpdate.rows[0]
+        user: updatedUser
       });
     } catch (err: any) {
       console.error('[ADMIN] Toggle status error:', err.message);

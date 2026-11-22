@@ -46,23 +46,27 @@ export const AuthView: React.FC<AuthViewProps> = ({
   // Status & Feedback
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suspendReason, setSuspendReason] = useState<string | null>(null);
   const [forgotSuccess, setForgotSuccess] = useState(false);
 
   useEffect(() => {
     setMode(initialMode);
     setError(null);
+    setSuspendReason(null);
     setForgotSuccess(false);
   }, [initialMode]);
 
   const switchMode = (newMode: AuthMode) => {
     setMode(newMode);
     setError(null);
+    setSuspendReason(null);
     setForgotSuccess(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuspendReason(null);
     setLoading(true);
 
     try {
@@ -79,7 +83,13 @@ export const AuthView: React.FC<AuthViewProps> = ({
         setForgotSuccess(true);
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please verify your credentials.');
+      if (err.errorCode === 'ACCOUNT_SUSPENDED' || err.suspendReason) {
+        setSuspendReason(err.suspendReason || 'Administrative compliance review');
+        setError(err.message || 'Your account has been suspended.');
+      } else {
+        setSuspendReason(null);
+        setError(err.message || 'Authentication failed. Please verify your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -486,24 +496,64 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
           {/* Error Banner */}
           {error && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                backgroundColor: '#fef2f2',
-                border: '1px solid #fee2e2',
-                color: '#b91c1c',
-                fontSize: '13px',
-                lineHeight: 1.4,
-                marginBottom: '20px',
-              }}
-            >
-              <AlertCircle size={17} style={{ flexShrink: 0, marginTop: '2px' }} />
-              <span>{error}</span>
-            </div>
+            suspendReason ? (
+              <div
+                style={{
+                  padding: '16px 18px',
+                  borderRadius: '10px',
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fca5a5',
+                  marginBottom: '20px',
+                  textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <AlertCircle size={18} color="#dc2626" />
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#991b1b' }}>
+                    Account Suspended
+                  </span>
+                </div>
+                <div
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '6px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #fca5a5',
+                    fontSize: '12px',
+                    color: '#7f1d1d',
+                    lineHeight: 1.5,
+                    marginBottom: '10px'
+                  }}
+                >
+                  <strong style={{ color: '#991b1b', display: 'block', marginBottom: '2px' }}>
+                    Reason for Suspension:
+                  </strong>
+                  {suspendReason}
+                </div>
+                <p style={{ fontSize: '11px', color: '#b91c1c', margin: 0, lineHeight: 1.4 }}>
+                  A notice has also been dispatched to your email address. If you believe this is an error, contact support at <a href="mailto:info@turfsyotps.dev" style={{ color: '#991b1b', fontWeight: 700, textDecoration: 'underline' }}>info@turfsyotps.dev</a>.
+                </p>
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fee2e2',
+                  color: '#b91c1c',
+                  fontSize: '13px',
+                  lineHeight: 1.4,
+                  marginBottom: '20px',
+                }}
+              >
+                <AlertCircle size={17} style={{ flexShrink: 0, marginTop: '2px' }} />
+                <span>{error}</span>
+              </div>
+            )
           )}
 
           {/* Forgot Password Success Message */}

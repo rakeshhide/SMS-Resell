@@ -48,7 +48,11 @@ export class ApiClient {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'API request failed');
+      const error: any = new Error(data.message || 'API request failed');
+      error.data = data;
+      error.suspendReason = data.suspendReason;
+      error.errorCode = data.error_code;
+      throw error;
     }
 
     return data;

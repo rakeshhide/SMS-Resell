@@ -353,6 +353,65 @@ export class EmailService {
     });
   }
 
+  public static async sendAccountSuspendedEmail(params: {
+    userEmail: string;
+    userName: string;
+    reason: string;
+    triggeredByLogin?: boolean;
+  }): Promise<void> {
+    const { userEmail, userName, reason, triggeredByLogin = false } = params;
+
+    const htmlBody = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background-color: #7f1d1d; padding: 24px 32px; text-align: left;">
+          <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">TurfsyOTPs Security & Compliance</h1>
+          <p style="color: #fca5a5; font-size: 13px; margin: 4px 0 0 0;">Notice of Account Suspension</p>
+        </div>
+        
+        <div style="padding: 32px;">
+          <h2 style="font-size: 18px; color: #0f172a; margin: 0 0 12px 0;">Developer Account Suspended</h2>
+          <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0;">
+            Hello ${userName || 'Developer'},<br />
+            This is an official notification that your TurfsyOTPs developer account associated with <strong>${userEmail}</strong> has been suspended.
+            ${triggeredByLogin ? '<br /><span style="color: #b91c1c; font-size: 13px; font-weight: 600;">A credential verification was performed on this suspended account.</span>' : ''}
+          </p>
+
+          <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 18px 20px; margin: 24px 0;">
+            <div style="font-size: 12px; font-weight: 700; color: #991b1b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
+              Reason for Suspension
+            </div>
+            <div style="font-size: 14px; color: #7f1d1d; font-weight: 600; line-height: 1.5;">
+              ${reason || 'Violation of Platform Terms of Service / Administrative compliance review'}
+            </div>
+          </div>
+
+          <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 16px 0;">
+            <strong>What this means for your account:</strong>
+          </p>
+          <ul style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0 0 24px 20px; padding: 0;">
+            <li>Console and developer dashboard access is locked.</li>
+            <li>Outbound OTP dispatch authorizations are temporarily restricted.</li>
+            <li>Your account float balance and transaction records remain safe and preserved in our ledger.</li>
+          </ul>
+
+          <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0 0 24px 0;">
+            If you have questions or wish to submit an appeal with supporting documentation, please reply directly to this email or contact support at <a href="mailto:info@turfsyotps.dev" style="color: #2563eb; text-decoration: none; font-weight: 600;">info@turfsyotps.dev</a>.
+          </p>
+        </div>
+
+        <div style="background-color: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
+          TurfsyOTPs Automated Security & Compliance Infrastructure.
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({
+      to: userEmail,
+      subject: '[TurfsyOTPs Notice] Account Suspension Notification',
+      html: htmlBody,
+    });
+  }
+
   private static lastFast2smsAlertTime = 0;
 
   public static async sendFast2smsBalanceAlert(params: {

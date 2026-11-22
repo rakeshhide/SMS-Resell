@@ -169,20 +169,32 @@ export class AuthController {
 
       const user = userRes.rows[0];
 
-      if (user.status !== 'active') {
-        res.status(403).json({
-          success: false,
-          message: 'Your account has been suspended.',
-          suspendReason: user.suspend_reason || null,
-        });
-        return;
-      }
-
+      // Verify password FIRST: only reveal suspension details on valid credentials
       const isValidPassword = await bcrypt.compare(password, user.password_hash);
       if (!isValidPassword) {
         res.status(401).json({
           success: false,
           message: 'Invalid email or password credentials.'
+        });
+        return;
+      }
+
+      // Check account suspension AFTER valid credentials verified
+      if (user.status !== 'active') {
+        EmailService.sendAccountSuspendedEmail({
+          userEmail: user.email,
+          userName: user.full_name || 'Developer',
+          reason: user.suspend_reason || 'Administrative policy review',
+          triggeredByLogin: true
+        }).catch((e) => console.error('[AUTH] Failed to send suspension email on login attempt:', e));
+
+        res.status(403).json({
+          success: false,
+          error_code: 'ACCOUNT_SUSPENDED',
+          message: user.suspend_reason
+            ? `Your account has been suspended: ${user.suspend_reason}`
+            : 'Your account has been suspended. Please contact platform support.',
+          suspendReason: user.suspend_reason || null,
         });
         return;
       }
