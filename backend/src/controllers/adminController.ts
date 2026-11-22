@@ -137,7 +137,7 @@ export class AdminController {
       const search = req.query.search as string;
 
       let queryText = `
-        SELECT u.id, u.email, u.full_name, u.company_name, u.role, u.status, u.created_at,
+        SELECT u.id, u.email, u.full_name, u.company_name, u.role, u.status, u.suspend_reason, u.created_at,
                COALESCE(w.balance, 0) as balance, w.currency,
                COALESCE(w.otp_rate, (SELECT otp_price FROM pricing_tiers WHERE is_active = true ORDER BY min_topup ASC LIMIT 1), 0.8000) as otp_rate,
                COALESCE(w.active_tier, 'Starter Tier') as active_tier,

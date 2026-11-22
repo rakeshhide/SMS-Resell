@@ -26,7 +26,13 @@ import {
   Search,
   Sliders,
   ExternalLink,
-  Mail
+  Mail,
+  Power,
+  AlertOctagon,
+  Check,
+  X,
+  Clock,
+  Lock
 } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { PricingTier, SystemSettings } from '../types';
@@ -41,8 +47,25 @@ export const AdminView: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adminSection, setAdminSection] = useState<'overview' | 'support' | 'users' | 'ledger' | 'audit'>('overview');
+  const [adminSection, setAdminSection] = useState<'overview' | 'support' | 'users' | 'ledger' | 'audit' | 'platform'>('overview');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Platform Operational & Access Controls State
+  const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string>('');
+  const [registrationMode, setRegistrationMode] = useState<'open' | 'closed' | 'invite_only'>('open');
+  const [inviteMessage, setInviteMessage] = useState<string>('');
+  const [savingPlatformControls, setSavingPlatformControls] = useState<boolean>(false);
+
+  // Invite Requests State
+  const [inviteRequests, setInviteRequests] = useState<any[]>([]);
+  const [inviteFilter, setInviteFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [processingInviteId, setProcessingInviteId] = useState<string | null>(null);
+
+  // Suspend User Modal State
+  const [suspendingUser, setSuspendingUser] = useState<any | null>(null);
+  const [suspendReason, setSuspendReason] = useState<string>('');
+  const [submittingSuspend, setSubmittingSuspend] = useState<boolean>(false);
 
   const showToast = (type: 'success' | 'error' | 'info' | 'warning', message: string, title?: string) => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -125,11 +148,13 @@ export const AdminView: React.FC = () => {
   const fetchAdminData = async () => {
     try {
       setLoading(true);
-      const [ovRes, usersRes, logsRes, tiersRes] = await Promise.all([
+      const [ovRes, usersRes, logsRes, tiersRes, platformRes, invitesRes] = await Promise.all([
         ApiClient.getAdminOverview(),
-        ApiClient.listUsers(1, 20),
+        ApiClient.listUsers(1, 50),
         ApiClient.getAuditLogs(),
-        ApiClient.listAdminPricingTiers().catch(() => ({ success: false, tiers: [], settings: { minTopup: 1, defaultGst: 18, defaultServiceFee: 3.0 } }))
+        ApiClient.listAdminPricingTiers().catch(() => ({ success: false, tiers: [], settings: { minTopup: 1, defaultGst: 18, defaultServiceFee: 3.0 } })),
+        ApiClient.getPlatformControls().catch(() => null),
+        ApiClient.getInviteRequests().catch(() => null),
       ]);
 
       if (ovRes?.stats) setStats(ovRes.stats);
@@ -141,6 +166,17 @@ export const AdminView: React.FC = () => {
         setMinTopup(tiersRes.settings.minTopup || 1);
         setDefaultGst(tiersRes.settings.defaultGst || 18);
         setDefaultServiceFee(tiersRes.settings.defaultServiceFee ?? 3.0);
+      }
+
+      if (platformRes && platformRes.success) {
+        setMaintenanceMode(Boolean(platformRes.maintenanceMode));
+        setMaintenanceMessage(platformRes.maintenanceMessage || '');
+        setRegistrationMode(platformRes.registrationMode || 'open');
+        setInviteMessage(platformRes.inviteMessage || '');
+      }
+
+      if (invitesRes && invitesRes.success && Array.isArray(invitesRes.requests)) {
+        setInviteRequests(invitesRes.requests);
       }
     } catch (err) {
       console.error('Failed to load admin data', err);
@@ -227,16 +263,75 @@ export const AdminView: React.FC = () => {
     }
   };
 
-  const handleToggleStatus = async (userId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
-    if (!window.confirm(`Are you sure you want to change user status to ${newStatus}?`)) return;
+  const handleSavePlatformControls = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSavingPlatformControls(true);
+      const res = await ApiClient.updatePlatformControls({
+        maintenanceMode,
+        maintenanceMessage,
+        registrationMode,
+        inviteMessage,
+      });
+      showToast('success', res.message || 'Platform operational controls saved successfully.', 'Controls Saved');
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to update platform controls', 'Error');
+    } finally {
+      setSavingPlatformControls(false);
+    }
+  };
+
+  const handleReviewInvite = async (id: string, action: 'approved' | 'rejected') => {
+    try {
+      setProcessingInviteId(id);
+      const res = await ApiClient.reviewInviteRequest(id, action);
+      showToast('success', res.message || `Invite request marked as ${action}.`, 'Invite Updated');
+      const refreshed = await ApiClient.getInviteRequests();
+      if (refreshed?.success && Array.isArray(refreshed.requests)) {
+        setInviteRequests(refreshed.requests);
+      }
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to review invite request', 'Error');
+    } finally {
+      setProcessingInviteId(null);
+    }
+  };
+
+  const handleOpenSuspendModal = (user: any) => {
+    setSuspendingUser(user);
+    setSuspendReason(user.suspend_reason || '');
+  };
+
+  const handleConfirmSuspend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!suspendingUser) return;
+    if (!suspendReason.trim()) {
+      showToast('warning', 'Please provide a clear reason for suspending this account.', 'Reason Required');
+      return;
+    }
 
     try {
-      await ApiClient.toggleUserStatus(userId, newStatus);
-      showToast('success', `User account status updated to ${newStatus}.`, 'User Status');
+      setSubmittingSuspend(true);
+      await ApiClient.toggleUserStatus(suspendingUser.id, 'suspended', suspendReason.trim());
+      showToast('success', `User ${suspendingUser.full_name || suspendingUser.email} has been suspended.`, 'Account Suspended');
+      setSuspendingUser(null);
+      setSuspendReason('');
       fetchAdminData();
     } catch (err: any) {
-      showToast('error', err.message || 'Failed to update user status', 'Status Error');
+      showToast('error', err.message || 'Failed to suspend user', 'Error');
+    } finally {
+      setSubmittingSuspend(false);
+    }
+  };
+
+  const handleReactivateUser = async (user: any) => {
+    if (!window.confirm(`Are you sure you want to reactivate developer ${user.full_name || user.email}?`)) return;
+    try {
+      await ApiClient.toggleUserStatus(user.id, 'active');
+      showToast('success', `User ${user.full_name || user.email} reactivated successfully.`, 'Account Reactivated');
+      fetchAdminData();
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to reactivate user', 'Error');
     }
   };
 
@@ -778,6 +873,53 @@ export const AdminView: React.FC = () => {
           <FileText size={16} />
           <span>Compliance Audit Trail</span>
         </button>
+
+        <button
+          onClick={() => setAdminSection('platform')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 18px',
+            borderRadius: '8px',
+            border: 'none',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+            backgroundColor: adminSection === 'platform' ? '#dc2626' : 'var(--bg-surface)',
+            color: adminSection === 'platform' ? '#ffffff' : 'var(--text-secondary)',
+            boxShadow: adminSection === 'platform' ? 'var(--shadow-sm)' : 'none'
+          }}
+        >
+          <Sliders size={16} />
+          <span>Platform & Access Controls</span>
+          {inviteRequests.filter((r) => r.status === 'pending').length > 0 && (
+            <span style={{
+              padding: '2px 7px',
+              borderRadius: '10px',
+              fontSize: '11px',
+              fontWeight: 800,
+              backgroundColor: adminSection === 'platform' ? '#ffffff' : '#ef4444',
+              color: adminSection === 'platform' ? '#dc2626' : '#ffffff'
+            }}>
+              {inviteRequests.filter((r) => r.status === 'pending').length}
+            </span>
+          )}
+          {maintenanceMode && (
+            <span
+              title="Maintenance Mode Active"
+              style={{
+                display: 'inline-block',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: adminSection === 'platform' ? '#ffffff' : '#ef4444'
+              }}
+            />
+          )}
+        </button>
       </div>
 
       {/* Support Chat & Inquiries Section */}
@@ -1227,16 +1369,33 @@ export const AdminView: React.FC = () => {
                     </span>
                   </td>
                   <td style={{ padding: '14px 16px' }}>
-                    <span style={{
-                      padding: '3px 8px',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      backgroundColor: u.status === 'active' ? '#ecfdf5' : '#fef2f2',
-                      color: u.status === 'active' ? '#047857' : '#b91c1c'
-                    }}>
-                      {u.status.toUpperCase()}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        backgroundColor: u.status === 'active' ? '#ecfdf5' : '#fef2f2',
+                        color: u.status === 'active' ? '#047857' : '#b91c1c',
+                        width: 'fit-content'
+                      }}>
+                        {u.status.toUpperCase()}
+                      </span>
+                      {u.status === 'suspended' && u.suspend_reason && (
+                        <div style={{
+                          fontSize: '11px',
+                          color: '#b91c1c',
+                          backgroundColor: '#fef2f2',
+                          border: '1px solid #fee2e2',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          maxWidth: '220px',
+                          lineHeight: '1.3'
+                        }}>
+                          <span style={{ fontWeight: 600 }}>Reason:</span> {u.suspend_reason}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td style={{ padding: '14px 16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -1305,22 +1464,39 @@ export const AdminView: React.FC = () => {
                       </button>
 
                       {u.role !== 'admin' && (
-                        <button
-                          onClick={() => handleToggleStatus(u.id, u.status)}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid',
-                            borderColor: u.status === 'active' ? '#fee2e2' : '#d1fae5',
-                            backgroundColor: u.status === 'active' ? '#fef2f2' : '#ecfdf5',
-                            color: u.status === 'active' ? '#b91c1c' : '#047857',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {u.status === 'active' ? 'Suspend' : 'Activate'}
-                        </button>
+                        u.status === 'active' ? (
+                          <button
+                            onClick={() => handleOpenSuspendModal(u)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              border: '1px solid #fee2e2',
+                              backgroundColor: '#fef2f2',
+                              color: '#b91c1c',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Suspend
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleReactivateUser(u)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              border: '1px solid #d1fae5',
+                              backgroundColor: '#ecfdf5',
+                              color: '#047857',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Reactivate
+                          </button>
+                        )
                       )}
                     </div>
                   </td>
@@ -1538,6 +1714,95 @@ export const AdminView: React.FC = () => {
                   style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#3b82f6', color: '#fff', fontWeight: 600 }}
                 >
                   {submittingAdjust ? 'Applying...' : 'Confirm Adjustment'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Suspend Developer Account Modal */}
+      {suspendingUser && (
+        <div className="modal-overlay" onClick={() => setSuspendingUser(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: '32px', maxWidth: '480px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                backgroundColor: '#fee2e2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#dc2626'
+              }}>
+                <AlertTriangle size={20} />
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                Suspend Developer Account
+              </h3>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
+              Suspending <strong>{suspendingUser.full_name}</strong> ({suspendingUser.email}). The developer will be blocked from logging into the console, and the reason entered below will be displayed to them on their login screen.
+            </p>
+
+            <form onSubmit={handleConfirmSuspend} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Suspension Reason (Visible to Developer)
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={suspendReason}
+                  onChange={(e) => setSuspendReason(e.target.value)}
+                  placeholder="e.g. Excessive unverified OTP requests detected / Terms of Service violation / Account undergoing verification."
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-subtle)',
+                    backgroundColor: 'var(--bg-app)',
+                    color: 'var(--text-main)',
+                    marginTop: '6px',
+                    fontSize: '13px',
+                    lineHeight: '1.4'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setSuspendingUser(null)}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-subtle)',
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingSuspend}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#dc2626',
+                    color: '#fff',
+                    fontWeight: 700,
+                    cursor: submittingSuspend ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {submittingSuspend ? 'Suspending...' : 'Confirm Suspension'}
                 </button>
               </div>
             </form>
@@ -1883,6 +2148,502 @@ export const AdminView: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Platform & Access Controls Section */}
+      {adminSection === 'platform' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Status Alert Banner */}
+          <div
+            style={{
+              padding: '18px 24px',
+              borderRadius: 'var(--radius-xl)',
+              backgroundColor: maintenanceMode ? '#fef2f2' : 'var(--bg-surface)',
+              border: `1px solid ${maintenanceMode ? '#fca5a5' : 'var(--border-subtle)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '16px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '10px',
+                  backgroundColor: maintenanceMode ? '#fee2e2' : '#eff6ff',
+                  color: maintenanceMode ? '#dc2626' : '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {maintenanceMode ? <AlertOctagon size={22} /> : <Power size={22} />}
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                    {maintenanceMode ? 'Frontend Maintenance Mode is LIVE' : 'Platform is Fully Operational'}
+                  </h4>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      backgroundColor: maintenanceMode ? '#dc2626' : '#059669',
+                      color: '#ffffff'
+                    }}
+                  >
+                    {maintenanceMode ? 'MAINTENANCE ON' : 'SYSTEM ONLINE'}
+                  </span>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      backgroundColor:
+                        registrationMode === 'open'
+                          ? '#ecfdf5'
+                          : registrationMode === 'invite_only'
+                          ? '#eff6ff'
+                          : '#fef2f2',
+                      color:
+                        registrationMode === 'open'
+                          ? '#047857'
+                          : registrationMode === 'invite_only'
+                          ? '#1d4ed8'
+                          : '#b91c1c'
+                    }}
+                  >
+                    REGISTRATION: {registrationMode.toUpperCase().replace('_', ' ')}
+                  </span>
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', margin: 0 }}>
+                  {maintenanceMode
+                    ? 'Non-admin visitors are currently redirected to the maintenance landing page. Backend APIs and admin consoles remain operational.'
+                    : 'All developer dashboards and API endpoints are accepting standard traffic.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Form: Platform Operational & Registration Controls */}
+          <div className="surface-card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <Settings size={20} color="#dc2626" />
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>
+                Operational & Access Control Policies
+              </h3>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
+              Adjust live frontend maintenance screens and toggle developer onboarding models in real time without downtime.
+            </p>
+
+            <form onSubmit={handleSavePlatformControls} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {/* Maintenance Mode Configuration */}
+              <div
+                style={{
+                  padding: '20px',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--bg-app)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+                  <div>
+                    <label style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)', display: 'block' }}>
+                      Frontend Maintenance Mode
+                    </label>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      Locks user interface for general visitors while keeping all backend endpoints active.
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'inline-flex', borderRadius: '8px', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
+                    <button
+                      type="button"
+                      onClick={() => setMaintenanceMode(false)}
+                      style={{
+                        padding: '8px 16px',
+                        border: 'none',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        backgroundColor: !maintenanceMode ? '#059669' : 'var(--bg-surface)',
+                        color: !maintenanceMode ? '#ffffff' : 'var(--text-secondary)'
+                      }}
+                    >
+                      Disabled (Normal)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMaintenanceMode(true)}
+                      style={{
+                        padding: '8px 16px',
+                        border: 'none',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        backgroundColor: maintenanceMode ? '#dc2626' : 'var(--bg-surface)',
+                        color: maintenanceMode ? '#ffffff' : 'var(--text-secondary)'
+                      }}
+                    >
+                      Enabled (Maintenance)
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                    Maintenance Notice & ETA Message
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={maintenanceMessage}
+                    onChange={(e) => setMaintenanceMessage(e.target.value)}
+                    placeholder="We are upgrading database clusters to deliver faster OTP routing. Dashboard access will be restored shortly. Backend dispatches remain online."
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-subtle)',
+                      backgroundColor: 'var(--bg-surface)',
+                      color: 'var(--text-main)',
+                      fontSize: '13px'
+                    }}
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                    Displayed on the public maintenance page to visitors.
+                  </span>
+                </div>
+              </div>
+
+              {/* Registration Mode Configuration */}
+              <div
+                style={{
+                  padding: '20px',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--bg-app)'
+                }}
+              >
+                <label style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)', display: 'block', marginBottom: '4px' }}>
+                  Developer Account Registration Policy
+                </label>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                  Select how prospective developers can sign up for TurfsyOTPs accounts.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                  {/* Option 1: Open */}
+                  <div
+                    onClick={() => setRegistrationMode('open')}
+                    style={{
+                      padding: '16px',
+                      borderRadius: '8px',
+                      border: `2px solid ${registrationMode === 'open' ? '#3b82f6' : 'var(--border-subtle)'}`,
+                      backgroundColor: registrationMode === 'open' ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-surface)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)' }}>Open Registration</span>
+                      <span
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          border: `2px solid ${registrationMode === 'open' ? '#3b82f6' : 'var(--border-subtle)'}`,
+                          backgroundColor: registrationMode === 'open' ? '#3b82f6' : 'transparent',
+                          display: 'inline-block'
+                        }}
+                      />
+                    </div>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
+                      Any developer can register instantly and begin testing and dispatching immediately.
+                    </p>
+                  </div>
+
+                  {/* Option 2: Invite Only */}
+                  <div
+                    onClick={() => setRegistrationMode('invite_only')}
+                    style={{
+                      padding: '16px',
+                      borderRadius: '8px',
+                      border: `2px solid ${registrationMode === 'invite_only' ? '#8b5cf6' : 'var(--border-subtle)'}`,
+                      backgroundColor: registrationMode === 'invite_only' ? 'rgba(139, 92, 246, 0.05)' : 'var(--bg-surface)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)' }}>Invite Only</span>
+                      <span
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          border: `2px solid ${registrationMode === 'invite_only' ? '#8b5cf6' : 'var(--border-subtle)'}`,
+                          backgroundColor: registrationMode === 'invite_only' ? '#8b5cf6' : 'transparent',
+                          display: 'inline-block'
+                        }}
+                      />
+                    </div>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
+                      Signups show an invite request application form for admin review and approval.
+                    </p>
+                  </div>
+
+                  {/* Option 3: Closed */}
+                  <div
+                    onClick={() => setRegistrationMode('closed')}
+                    style={{
+                      padding: '16px',
+                      borderRadius: '8px',
+                      border: `2px solid ${registrationMode === 'closed' ? '#dc2626' : 'var(--border-subtle)'}`,
+                      backgroundColor: registrationMode === 'closed' ? 'rgba(220, 38, 38, 0.05)' : 'var(--bg-surface)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)' }}>Closed</span>
+                      <span
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          border: `2px solid ${registrationMode === 'closed' ? '#dc2626' : 'var(--border-subtle)'}`,
+                          backgroundColor: registrationMode === 'closed' ? '#dc2626' : 'transparent',
+                          display: 'inline-block'
+                        }}
+                      />
+                    </div>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
+                      Self-registration is locked. No new developer accounts can be registered.
+                    </p>
+                  </div>
+                </div>
+
+                {registrationMode === 'invite_only' && (
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                      Invite Screen Guidance Message
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={inviteMessage}
+                      onChange={(e) => setInviteMessage(e.target.value)}
+                      placeholder="Access is currently restricted to verified developers and businesses. Submit your company requirements below to request an invitation."
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-subtle)',
+                        backgroundColor: 'var(--bg-surface)',
+                        color: 'var(--text-main)',
+                        fontSize: '13px'
+                      }}
+                    />
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                      Shown at the top of the invite request submission view.
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <button
+                  type="submit"
+                  disabled={savingPlatformControls}
+                  style={{
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: '#dc2626',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: savingPlatformControls ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Power size={15} />
+                  <span>{savingPlatformControls ? 'Saving Controls...' : 'Save Operational Controls'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Developer Invite Requests Management */}
+          <div className="surface-card">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '14px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Mail size={20} color="#8b5cf6" />
+                  <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>
+                    Developer Invite Applications ({inviteRequests.length})
+                  </h3>
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  Review and approve inbound platform access requests submitted through the invite program.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {(['all', 'pending', 'approved', 'rejected'] as const).map((tab) => {
+                  const count =
+                    tab === 'all'
+                      ? inviteRequests.length
+                      : inviteRequests.filter((r) => r.status === tab).length;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setInviteFilter(tab)}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-subtle)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        backgroundColor: inviteFilter === tab ? '#8b5cf6' : 'var(--bg-app)',
+                        color: inviteFilter === tab ? '#ffffff' : 'var(--text-secondary)'
+                      }}
+                    >
+                      <span style={{ textTransform: 'capitalize' }}>{tab}</span> ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="table-responsive">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', minWidth: '700px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '12px 16px', fontWeight: 600 }}>Developer</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 600 }}>Company</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 600 }}>Proposed Use Case</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 600 }}>Submitted</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 600 }}>Status</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 600, textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inviteRequests
+                    .filter((r) => inviteFilter === 'all' || r.status === inviteFilter)
+                    .map((req) => (
+                      <tr key={req.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                        <td style={{ padding: '14px 16px' }}>
+                          <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{req.full_name}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{req.email}</div>
+                        </td>
+                        <td style={{ padding: '14px 16px', color: 'var(--text-main)' }}>
+                          {req.company || '-'}
+                        </td>
+                        <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', maxWidth: '300px' }}>
+                          <div style={{ fontSize: '12px', lineHeight: '1.4' }}>{req.reason}</div>
+                        </td>
+                        <td style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                          {new Date(req.created_at).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          <span
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              backgroundColor:
+                                req.status === 'approved'
+                                  ? '#ecfdf5'
+                                  : req.status === 'rejected'
+                                  ? '#fef2f2'
+                                  : '#fffbeb',
+                              color:
+                                req.status === 'approved'
+                                  ? '#047857'
+                                  : req.status === 'rejected'
+                                  ? '#b91c1c'
+                                  : '#b45309'
+                            }}
+                          >
+                            {req.status.toUpperCase()}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                          {req.status === 'pending' ? (
+                            <div style={{ display: 'inline-flex', gap: '8px' }}>
+                              <button
+                                onClick={() => handleReviewInvite(req.id, 'approved')}
+                                disabled={processingInviteId === req.id}
+                                style={{
+                                  padding: '6px 12px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #bbf7d0',
+                                  backgroundColor: '#f0fdf4',
+                                  color: '#15803d',
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <Check size={13} />
+                                <span>Approve</span>
+                              </button>
+                              <button
+                                onClick={() => handleReviewInvite(req.id, 'rejected')}
+                                disabled={processingInviteId === req.id}
+                                style={{
+                                  padding: '6px 12px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #fecaca',
+                                  backgroundColor: '#fef2f2',
+                                  color: '#b91c1c',
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <X size={13} />
+                                <span>Reject</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                              Reviewed
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  {inviteRequests.filter((r) => inviteFilter === 'all' || r.status === inviteFilter).length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: '36px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        No invite requests found in this view.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

@@ -310,10 +310,10 @@ export class ApiClient {
     return this.request<{ success: boolean; users: any[]; total: number }>(`/admin/users?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
   }
 
-  public static toggleUserStatus(userId: string, status: 'active' | 'suspended') {
+  public static toggleUserStatus(userId: string, status: 'active' | 'suspended', suspendReason?: string) {
     return this.request<{ success: boolean; message: string }>('/admin/users/status', {
       method: 'POST',
-      body: JSON.stringify({ userId, status }),
+      body: JSON.stringify({ userId, status, suspendReason }),
     });
   }
 
