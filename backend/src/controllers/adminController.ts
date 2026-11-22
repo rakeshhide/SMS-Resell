@@ -831,14 +831,16 @@ export class AdminController {
         }
 
         const updated = result.rows[0];
-        EmailService.sendInviteApprovedEmail({
-          userEmail: updated.email,
-          userName: updated.full_name,
-          inviteToken,
-          expiresAt,
-        }).catch((err) => {
+        try {
+          await EmailService.sendInviteApprovedEmail({
+            userEmail: updated.email,
+            userName: updated.full_name,
+            inviteToken,
+            expiresAt,
+          });
+        } catch (err: any) {
           console.error('[EMAIL] Failed to send invite approval email:', err.message);
-        });
+        }
       } else {
         result = await pool.query(`
           UPDATE invite_requests
@@ -855,17 +857,62 @@ export class AdminController {
         }
 
         const updated = result.rows[0];
-        EmailService.sendInviteRejectedEmail({
-          userEmail: updated.email,
-          userName: updated.full_name,
-        }).catch((err) => {
+        try {
+          await EmailService.sendInviteRejectedEmail({
+            userEmail: updated.email,
+            userName: updated.full_name,
+          });
+        } catch (err: any) {
           console.error('[EMAIL] Failed to send invite rejection email:', err.message);
-        });
+        }
       }
 
       res.json({ success: true, message: `Request ${action}.`, request: result.rows[0] });
     } catch (err: any) {
       res.status(500).json({ success: false, message: 'Failed to review request.' });
+    }
+  }
+
+  public static async resendInviteEmail(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const result = await pool.query(
+        'SELECT id, full_name, email, invite_token, token_expires_at, claimed_at, status FROM invite_requests WHERE id = $1',
+        [id]
+      );
+      if (result.rowCount === 0) {
+        res.status(404).json({ success: false, message: 'Request not found.' });
+        return;
+      }
+      const invite = result.rows[0];
+      if (invite.status !== 'approved') {
+        res.status(400).json({ success: false, message: 'Cannot resend email for unapproved request.' });
+        return;
+      }
+
+      let inviteToken = invite.invite_token;
+      let expiresAt = invite.token_expires_at ? new Date(invite.token_expires_at) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      if (!inviteToken || expiresAt.getTime() < Date.now()) {
+        inviteToken = crypto.randomBytes(32).toString('hex');
+        expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        await pool.query(
+          'UPDATE invite_requests SET invite_token = $1, token_expires_at = $2 WHERE id = $3',
+          [inviteToken, expiresAt, id]
+        );
+      }
+
+      await EmailService.sendInviteApprovedEmail({
+        userEmail: invite.email,
+        userName: invite.full_name,
+        inviteToken,
+        expiresAt,
+      });
+
+      res.json({ success: true, message: `Activation email dispatched to ${invite.email}.` });
+    } catch (err: any) {
+      console.error('[EMAIL] Resend invite email error:', err.message);
+      res.status(500).json({ success: false, message: 'Failed to dispatch activation email.' });
     }
   }
 

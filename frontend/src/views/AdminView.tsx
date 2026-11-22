@@ -68,6 +68,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ onMaintenanceModeChange })
   const [deleteInviteModal, setDeleteInviteModal] = useState<any | null>(null);
   const [deletingInviteId, setDeletingInviteId] = useState<string | null>(null);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+  const [sendingEmailInviteId, setSendingEmailInviteId] = useState<string | null>(null);
 
   // Suspend User Modal State
   const [suspendingUser, setSuspendingUser] = useState<any | null>(null);
@@ -345,6 +346,22 @@ export const AdminView: React.FC<AdminViewProps> = ({ onMaintenanceModeChange })
     setTimeout(() => {
       setCopiedInviteId((cur) => (cur === req.id ? null : cur));
     }, 2500);
+  };
+
+  const handleResendInviteEmail = async (id: string) => {
+    try {
+      setSendingEmailInviteId(id);
+      const res = await ApiClient.resendInviteEmail(id);
+      showToast('success', res.message || 'Activation email dispatched.', 'Email Sent');
+      const refreshed = await ApiClient.getInviteRequests();
+      if (refreshed?.success && Array.isArray(refreshed.requests)) {
+        setInviteRequests(refreshed.requests);
+      }
+    } catch (err: any) {
+      showToast('error', err.message || 'Failed to dispatch activation email.', 'Error');
+    } finally {
+      setSendingEmailInviteId(null);
+    }
   };
 
   const handleOpenSuspendModal = (user: any) => {
@@ -2825,27 +2842,52 @@ export const AdminView: React.FC<AdminViewProps> = ({ onMaintenanceModeChange })
                               </>
                             )}
 
-                            {req.status === 'approved' && req.invite_token && !req.claimed_at && (
-                              <button
-                                onClick={() => handleCopyInviteLink(req)}
-                                style={{
-                                  padding: '6px 12px',
-                                  borderRadius: '6px',
-                                  border: '1px solid #bfdbfe',
-                                  backgroundColor: '#eff6ff',
-                                  color: '#2563eb',
-                                  fontSize: '12px',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px'
-                                }}
-                                title="Copy direct setup link"
-                              >
-                                <Copy size={13} />
-                                <span>{copiedInviteId === req.id ? 'Copied' : 'Copy Link'}</span>
-                              </button>
+                            {req.status === 'approved' && !req.claimed_at && (
+                              <>
+                                <button
+                                  onClick={() => handleResendInviteEmail(req.id)}
+                                  disabled={sendingEmailInviteId === req.id}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #bfdbfe',
+                                    backgroundColor: '#eff6ff',
+                                    color: '#2563eb',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                  title="Dispatch password setup email"
+                                >
+                                  <Mail size={13} />
+                                  <span>{sendingEmailInviteId === req.id ? 'Sending...' : 'Resend Email'}</span>
+                                </button>
+                                {req.invite_token && (
+                                  <button
+                                    onClick={() => handleCopyInviteLink(req)}
+                                    style={{
+                                      padding: '6px 12px',
+                                      borderRadius: '6px',
+                                      border: '1px solid #e2e8f0',
+                                      backgroundColor: '#f8fafc',
+                                      color: '#334155',
+                                      fontSize: '12px',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                    title="Copy direct setup link"
+                                  >
+                                    <Copy size={13} />
+                                    <span>{copiedInviteId === req.id ? 'Copied' : 'Copy Link'}</span>
+                                  </button>
+                                )}
+                              </>
                             )}
 
                             <button

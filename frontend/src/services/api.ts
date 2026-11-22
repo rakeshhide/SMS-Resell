@@ -166,6 +166,12 @@ export class ApiClient {
     });
   }
 
+  public static resendInviteEmail(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/admin/invite-requests/${id}/resend`, {
+      method: 'POST',
+    });
+  }
+
   // Wallet
   public static getWalletBalance() {
     return this.request<{
