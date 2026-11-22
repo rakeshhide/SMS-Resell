@@ -28,6 +28,8 @@ interface AuthViewProps {
   darkMode?: boolean;
   maintenanceMode?: boolean;
   maintenanceMessage?: string;
+  registrationMode?: 'open' | 'closed' | 'invite_only';
+  inviteMessage?: string;
 }
 
 export const AuthView: React.FC<AuthViewProps> = ({
@@ -37,6 +39,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
   darkMode = false,
   maintenanceMode = false,
   maintenanceMessage = '',
+  registrationMode = 'open',
+  inviteMessage = '',
 }) => {
   const [mode, setMode] = useState<AuthMode>(initialMode);
 
@@ -45,6 +49,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [inviteReason, setInviteReason] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // Status & Feedback
@@ -52,12 +57,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [suspendReason, setSuspendReason] = useState<string | null>(null);
   const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [inviteSubmitted, setInviteSubmitted] = useState(false);
 
   useEffect(() => {
     setMode(initialMode);
     setError(null);
     setSuspendReason(null);
     setForgotSuccess(false);
+    setInviteSubmitted(false);
   }, [initialMode]);
 
   const switchMode = (newMode: AuthMode) => {
@@ -65,6 +72,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
     setError(null);
     setSuspendReason(null);
     setForgotSuccess(false);
+    setInviteSubmitted(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,9 +83,26 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
     try {
       if (mode === 'signup') {
-        const res = await ApiClient.register(fullName, email, password, companyName);
-        ApiClient.setToken(res.token);
-        onSuccess(res.user, res.token);
+        if (registrationMode === 'invite_only') {
+          if (!fullName.trim() || !email.trim()) {
+            setError('Full name and work email are required.');
+            setLoading(false);
+            return;
+          }
+          await ApiClient.submitInviteRequest({
+            fullName: fullName.trim(),
+            email: email.trim(),
+            company: companyName.trim() || undefined,
+            reason: inviteReason.trim() || undefined,
+          });
+          setInviteSubmitted(true);
+        } else if (registrationMode === 'closed') {
+          setError(inviteMessage || 'New account registration is currently paused.');
+        } else {
+          const res = await ApiClient.register(fullName, email, password, companyName);
+          ApiClient.setToken(res.token);
+          onSuccess(res.user, res.token);
+        }
       } else if (mode === 'signin') {
         const res = await ApiClient.login(email, password);
         if (maintenanceMode && res.user.role !== 'admin') {
@@ -473,7 +498,11 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   boxShadow: mode === 'signup' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
                 }}
               >
-                Create Account
+                {registrationMode === 'invite_only'
+                  ? 'Request Invite'
+                  : registrationMode === 'closed'
+                  ? 'Registration Closed'
+                  : 'Create Account'}
               </button>
             </div>
           )}
@@ -492,14 +521,22 @@ export const AuthView: React.FC<AuthViewProps> = ({
               {mode === 'signin'
                 ? 'Welcome Back'
                 : mode === 'signup'
-                ? 'Create Your Developer Account'
+                ? registrationMode === 'invite_only'
+                  ? 'Request Platform Access'
+                  : registrationMode === 'closed'
+                  ? 'Registration Closed'
+                  : 'Create Your Developer Account'
                 : 'Recover Your Account'}
             </h1>
             <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
               {mode === 'signin'
                 ? 'Enter your credentials to access your API keys, SMS balance, and telemetry.'
                 : mode === 'signup'
-                ? 'Sign up to generate instant API keys and dispatch high-speed OTPs.'
+                ? registrationMode === 'invite_only'
+                  ? (inviteMessage || 'Platform onboarding is currently invite-only. Submit your developer application for approval.')
+                  : registrationMode === 'closed'
+                  ? (inviteMessage || 'Account registrations are temporarily paused. Existing accounts may sign in.')
+                  : 'Sign up to generate instant API keys and dispatch high-speed OTPs.'
                 : 'Enter your registered email address and we will dispatch a password reset link.'}
             </p>
           </div>
@@ -658,6 +695,101 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 <span>Back to Sign In</span>
               </button>
             </div>
+          ) : mode === 'signup' && registrationMode === 'closed' ? (
+            /* Registration Closed View */
+            <div style={{ padding: '20px 0', textAlign: 'center' }}>
+              <div
+                style={{
+                  padding: '18px 20px',
+                  borderRadius: '10px',
+                  backgroundColor: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
+                  marginBottom: '24px',
+                  textAlign: 'left',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', fontWeight: 700, fontSize: '14px', marginBottom: '6px' }}>
+                  <AlertCircle size={18} color="#f59e0b" />
+                  <span>Public Registration Paused</span>
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                  {inviteMessage || 'New account registrations are temporarily paused. If you already have an account, please sign in below.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => switchMode('signin')}
+                style={{
+                  width: '100%',
+                  padding: '12px 20px',
+                  backgroundColor: '#2563eb',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
+              >
+                <ArrowLeft size={16} />
+                <span>Return to Sign In</span>
+              </button>
+            </div>
+          ) : mode === 'signup' && registrationMode === 'invite_only' && inviteSubmitted ? (
+            /* Invite Request Success View */
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  backgroundColor: '#ecfdf5',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px',
+                  color: '#059669',
+                }}
+              >
+                <CheckCircle2 size={32} />
+              </div>
+
+              <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 10px' }}>
+                Invite Request Received
+              </h2>
+
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 28px' }}>
+                Thank you for applying for developer access. Our team will review your application for <strong>{email}</strong> and send your activation invite link via email upon approval.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => { switchMode('signin'); setInviteSubmitted(false); }}
+                style={{
+                  width: '100%',
+                  padding: '12px 20px',
+                  backgroundColor: '#2563eb',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
+              >
+                <ArrowLeft size={16} />
+                <span>Back to Sign In</span>
+              </button>
+            </div>
           ) : (
             /* Main Form (Spacious inputs, no small boxed border) */
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
@@ -798,8 +930,53 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 </div>
               </div>
 
-              {/* Password (Sign In & Sign Up) */}
-              {mode !== 'forgot' && (
+              {/* Invite-Only: Expected Monthly Volume & Use Case */}
+              {mode === 'signup' && registrationMode === 'invite_only' && (
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: 'var(--text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Expected Monthly Volume / Primary Use Case (Optional)
+                  </label>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      backgroundColor: 'var(--bg-card)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '8px',
+                      padding: '12px 14px',
+                    }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="e.g. 50,000 monthly OTPs for user verification"
+                      value={inviteReason}
+                      onChange={(e) => setInviteReason(e.target.value)}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        outline: 'none',
+                        fontSize: '14px',
+                        width: '100%',
+                        color: 'var(--text-main)',
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Password (Sign In & Open Sign Up only - NOT shown for invite requests) */}
+              {mode !== 'forgot' && !(mode === 'signup' && registrationMode === 'invite_only') && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                     <label
@@ -909,7 +1086,9 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       {mode === 'signin'
                         ? 'Sign In to Developer Console'
                         : mode === 'signup'
-                        ? 'Create Developer Account'
+                        ? registrationMode === 'invite_only'
+                          ? 'Submit Invite Request'
+                          : 'Create Developer Account'
                         : 'Send Password Reset Link'}
                     </span>
                     <ArrowRight size={16} />
@@ -921,22 +1100,49 @@ export const AuthView: React.FC<AuthViewProps> = ({
               <div style={{ textAlign: 'center', marginTop: '14px' }}>
                 {mode === 'signin' ? (
                   <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
-                    Don't have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => switchMode('signup')}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#2563eb',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        padding: 0,
-                        fontSize: '14px',
-                      }}
-                    >
-                      Create account free
-                    </button>
+                    {registrationMode === 'invite_only' ? (
+                      <>
+                        Need developer access?{' '}
+                        <button
+                          type="button"
+                          onClick={() => switchMode('signup')}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#2563eb',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            padding: 0,
+                            fontSize: '14px',
+                          }}
+                        >
+                          Request an invite
+                        </button>
+                      </>
+                    ) : registrationMode === 'closed' ? (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                        New account registration is currently paused.
+                      </span>
+                    ) : (
+                      <>
+                        Don't have an account?{' '}
+                        <button
+                          type="button"
+                          onClick={() => switchMode('signup')}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#2563eb',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            padding: 0,
+                            fontSize: '14px',
+                          }}
+                        >
+                          Create account free
+                        </button>
+                      </>
+                    )}
                   </p>
                 ) : mode === 'signup' ? (
                   <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>

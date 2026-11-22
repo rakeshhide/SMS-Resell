@@ -280,37 +280,23 @@ export function App() {
           darkMode={darkMode}
         />
       ) : authRouteMode !== null && !user ? (
-        /* 3. Authentication Route: ALWAYS Accessible so Admin Can Sign In */
-        authRouteMode === 'signup' && registrationMode !== 'open' ? (
-          <InviteRequestView
-            inviteMessage={registrationMode === 'invite_only' ? inviteMessage : 'Registration is currently closed. You can submit your details to be notified when it reopens.'}
-            onGoHome={() => {
-              setAuthRouteMode(null);
-              setViewingLanding(true);
-              try { history.pushState('', document.title, '/'); } catch {}
-            }}
-            onGoToLogin={() => {
-              setAuthRouteMode('signin');
-              setViewingLanding(false);
-              try { history.pushState('', document.title, '/login'); } catch {}
-            }}
-          />
-        ) : (
-          <AuthView
-            initialMode={authRouteMode}
-            onSuccess={handleAuthSuccess}
-            onGoHome={() => {
-              setAuthRouteMode(null);
-              setViewingLanding(true);
-              try {
-                history.pushState('', document.title, '/');
-              } catch {}
-            }}
-            darkMode={darkMode}
-            maintenanceMode={maintenanceMode}
-            maintenanceMessage={maintenanceMessage}
-          />
-        )
+        /* 3. Authentication Route: ALWAYS Accessible (Handles Sign In, Registration & Invite Requests) */
+        <AuthView
+          initialMode={authRouteMode}
+          onSuccess={handleAuthSuccess}
+          onGoHome={() => {
+            setAuthRouteMode(null);
+            setViewingLanding(true);
+            try {
+              history.pushState('', document.title, '/');
+            } catch {}
+          }}
+          darkMode={darkMode}
+          maintenanceMode={maintenanceMode}
+          maintenanceMessage={maintenanceMessage}
+          registrationMode={registrationMode}
+          inviteMessage={inviteMessage}
+        />
       ) : viewingLanding ? (
         /* 4. Public Intro / Landing Page: ALWAYS SAFE & LIVE */
         <LandingPageView
@@ -329,6 +315,7 @@ export function App() {
           }}
           maintenanceMode={maintenanceMode}
           maintenanceMessage={maintenanceMessage}
+          registrationMode={registrationMode}
           onAdminLogin={() => {
             setAuthRouteMode('signin');
             setViewingLanding(false);

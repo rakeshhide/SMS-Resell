@@ -58,12 +58,19 @@ export class AuthController {
       }
 
       if (regMode === 'invite_only') {
-        res.status(403).json({
-          success: false,
-          message: 'Registration is currently invite-only. Submit a request for access.',
-          registrationMode: 'invite_only',
-        });
-        return;
+        // Allow registration only if this email has an approved invite request
+        const approvedCheck = await pool.query(
+          "SELECT id FROM invite_requests WHERE email = $1 AND status = 'approved' LIMIT 1",
+          [email.toLowerCase()]
+        );
+        if (!approvedCheck.rowCount || approvedCheck.rowCount === 0) {
+          res.status(403).json({
+            success: false,
+            message: 'Registration is currently invite-only. Submit a request for access.',
+            registrationMode: 'invite_only',
+          });
+          return;
+        }
       }
 
       // Check existing email

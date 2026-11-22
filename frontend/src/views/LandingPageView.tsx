@@ -28,6 +28,7 @@ interface LandingPageViewProps {
   maintenanceMode?: boolean;
   maintenanceMessage?: string;
   onAdminLogin?: () => void;
+  registrationMode?: 'open' | 'closed' | 'invite_only';
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
@@ -38,6 +39,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   maintenanceMode = false,
   maintenanceMessage = '',
   onAdminLogin,
+  registrationMode = 'open',
 }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -171,7 +173,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   Sign In
                 </button>
                 <button
-                  onClick={() => onOpenAuth(true)}
+                  onClick={() => onOpenAuth(registrationMode !== 'closed')}
                   style={{
                     padding: '9px 20px',
                     backgroundColor: '#3b82f6',
@@ -182,7 +184,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)'
                   }}
                 >
-                  Get Started
+                  {registrationMode === 'invite_only' ? 'Request Invite' : registrationMode === 'closed' ? 'Sign In' : 'Get Started'}
                 </button>
               </>
             )}
