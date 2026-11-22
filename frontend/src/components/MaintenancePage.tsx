@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowLeft, ExternalLink, BarChart2, Wallet, Lock } from 'lucide-react';
+import { TurfsyLogo } from './TurfsyLogo';
 
 interface MaintenancePageProps {
   message?: string;
@@ -41,30 +42,16 @@ export function MaintenancePage({
           boxSizing: 'border-box',
         }}
       >
-        {/* Top Logo Icon (Dark rounded square with T symbol) */}
+        {/* Top Logo Icon (Official Website TurfsyLogo) */}
         <div
           style={{
-            width: '68px',
-            height: '68px',
-            borderRadius: '18px',
-            backgroundColor: '#0b1329',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 16px',
-            boxShadow: '0 8px 18px -4px rgba(11, 19, 41, 0.25)',
+            margin: '0 auto 18px',
           }}
         >
-          <svg width="34" height="34" viewBox="0 0 32 32" fill="none">
-            <path
-              d="M7 11C7 9.34315 8.34315 8 10 8H22C23.6569 8 25 9.34315 25 11C25 12.6569 23.6569 14 22 14H18V22C18 23.6569 16.6569 25 15 25C13.3431 25 12 23.6569 12 22V14H10C8.34315 14 7 12.6569 7 11Z"
-              fill="#ffffff"
-            />
-            <path
-              d="M13 11C13 9.89543 13.8954 9 15 9H21C22.1046 9 23 9.89543 23 11C23 12.1046 22.1046 13 21 13H17.5V21C17.5 22.1046 16.6046 23 15.5 23C14.3954 23 13.5 22.1046 13.5 21V13H15C13.8954 13 13 12.1046 13 11Z"
-              fill="#3b82f6"
-            />
-          </svg>
+          <TurfsyLogo size={64} />
         </div>
 
         {/* Status Pill Badge */}
