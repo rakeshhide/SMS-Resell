@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { MaintenancePage } from './components/MaintenancePage';
 import { DashboardView } from './views/DashboardView';
 import { TransactionsView } from './views/TransactionsView';
 import { AnalyticsView } from './views/AnalyticsView';
@@ -15,6 +16,7 @@ import { LandingPageView } from './views/LandingPageView';
 import { LegalView, LegalTab } from './views/LegalView';
 import { ResetPasswordView } from './views/ResetPasswordView';
 import { AuthView, AuthMode } from './views/AuthView';
+import { InviteRequestView } from './views/InviteRequestView';
 import { WalletRechargeModal } from './components/WalletRechargeModal';
 import { User } from './types';
 import { ApiClient } from './services/api';
@@ -24,6 +26,14 @@ export function App() {
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [viewingLanding, setViewingLanding] = useState<boolean>(true);
   const [legalViewTab, setLegalViewTab] = useState<LegalTab | null>(null);
+
+  // Platform status
+  const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string>('');
+  const [registrationMode, setRegistrationMode] = useState<'open' | 'closed' | 'invite_only'>('open');
+  const [inviteMessage, setInviteMessage] = useState<string>('');
+  const [showInviteRequest, setShowInviteRequest] = useState<boolean>(false);
+
   const [isResetPasswordRoute, setIsResetPasswordRoute] = useState<boolean>(() => {
     return window.location.pathname === '/reset-password' || new URLSearchParams(window.location.search).has('token');
   });
@@ -44,7 +54,14 @@ export function App() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check URL hash for direct policy routing or reset-password or auth pages
+    // Load platform status first (unauthenticated)
+    ApiClient.getPlatformStatus().then((res) => {
+      setMaintenanceMode(res.maintenanceMode);
+      setMaintenanceMessage(res.maintenanceMessage);
+      setRegistrationMode(res.registrationMode);
+      setInviteMessage(res.inviteMessage);
+    }).catch(() => {});
+
     const handleRoute = () => {
       const isReset = window.location.pathname === '/reset-password' || new URLSearchParams(window.location.search).has('token');
       setIsResetPasswordRoute(isReset);
@@ -134,7 +151,10 @@ export function App() {
 
   return (
     <div className={darkMode ? 'dark-mode' : ''} style={{ minHeight: '100vh', backgroundColor: 'var(--bg-app)' }}>
-      {isResetPasswordRoute ? (
+      {/* Maintenance mode -- admin bypasses it */}
+      {maintenanceMode && user?.role !== 'admin' ? (
+        <MaintenancePage message={maintenanceMessage} />
+      ) : isResetPasswordRoute ? (
         <ResetPasswordView
           darkMode={darkMode}
           onGoToLogin={() => {
@@ -181,6 +201,20 @@ export function App() {
           darkMode={darkMode}
         />
       ) : authRouteMode !== null && !user ? (
+        authRouteMode === 'signup' && registrationMode !== 'open' ? (
+          <InviteRequestView
+            inviteMessage={registrationMode === 'invite_only' ? inviteMessage : 'Registration is currently closed. You can submit your details to be notified when it reopens.'}
+            onGoHome={() => {
+              setAuthRouteMode(null);
+              setViewingLanding(true);
+              try { history.pushState('', document.title, '/'); } catch {}
+            }}
+            onGoToLogin={() => {
+              setAuthRouteMode('signin');
+              try { history.pushState('', document.title, '/login'); } catch {}
+            }}
+          />
+        ) : (
         <AuthView
           initialMode={authRouteMode}
           onSuccess={handleAuthSuccess}
@@ -193,6 +227,7 @@ export function App() {
           }}
           darkMode={darkMode}
         />
+        )
       ) : viewingLanding ? (
         <LandingPageView
           onOpenAuth={(isSignUp = false) => {

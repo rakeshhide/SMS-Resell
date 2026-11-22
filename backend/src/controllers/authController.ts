@@ -42,6 +42,30 @@ export class AuthController {
 
       const { fullName, email, password, companyName } = parsed.data;
 
+      // Check registration mode
+      const regModeRes = await pool.query(
+        "SELECT value FROM system_settings WHERE key = 'registration_mode' LIMIT 1"
+      );
+      const regMode = regModeRes.rows[0]?.value || 'open';
+
+      if (regMode === 'closed') {
+        res.status(403).json({
+          success: false,
+          message: 'New account registration is currently closed.',
+          registrationMode: 'closed',
+        });
+        return;
+      }
+
+      if (regMode === 'invite_only') {
+        res.status(403).json({
+          success: false,
+          message: 'Registration is currently invite-only. Submit a request for access.',
+          registrationMode: 'invite_only',
+        });
+        return;
+      }
+
       // Check existing email
       const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
       if (existing.rowCount && existing.rowCount > 0) {
@@ -130,7 +154,7 @@ export class AuthController {
       const { email, password } = parsed.data;
 
       const userRes = await pool.query(`
-        SELECT id, full_name, email, password_hash, role, status
+        SELECT id, full_name, email, password_hash, role, status, suspend_reason
         FROM users
         WHERE email = $1
       `, [email.toLowerCase()]);
@@ -148,7 +172,8 @@ export class AuthController {
       if (user.status !== 'active') {
         res.status(403).json({
           success: false,
-          message: 'Your account has been suspended. Please contact platform administrators.'
+          message: 'Your account has been suspended.',
+          suspendReason: user.suspend_reason || null,
         });
         return;
       }
@@ -478,6 +503,51 @@ export class AuthController {
     } catch (err: any) {
       console.error('[AUTH] Verify reset token error:', err.message);
       res.status(500).json({ success: false, valid: false, message: 'Failed to verify reset token.' });
+    }
+  }
+
+  /**
+   * Public: Submit an invite request (used when registration_mode = invite_only)
+   */
+  public static async submitInviteRequest(req: Request, res: Response): Promise<void> {
+    try {
+      const { fullName, email, company, reason } = req.body;
+
+      if (!fullName || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        res.status(400).json({ success: false, message: 'Full name and valid email are required.' });
+        return;
+      }
+
+      // Check if already submitted (pending)
+      const existing = await pool.query(
+        "SELECT id, status FROM invite_requests WHERE email = $1 ORDER BY created_at DESC LIMIT 1",
+        [email.toLowerCase()]
+      );
+
+      if (existing.rowCount && existing.rowCount > 0) {
+        const prev = existing.rows[0];
+        if (prev.status === 'pending') {
+          res.status(409).json({ success: false, message: 'A request from this email is already pending review.' });
+          return;
+        }
+        if (prev.status === 'approved') {
+          res.status(409).json({ success: false, message: 'This email has already been approved. Please register your account.' });
+          return;
+        }
+      }
+
+      await pool.query(`
+        INSERT INTO invite_requests (full_name, email, company, reason)
+        VALUES ($1, $2, $3, $4)
+      `, [fullName.trim(), email.toLowerCase(), company?.trim() || null, reason?.trim() || null]);
+
+      res.status(201).json({
+        success: true,
+        message: 'Your request has been submitted. We will review it and reach out to you.',
+      });
+    } catch (err: any) {
+      console.error('[AUTH] Invite request error:', err.message);
+      res.status(500).json({ success: false, message: 'Failed to submit request.' });
     }
   }
 }

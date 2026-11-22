@@ -93,6 +93,57 @@ export class ApiClient {
     return this.request<{ success: boolean; user: any }>('/auth/me');
   }
 
+  public static getPlatformStatus() {
+    return this.request<{
+      success: boolean;
+      maintenanceMode: boolean;
+      maintenanceMessage: string;
+      registrationMode: 'open' | 'closed' | 'invite_only';
+      inviteMessage: string;
+    }>('/admin/platform-status');
+  }
+
+  public static submitInviteRequest(data: { fullName: string; email: string; company?: string; reason?: string }) {
+    return this.request<{ success: boolean; message: string }>('/auth/invite-request', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public static getPlatformControls() {
+    return this.request<{
+      success: boolean;
+      maintenanceMode: boolean;
+      maintenanceMessage: string;
+      registrationMode: 'open' | 'closed' | 'invite_only';
+      inviteMessage: string;
+    }>('/admin/platform-controls');
+  }
+
+  public static updatePlatformControls(data: {
+    maintenanceMode?: boolean;
+    maintenanceMessage?: string;
+    registrationMode?: 'open' | 'closed' | 'invite_only';
+    inviteMessage?: string;
+  }) {
+    return this.request<{ success: boolean; message: string }>('/admin/platform-controls', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public static getInviteRequests(status?: string) {
+    const q = status ? `?status=${status}` : '';
+    return this.request<{ success: boolean; requests: any[] }>(`/admin/invite-requests${q}`);
+  }
+
+  public static reviewInviteRequest(id: string, action: 'approved' | 'rejected') {
+    return this.request<{ success: boolean; message: string }>(`/admin/invite-requests/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ action }),
+    });
+  }
+
   // Wallet
   public static getWalletBalance() {
     return this.request<{

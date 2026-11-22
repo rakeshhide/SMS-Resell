@@ -5,6 +5,9 @@ import { requireAdmin } from '../middlewares/adminMiddleware';
 
 const router = Router();
 
+// Public endpoint - no auth
+router.get('/platform-status', AdminController.getPlatformStatus);
+
 router.use(authenticateJWT);
 router.use(requireAdmin);
 
@@ -22,6 +25,14 @@ router.delete('/pricing-tiers/:id', AdminController.deletePricingTier);
 router.patch('/pricing-tiers/:id/toggle', AdminController.togglePricingTier);
 router.get('/settings', AdminController.getSettings);
 router.put('/settings', AdminController.updateSettings);
+
+// Platform Controls
+router.get('/platform-controls', AdminController.getPlatformStatus);
+router.put('/platform-controls', AdminController.updatePlatformControls);
+
+// Invite Requests
+router.get('/invite-requests', AdminController.listInviteRequests);
+router.patch('/invite-requests/:id', AdminController.reviewInviteRequest);
 
 router.post('/wallet/adjust', AdminController.manualAdjustment);
 router.post('/users/tier', AdminController.setUserTier);

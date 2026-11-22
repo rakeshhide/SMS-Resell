@@ -10,5 +10,6 @@ router.post('/forgot-password', AuthController.forgotPassword);
 router.post('/reset-password', AuthController.resetPassword);
 router.get('/verify-reset-token', AuthController.verifyResetToken);
 router.get('/me', authenticateJWT, AuthController.getMe);
+router.post('/invite-request', AuthController.submitInviteRequest);
 
 export default router;

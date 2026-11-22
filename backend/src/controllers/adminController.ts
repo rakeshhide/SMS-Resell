@@ -200,7 +200,7 @@ export class AdminController {
    */
   public static async toggleUserStatus(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const { userId, status } = req.body;
+      const { userId, status, suspendReason } = req.body;
       if (!userId || !['active', 'suspended'].includes(status)) {
         res.status(400).json({ success: false, message: 'Invalid user status parameter' });
         return;
@@ -208,21 +208,22 @@ export class AdminController {
 
       const resUpdate = await pool.query(`
         UPDATE users
-        SET status = $1, updated_at = NOW()
-        WHERE id = $2
-        RETURNING id, email, status
-      `, [status, userId]);
+        SET status = $1,
+            suspend_reason = $2,
+            updated_at = NOW()
+        WHERE id = $3
+        RETURNING id, email, status, suspend_reason
+      `, [status, status === 'suspended' ? (suspendReason || null) : null, userId]);
 
       if (resUpdate.rowCount === 0) {
         res.status(404).json({ success: false, message: 'User not found' });
         return;
       }
 
-      // Log in audit log
       await pool.query(`
         INSERT INTO audit_logs (actor_id, action, target_type, target_id, reason)
         VALUES ($1, 'USER_STATUS_UPDATE', 'user', $2, $3)
-      `, [req.user?.id, userId, `Status changed to ${status}`]);
+      `, [req.user?.id, userId, `Status changed to ${status}${suspendReason ? ': ' + suspendReason : ''}`]);
 
       res.json({
         success: true,
@@ -696,6 +697,122 @@ export class AdminController {
     } catch (err: any) {
       console.error('[ADMIN] Trigger Fast2SMS check error:', err.message);
       res.status(500).json({ success: false, message: 'Failed to verify Fast2SMS float.' });
+    }
+  }
+
+  /**
+   * Public: Get platform status (maintenance mode + registration mode)
+   * No auth required -- called by frontend before showing any UI
+   */
+  public static async getPlatformStatus(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const result = await pool.query(`
+        SELECT key, value FROM system_settings
+        WHERE key IN ('maintenance_mode', 'maintenance_message', 'registration_mode', 'invite_message')
+      `);
+
+      const map: Record<string, string> = {};
+      for (const row of result.rows) map[row.key] = row.value;
+
+      res.json({
+        success: true,
+        maintenanceMode: map['maintenance_mode'] === 'true',
+        maintenanceMessage: map['maintenance_message'] || 'We are under maintenance. Back shortly.',
+        registrationMode: (map['registration_mode'] || 'open') as 'open' | 'closed' | 'invite_only',
+        inviteMessage: map['invite_message'] || 'Registration is currently invite-only.',
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, maintenanceMode: false, registrationMode: 'open' });
+    }
+  }
+
+  /**
+   * Admin: Update platform controls (maintenance + registration mode)
+   */
+  public static async updatePlatformControls(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { maintenanceMode, maintenanceMessage, registrationMode, inviteMessage } = req.body;
+
+      const updates: Array<[string, string]> = [];
+      if (maintenanceMode !== undefined) updates.push(['maintenance_mode', String(!!maintenanceMode)]);
+      if (maintenanceMessage !== undefined) updates.push(['maintenance_message', String(maintenanceMessage)]);
+      if (registrationMode !== undefined) {
+        if (!['open', 'closed', 'invite_only'].includes(registrationMode)) {
+          res.status(400).json({ success: false, message: 'Invalid registrationMode. Use: open | closed | invite_only' });
+          return;
+        }
+        updates.push(['registration_mode', registrationMode]);
+      }
+      if (inviteMessage !== undefined) updates.push(['invite_message', String(inviteMessage)]);
+
+      for (const [key, value] of updates) {
+        await BillingService.updateSetting(key, value);
+      }
+
+      await pool.query(`
+        INSERT INTO audit_logs (actor_id, action, target_type, target_id, reason, metadata)
+        VALUES ($1, 'UPDATE_PLATFORM_CONTROLS', 'system', 'platform', 'Admin updated platform controls', $2)
+      `, [req.user?.id, JSON.stringify({ maintenanceMode, registrationMode })]);
+
+      res.json({ success: true, message: 'Platform controls updated.' });
+    } catch (err: any) {
+      console.error('[ADMIN] Update platform controls error:', err.message);
+      res.status(500).json({ success: false, message: 'Failed to update platform controls.' });
+    }
+  }
+
+  /**
+   * Admin: List invite requests
+   */
+  public static async listInviteRequests(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { status } = req.query;
+      const filter = status ? `WHERE status = $1` : '';
+      const params = status ? [status] : [];
+
+      const result = await pool.query(
+        `SELECT id, full_name, email, company, reason, status, created_at, reviewed_at
+         FROM invite_requests
+         ${filter}
+         ORDER BY created_at DESC
+         LIMIT 100`,
+        params
+      );
+
+      res.json({ success: true, requests: result.rows });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: 'Failed to fetch invite requests.' });
+    }
+  }
+
+  /**
+   * Admin: Approve or reject an invite request
+   */
+  public static async reviewInviteRequest(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { action } = req.body;
+
+      if (!['approved', 'rejected'].includes(action)) {
+        res.status(400).json({ success: false, message: 'action must be approved or rejected' });
+        return;
+      }
+
+      const result = await pool.query(`
+        UPDATE invite_requests
+        SET status = $1, reviewed_by = $2, reviewed_at = NOW()
+        WHERE id = $3
+        RETURNING *
+      `, [action, req.user?.id, id]);
+
+      if (result.rowCount === 0) {
+        res.status(404).json({ success: false, message: 'Request not found.' });
+        return;
+      }
+
+      res.json({ success: true, message: `Request ${action}.`, request: result.rows[0] });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: 'Failed to review request.' });
     }
   }
 }
