@@ -17,6 +17,7 @@ import { LegalView, LegalTab } from './views/LegalView';
 import { ResetPasswordView } from './views/ResetPasswordView';
 import { AuthView, AuthMode } from './views/AuthView';
 import { InviteRequestView } from './views/InviteRequestView';
+import { AdminMaintenanceLoginView } from './views/AdminMaintenanceLoginView';
 import { WalletRechargeModal } from './components/WalletRechargeModal';
 import { User } from './types';
 import { ApiClient } from './services/api';
@@ -34,6 +35,7 @@ export function App() {
   const [registrationMode, setRegistrationMode] = useState<'open' | 'closed' | 'invite_only'>('open');
   const [inviteMessage, setInviteMessage] = useState<string>('');
   const [togglingMaintenance, setTogglingMaintenance] = useState<boolean>(false);
+  const [viewingAdminMaintenanceLogin, setViewingAdminMaintenanceLogin] = useState<boolean>(false);
 
   const [isResetPasswordRoute, setIsResetPasswordRoute] = useState<boolean>(() => {
     return window.location.pathname === '/reset-password' || new URLSearchParams(window.location.search).has('token');
@@ -81,9 +83,13 @@ export function App() {
             setCurrentTab('admin');
             setViewingLanding(false);
             setAuthRouteMode(null);
+            setViewingAdminMaintenanceLogin(false);
           } else {
-            setAuthRouteMode('signin');
             setViewingLanding(false);
+            setAuthRouteMode('signin');
+            if (maintenanceMode) {
+              setViewingAdminMaintenanceLogin(true);
+            }
           }
         } else if (p === '/login' || hash === 'login') {
           setAuthRouteMode('signin');
@@ -127,6 +133,7 @@ export function App() {
     ApiClient.clearToken();
     setUser(null);
     setAuthRouteMode(null);
+    setViewingAdminMaintenanceLogin(false);
     setViewingLanding(true);
     try {
       history.pushState('', document.title, '/');
@@ -136,6 +143,7 @@ export function App() {
   const handleAuthSuccess = (authenticatedUser: User) => {
     setUser(authenticatedUser);
     setAuthRouteMode(null);
+    setViewingAdminMaintenanceLogin(false);
     setViewingLanding(false);
     if (authenticatedUser.role === 'admin') {
       setCurrentTab('admin');
@@ -231,8 +239,19 @@ export function App() {
         </div>
       )}
 
-      {/* 1. Reset Password Route */}
-      {isResetPasswordRoute ? (
+      {/* 0. Dedicated Admin Emergency Maintenance Login Portal (ACTIVE ONLY during maintenance) */}
+      {viewingAdminMaintenanceLogin ? (
+        <AdminMaintenanceLoginView
+          onSuccess={handleAuthSuccess}
+          onBackToMaintenance={() => setViewingAdminMaintenanceLogin(false)}
+          onGoHome={() => {
+            setViewingAdminMaintenanceLogin(false);
+            setViewingLanding(true);
+            try { history.pushState('', document.title, '/'); } catch {}
+          }}
+          maintenanceMessage={maintenanceMessage}
+        />
+      ) : isResetPasswordRoute ? (
         <ResetPasswordView
           darkMode={darkMode}
           onGoToLogin={() => {
@@ -280,23 +299,39 @@ export function App() {
           darkMode={darkMode}
         />
       ) : authRouteMode !== null && !user ? (
-        /* 3. Authentication Route: ALWAYS Accessible (Handles Sign In, Registration & Invite Requests) */
-        <AuthView
-          initialMode={authRouteMode}
-          onSuccess={handleAuthSuccess}
-          onGoHome={() => {
-            setAuthRouteMode(null);
-            setViewingLanding(true);
-            try {
-              history.pushState('', document.title, '/');
-            } catch {}
-          }}
-          darkMode={darkMode}
-          maintenanceMode={maintenanceMode}
-          maintenanceMessage={maintenanceMessage}
-          registrationMode={registrationMode}
-          inviteMessage={inviteMessage}
-        />
+        /* 3. Authentication Route */
+        maintenanceMode ? (
+          /* When maintenance is on, visiting login shows the dedicated Maintenance Page with Admin Sign In button */
+          <MaintenancePage
+            message={maintenanceMessage}
+            onGoHome={() => {
+              setAuthRouteMode(null);
+              setViewingLanding(true);
+              try { history.pushState('', document.title, '/'); } catch {}
+            }}
+            onAdminLogin={() => {
+              setViewingAdminMaintenanceLogin(true);
+            }}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <AuthView
+            initialMode={authRouteMode}
+            onSuccess={handleAuthSuccess}
+            onGoHome={() => {
+              setAuthRouteMode(null);
+              setViewingLanding(true);
+              try {
+                history.pushState('', document.title, '/');
+              } catch {}
+            }}
+            darkMode={darkMode}
+            maintenanceMode={maintenanceMode}
+            maintenanceMessage={maintenanceMessage}
+            registrationMode={registrationMode}
+            inviteMessage={inviteMessage}
+          />
+        )
       ) : viewingLanding ? (
         /* 4. Public Intro / Landing Page: ALWAYS SAFE & LIVE */
         <LandingPageView
@@ -317,21 +352,24 @@ export function App() {
           maintenanceMessage={maintenanceMessage}
           registrationMode={registrationMode}
           onAdminLogin={() => {
-            setAuthRouteMode('signin');
             setViewingLanding(false);
+            if (maintenanceMode) {
+              setViewingAdminMaintenanceLogin(true);
+            } else {
+              setAuthRouteMode('signin');
+            }
             try {
               history.pushState('', document.title, '/login');
             } catch {}
           }}
         />
       ) : maintenanceMode && user?.role !== 'admin' ? (
-        /* 5. Maintenance screen for logged-in regular users */
+        /* 5. Maintenance screen matching user design for logged-in regular users */
         <MaintenancePage
           message={maintenanceMessage}
           onGoHome={() => setViewingLanding(true)}
           onAdminLogin={() => {
-            handleLogout();
-            setAuthRouteMode('signin');
+            setViewingAdminMaintenanceLogin(true);
             setViewingLanding(false);
           }}
           onLogout={handleLogout}
