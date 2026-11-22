@@ -181,20 +181,19 @@ export class AuthController {
 
       // Check account suspension AFTER valid credentials verified
       if (user.status !== 'active') {
+        const effectiveReason = user.suspend_reason || 'Administrative compliance review: Account suspended by administrator.';
         EmailService.sendAccountSuspendedEmail({
           userEmail: user.email,
           userName: user.full_name || 'Developer',
-          reason: user.suspend_reason || 'Administrative policy review',
+          reason: effectiveReason,
           triggeredByLogin: true
         }).catch((e) => console.error('[AUTH] Failed to send suspension email on login attempt:', e));
 
         res.status(403).json({
           success: false,
           error_code: 'ACCOUNT_SUSPENDED',
-          message: user.suspend_reason
-            ? `Your account has been suspended: ${user.suspend_reason}`
-            : 'Your account has been suspended. Please contact platform support.',
-          suspendReason: user.suspend_reason || null,
+          message: `Your account has been suspended: ${effectiveReason}`,
+          suspendReason: effectiveReason,
         });
         return;
       }

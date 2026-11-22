@@ -83,12 +83,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
         setForgotSuccess(true);
       }
     } catch (err: any) {
-      if (err.errorCode === 'ACCOUNT_SUSPENDED' || err.suspendReason) {
-        setSuspendReason(err.suspendReason || 'Administrative compliance review');
-        setError(err.message || 'Your account has been suspended.');
+      const msg = err.message || '';
+      const isSuspended = err.errorCode === 'ACCOUNT_SUSPENDED' || err.suspendReason || msg.toLowerCase().includes('suspend');
+      if (isSuspended) {
+        setSuspendReason(err.suspendReason || 'Administrative compliance review: Account suspended by administrator.');
+        setError(msg || 'Your account has been suspended.');
       } else {
         setSuspendReason(null);
-        setError(err.message || 'Authentication failed. Please verify your credentials.');
+        setError(msg || 'Authentication failed. Please verify your credentials.');
       }
     } finally {
       setLoading(false);
