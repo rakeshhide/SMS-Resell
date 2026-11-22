@@ -26,6 +26,8 @@ interface AuthViewProps {
   onSuccess: (user: User, token: string) => void;
   onGoHome: () => void;
   darkMode?: boolean;
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string;
 }
 
 export const AuthView: React.FC<AuthViewProps> = ({
@@ -33,6 +35,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
   onSuccess,
   onGoHome,
   darkMode = false,
+  maintenanceMode = false,
+  maintenanceMessage = '',
 }) => {
   const [mode, setMode] = useState<AuthMode>(initialMode);
 
@@ -76,6 +80,10 @@ export const AuthView: React.FC<AuthViewProps> = ({
         onSuccess(res.user, res.token);
       } else if (mode === 'signin') {
         const res = await ApiClient.login(email, password);
+        if (maintenanceMode && res.user.role !== 'admin') {
+          setError('The developer console is currently undergoing scheduled maintenance. Please check back shortly. Programmatic API endpoints remain active.');
+          return;
+        }
         ApiClient.setToken(res.token);
         onSuccess(res.user, res.token);
       } else if (mode === 'forgot') {
@@ -495,6 +503,34 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 : 'Enter your registered email address and we will dispatch a password reset link.'}
             </p>
           </div>
+
+          {/* Platform Maintenance Notice */}
+          {maintenanceMode && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                backgroundColor: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                color: '#1e40af',
+                fontSize: '12px',
+                lineHeight: 1.5,
+                marginBottom: '18px',
+                textAlign: 'left',
+              }}
+            >
+              <AlertCircle size={16} color="#2563eb" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <strong style={{ display: 'block', color: '#1e3a8a', marginBottom: '2px' }}>
+                  Console Maintenance Mode Active
+                </strong>
+                Developer consoles are undergoing upgrades. Administrators may sign in below to manage platform operations.
+              </div>
+            </div>
+          )}
 
           {/* Error Banner */}
           {error && (

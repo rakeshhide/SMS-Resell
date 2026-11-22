@@ -20,6 +20,7 @@ import { InviteRequestView } from './views/InviteRequestView';
 import { WalletRechargeModal } from './components/WalletRechargeModal';
 import { User } from './types';
 import { ApiClient } from './services/api';
+import { AlertOctagon, Power } from 'lucide-react';
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -32,7 +33,7 @@ export function App() {
   const [maintenanceMessage, setMaintenanceMessage] = useState<string>('');
   const [registrationMode, setRegistrationMode] = useState<'open' | 'closed' | 'invite_only'>('open');
   const [inviteMessage, setInviteMessage] = useState<string>('');
-  const [showInviteRequest, setShowInviteRequest] = useState<boolean>(false);
+  const [togglingMaintenance, setTogglingMaintenance] = useState<boolean>(false);
 
   const [isResetPasswordRoute, setIsResetPasswordRoute] = useState<boolean>(() => {
     return window.location.pathname === '/reset-password' || new URLSearchParams(window.location.search).has('token');
@@ -41,7 +42,7 @@ export function App() {
   const [authRouteMode, setAuthRouteMode] = useState<AuthMode | null>(() => {
     const p = window.location.pathname.toLowerCase();
     const h = window.location.hash.replace('#', '').toLowerCase();
-    if (p === '/login' || h === 'login') return 'signin';
+    if (p === '/login' || h === 'login' || p === '/admin' || h === 'admin') return 'signin';
     if (p === '/signup' || h === 'signup' || p === '/register' || h === 'register') return 'signup';
     if (p === '/forgot-password' || h === 'forgot') return 'forgot';
     return null;
@@ -56,10 +57,10 @@ export function App() {
   useEffect(() => {
     // Load platform status first (unauthenticated)
     ApiClient.getPlatformStatus().then((res) => {
-      setMaintenanceMode(res.maintenanceMode);
-      setMaintenanceMessage(res.maintenanceMessage);
-      setRegistrationMode(res.registrationMode);
-      setInviteMessage(res.inviteMessage);
+      setMaintenanceMode(Boolean(res.maintenanceMode));
+      setMaintenanceMessage(res.maintenanceMessage || '');
+      setRegistrationMode(res.registrationMode || 'open');
+      setInviteMessage(res.inviteMessage || '');
     }).catch(() => {});
 
     const handleRoute = () => {
@@ -74,12 +75,25 @@ export function App() {
         setAuthRouteMode(null);
       } else {
         setLegalViewTab(null);
-        if (p === '/login' || hash === 'login') {
+        if (p === '/admin' || hash === 'admin') {
+          const token = localStorage.getItem('nexus_auth_token');
+          if (token) {
+            setCurrentTab('admin');
+            setViewingLanding(false);
+            setAuthRouteMode(null);
+          } else {
+            setAuthRouteMode('signin');
+            setViewingLanding(false);
+          }
+        } else if (p === '/login' || hash === 'login') {
           setAuthRouteMode('signin');
+          setViewingLanding(false);
         } else if (p === '/signup' || hash === 'signup' || p === '/register' || hash === 'register') {
           setAuthRouteMode('signup');
+          setViewingLanding(false);
         } else if (p === '/forgot-password' || hash === 'forgot') {
           setAuthRouteMode('forgot');
+          setViewingLanding(false);
         }
       }
     };
@@ -93,6 +107,9 @@ export function App() {
         setUser(res.user);
         setViewingLanding(false);
         setAuthRouteMode(null);
+        if (window.location.pathname.toLowerCase() === '/admin' || window.location.hash.toLowerCase() === '#admin') {
+          setCurrentTab('admin');
+        }
       } else {
         setViewingLanding(true);
       }
@@ -120,10 +137,26 @@ export function App() {
     setUser(authenticatedUser);
     setAuthRouteMode(null);
     setViewingLanding(false);
-    setCurrentTab('dashboard');
+    if (authenticatedUser.role === 'admin') {
+      setCurrentTab('admin');
+    } else {
+      setCurrentTab('dashboard');
+    }
     try {
       history.pushState('', document.title, '/');
     } catch {}
+  };
+
+  const handleTurnOffMaintenance = async () => {
+    try {
+      setTogglingMaintenance(true);
+      await ApiClient.updatePlatformControls({ maintenanceMode: false });
+      setMaintenanceMode(false);
+    } catch (err: any) {
+      console.error('Failed to disable maintenance mode:', err);
+    } finally {
+      setTogglingMaintenance(false);
+    }
   };
 
   const handleWalletSuccess = (newBalance: number) => {
@@ -151,15 +184,61 @@ export function App() {
 
   return (
     <div className={darkMode ? 'dark-mode' : ''} style={{ minHeight: '100vh', backgroundColor: 'var(--bg-app)' }}>
-      {/* Maintenance mode -- admin bypasses it */}
-      {maintenanceMode && user?.role !== 'admin' ? (
-        <MaintenancePage message={maintenanceMessage} />
-      ) : isResetPasswordRoute ? (
+      {/* Global Sticky Maintenance Mode Warning Bar for Logged-In Admin */}
+      {maintenanceMode && user?.role === 'admin' && (
+        <div
+          style={{
+            backgroundColor: '#dc2626',
+            color: '#ffffff',
+            padding: '10px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '13px',
+            fontWeight: 600,
+            position: 'sticky',
+            top: 0,
+            zIndex: 99999,
+            boxShadow: '0 2px 10px rgba(220, 38, 38, 0.4)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <AlertOctagon size={18} color="#ffffff" />
+            <span>
+              Platform Maintenance Mode is currently <strong>ACTIVE</strong>. Regular developer accounts cannot access the console.
+            </span>
+          </div>
+          <button
+            onClick={handleTurnOffMaintenance}
+            disabled={togglingMaintenance}
+            style={{
+              backgroundColor: '#ffffff',
+              color: '#dc2626',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '6px 14px',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: togglingMaintenance ? 'not-allowed' : 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Power size={14} />
+            <span>{togglingMaintenance ? 'Turning Off...' : 'Turn Off Maintenance Mode Now'}</span>
+          </button>
+        </div>
+      )}
+
+      {/* 1. Reset Password Route */}
+      {isResetPasswordRoute ? (
         <ResetPasswordView
           darkMode={darkMode}
           onGoToLogin={() => {
             setIsResetPasswordRoute(false);
             setAuthRouteMode('signin');
+            setViewingLanding(false);
             try {
               history.pushState('', document.title, '/login');
             } catch {}
@@ -167,6 +246,7 @@ export function App() {
           onForgotPassword={() => {
             setIsResetPasswordRoute(false);
             setAuthRouteMode('forgot');
+            setViewingLanding(false);
             try {
               history.pushState('', document.title, '/login');
             } catch {}
@@ -174,15 +254,14 @@ export function App() {
           onGoHome={() => {
             setIsResetPasswordRoute(false);
             setAuthRouteMode(null);
+            setViewingLanding(true);
             try {
               history.pushState('', document.title, '/');
             } catch {}
-            if (!user) {
-              setViewingLanding(true);
-            }
           }}
         />
       ) : legalViewTab !== null ? (
+        /* 2. Legal Policy Pages */
         <LegalView
           initialTab={legalViewTab}
           onBack={() => {
@@ -201,6 +280,7 @@ export function App() {
           darkMode={darkMode}
         />
       ) : authRouteMode !== null && !user ? (
+        /* 3. Authentication Route: ALWAYS Accessible so Admin Can Sign In */
         authRouteMode === 'signup' && registrationMode !== 'open' ? (
           <InviteRequestView
             inviteMessage={registrationMode === 'invite_only' ? inviteMessage : 'Registration is currently closed. You can submit your details to be notified when it reopens.'}
@@ -211,27 +291,32 @@ export function App() {
             }}
             onGoToLogin={() => {
               setAuthRouteMode('signin');
+              setViewingLanding(false);
               try { history.pushState('', document.title, '/login'); } catch {}
             }}
           />
         ) : (
-        <AuthView
-          initialMode={authRouteMode}
-          onSuccess={handleAuthSuccess}
-          onGoHome={() => {
-            setAuthRouteMode(null);
-            setViewingLanding(true);
-            try {
-              history.pushState('', document.title, '/');
-            } catch {}
-          }}
-          darkMode={darkMode}
-        />
+          <AuthView
+            initialMode={authRouteMode}
+            onSuccess={handleAuthSuccess}
+            onGoHome={() => {
+              setAuthRouteMode(null);
+              setViewingLanding(true);
+              try {
+                history.pushState('', document.title, '/');
+              } catch {}
+            }}
+            darkMode={darkMode}
+            maintenanceMode={maintenanceMode}
+            maintenanceMessage={maintenanceMessage}
+          />
         )
       ) : viewingLanding ? (
+        /* 4. Public Intro / Landing Page: ALWAYS SAFE & LIVE */
         <LandingPageView
           onOpenAuth={(isSignUp = false) => {
             setAuthRouteMode(isSignUp ? 'signup' : 'signin');
+            setViewingLanding(false);
             try {
               history.pushState('', document.title, isSignUp ? '/signup' : '/login');
             } catch {}
@@ -242,8 +327,30 @@ export function App() {
             window.location.hash = tab;
             setLegalViewTab(tab);
           }}
+          maintenanceMode={maintenanceMode}
+          maintenanceMessage={maintenanceMessage}
+          onAdminLogin={() => {
+            setAuthRouteMode('signin');
+            setViewingLanding(false);
+            try {
+              history.pushState('', document.title, '/login');
+            } catch {}
+          }}
+        />
+      ) : maintenanceMode && user?.role !== 'admin' ? (
+        /* 5. Maintenance screen for logged-in regular users */
+        <MaintenancePage
+          message={maintenanceMessage}
+          onGoHome={() => setViewingLanding(true)}
+          onAdminLogin={() => {
+            handleLogout();
+            setAuthRouteMode('signin');
+            setViewingLanding(false);
+          }}
+          onLogout={handleLogout}
         />
       ) : (
+        /* 6. Authenticated App Experience (Admins and regular users when not in maintenance) */
         <div className="app-container">
           {/* Dark Contrast Responsive Sidebar */}
           <Sidebar
@@ -281,7 +388,6 @@ export function App() {
               {currentTab === 'send-otp' && (
                 <SendOtpView
                   onSuccessDispatch={() => {
-                    // Refresh balance
                     ApiClient.getWalletBalance().then((res) => {
                       if (user && res?.balance !== undefined) {
                         setUser({ ...user, balance: res.balance });
@@ -296,7 +402,9 @@ export function App() {
               )}
               {currentTab === 'docs' && <DocsView />}
               {currentTab === 'support' && <SupportView />}
-              {currentTab === 'admin' && <AdminView />}
+              {currentTab === 'admin' && (
+                <AdminView onMaintenanceModeChange={(active) => setMaintenanceMode(active)} />
+              )}
               {currentTab === 'legal' && (
                 <LegalView
                   initialTab="terms"

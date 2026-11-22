@@ -42,7 +42,11 @@ import { AdminSkeleton } from '../components/Skeleton';
 import { AdminSupportChat } from '../components/AdminSupportChat';
 import { ToastContainer, ToastMessage } from '../components/Toast';
 
-export const AdminView: React.FC = () => {
+interface AdminViewProps {
+  onMaintenanceModeChange?: (active: boolean) => void;
+}
+
+export const AdminView: React.FC<AdminViewProps> = ({ onMaintenanceModeChange }) => {
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -286,6 +290,9 @@ export const AdminView: React.FC = () => {
         inviteMessage,
       });
       showToast('success', res.message || 'Platform operational controls saved successfully.', 'Controls Saved');
+      if (onMaintenanceModeChange) {
+        onMaintenanceModeChange(maintenanceMode);
+      }
     } catch (err: any) {
       showToast('error', err.message || 'Failed to update platform controls', 'Error');
     } finally {

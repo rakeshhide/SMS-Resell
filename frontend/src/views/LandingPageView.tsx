@@ -25,6 +25,9 @@ interface LandingPageViewProps {
   onGoToDashboard: () => void;
   isLoggedIn: boolean;
   onOpenLegal?: (tab: 'terms' | 'privacy' | 'aup' | 'refund') => void;
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string;
+  onAdminLogin?: () => void;
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
@@ -32,6 +35,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   onGoToDashboard,
   isLoggedIn,
   onOpenLegal,
+  maintenanceMode = false,
+  maintenanceMessage = '',
+  onAdminLogin,
 }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -62,6 +68,57 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   return (
     <div style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-main)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
+      {/* Maintenance Mode Public Status Banner (Landing page remains 100% live) */}
+      {maintenanceMode && (
+        <div
+          style={{
+            backgroundColor: '#0f172a',
+            borderBottom: '1px solid #1e293b',
+            color: '#94a3b8',
+            padding: '8px 24px',
+            fontSize: '12px',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                backgroundColor: '#f59e0b',
+                display: 'inline-block',
+              }}
+            />
+            <span style={{ color: '#cbd5e1' }}>
+              <strong>Platform Notice:</strong> {maintenanceMessage || 'Developer console undergoing scheduled upgrades. Programmatic API and SMS routes remain 100% operational.'}
+            </span>
+          </div>
+          {onAdminLogin && (
+            <button
+              onClick={onAdminLogin}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#60a5fa',
+                fontWeight: 600,
+                fontSize: '12px',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                padding: 0,
+              }}
+            >
+              Admin Portal &rarr;
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Top Navbar */}
       <header className="landing-header">
         <div className="landing-header-inner">
