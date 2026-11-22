@@ -111,6 +111,12 @@ export class AuthController {
           VALUES ($1, 0.0000, 'INR', $2, $3, 0.0000)
         `, [newUser.id, initialOtpRate, initialTierId]);
 
+        await client.query(`
+          UPDATE invite_requests
+          SET claimed_at = NOW()
+          WHERE email = $1 AND status = 'approved' AND claimed_at IS NULL
+        `, [email.toLowerCase()]);
+
         await client.query('COMMIT');
 
         const jwtSecret = process.env.JWT_SECRET;
@@ -566,6 +572,56 @@ export class AuthController {
     } catch (err: any) {
       console.error('[AUTH] Invite request error:', err.message);
       res.status(500).json({ success: false, message: 'Failed to submit request.' });
+    }
+  }
+
+  public static async verifyInviteToken(req: Request, res: Response): Promise<void> {
+    try {
+      const token = String(req.query.token || '').trim();
+      if (!token) {
+        res.status(400).json({ success: false, message: 'Invite token is required.' });
+        return;
+      }
+
+      const result = await pool.query(`
+        SELECT id, full_name, email, company, status, token_expires_at, claimed_at
+        FROM invite_requests
+        WHERE invite_token = $1
+        LIMIT 1
+      `, [token]);
+
+      if (result.rowCount === 0) {
+        res.status(404).json({ success: false, message: 'Invalid or unknown invitation token.' });
+        return;
+      }
+
+      const invite = result.rows[0];
+
+      if (invite.status !== 'approved') {
+        res.status(403).json({ success: false, message: 'This invitation request has not been approved.' });
+        return;
+      }
+
+      if (invite.claimed_at) {
+        res.status(410).json({ success: false, message: 'This invitation has already been used to create an account. Please sign in.' });
+        return;
+      }
+
+      if (invite.token_expires_at && new Date(invite.token_expires_at).getTime() < Date.now()) {
+        res.status(410).json({ success: false, message: 'This invitation has expired. Please submit a new invite request.' });
+        return;
+      }
+
+      res.json({
+        success: true,
+        invite: {
+          fullName: invite.full_name,
+          email: invite.email,
+          company: invite.company,
+        }
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: 'Failed to verify invitation token.' });
     }
   }
 }

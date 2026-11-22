@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import crypto from 'crypto';
 import { z } from 'zod';
 import axios from 'axios';
 import { pool } from '../config/db';
@@ -808,16 +809,58 @@ export class AdminController {
         return;
       }
 
-      const result = await pool.query(`
-        UPDATE invite_requests
-        SET status = $1, reviewed_by = $2, reviewed_at = NOW()
-        WHERE id = $3
-        RETURNING *
-      `, [action, req.user?.id, id]);
+      let result;
+      if (action === 'approved') {
+        const inviteToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-      if (result.rowCount === 0) {
-        res.status(404).json({ success: false, message: 'Request not found.' });
-        return;
+        result = await pool.query(`
+          UPDATE invite_requests
+          SET status = 'approved',
+              invite_token = $1,
+              token_expires_at = $2,
+              reviewed_by = $3,
+              reviewed_at = NOW()
+          WHERE id = $4
+          RETURNING *
+        `, [inviteToken, expiresAt, req.user?.id, id]);
+
+        if (result.rowCount === 0) {
+          res.status(404).json({ success: false, message: 'Request not found.' });
+          return;
+        }
+
+        const updated = result.rows[0];
+        EmailService.sendInviteApprovedEmail({
+          userEmail: updated.email,
+          userName: updated.full_name,
+          inviteToken,
+          expiresAt,
+        }).catch((err) => {
+          console.error('[EMAIL] Failed to send invite approval email:', err.message);
+        });
+      } else {
+        result = await pool.query(`
+          UPDATE invite_requests
+          SET status = 'rejected',
+              reviewed_by = $1,
+              reviewed_at = NOW()
+          WHERE id = $2
+          RETURNING *
+        `, [req.user?.id, id]);
+
+        if (result.rowCount === 0) {
+          res.status(404).json({ success: false, message: 'Request not found.' });
+          return;
+        }
+
+        const updated = result.rows[0];
+        EmailService.sendInviteRejectedEmail({
+          userEmail: updated.email,
+          userName: updated.full_name,
+        }).catch((err) => {
+          console.error('[EMAIL] Failed to send invite rejection email:', err.message);
+        });
       }
 
       res.json({ success: true, message: `Request ${action}.`, request: result.rows[0] });

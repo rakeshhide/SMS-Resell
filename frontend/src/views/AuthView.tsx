@@ -58,6 +58,38 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const [suspendReason, setSuspendReason] = useState<string | null>(null);
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [inviteSubmitted, setInviteSubmitted] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteVerified, setInviteVerified] = useState(false);
+  const [verifyingInvite, setVerifyingInvite] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('invite') || params.get('invite_token');
+    const emailParam = params.get('email');
+    if (token) {
+      setInviteToken(token);
+      setVerifyingInvite(true);
+      setMode('signup');
+      if (emailParam) setEmail(decodeURIComponent(emailParam));
+      ApiClient.verifyInviteToken(token)
+        .then((res) => {
+          if (res.success && res.invite) {
+            setInviteVerified(true);
+            setEmail(res.invite.email);
+            if (res.invite.fullName) setFullName(res.invite.fullName);
+            if (res.invite.company) setCompanyName(res.invite.company);
+          } else {
+            setError(res.message || 'Invalid or expired invitation link.');
+          }
+        })
+        .catch((err) => {
+          setError(err.message || 'Invalid or expired invitation link.');
+        })
+        .finally(() => {
+          setVerifyingInvite(false);
+        });
+    }
+  }, []);
 
   useEffect(() => {
     setMode(initialMode);
@@ -83,7 +115,16 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
     try {
       if (mode === 'signup') {
-        if (registrationMode === 'invite_only') {
+        if (inviteVerified) {
+          if (!fullName.trim() || !email.trim() || !password) {
+            setError('Full name, email, and password are required.');
+            setLoading(false);
+            return;
+          }
+          const res = await ApiClient.register(fullName.trim(), email.trim(), password, companyName.trim());
+          ApiClient.setToken(res.token);
+          onSuccess(res.user, res.token);
+        } else if (registrationMode === 'invite_only') {
           if (!fullName.trim() || !email.trim()) {
             setError('Full name and work email are required.');
             setLoading(false);
@@ -498,7 +539,9 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   boxShadow: mode === 'signup' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
                 }}
               >
-                {registrationMode === 'invite_only'
+                {inviteVerified
+                  ? 'Complete Setup'
+                  : registrationMode === 'invite_only'
                   ? 'Request Invite'
                   : registrationMode === 'closed'
                   ? 'Registration Closed'
@@ -521,7 +564,9 @@ export const AuthView: React.FC<AuthViewProps> = ({
               {mode === 'signin'
                 ? 'Welcome Back'
                 : mode === 'signup'
-                ? registrationMode === 'invite_only'
+                ? inviteVerified
+                  ? 'Complete Your Developer Account'
+                  : registrationMode === 'invite_only'
                   ? 'Request Platform Access'
                   : registrationMode === 'closed'
                   ? 'Registration Closed'
@@ -532,7 +577,9 @@ export const AuthView: React.FC<AuthViewProps> = ({
               {mode === 'signin'
                 ? 'Enter your credentials to access your API keys, SMS balance, and telemetry.'
                 : mode === 'signup'
-                ? registrationMode === 'invite_only'
+                ? inviteVerified
+                  ? 'Your developer application has been approved. Set your password to begin.'
+                  : registrationMode === 'invite_only'
                   ? (inviteMessage || 'Platform onboarding is currently invite-only. Submit your developer application for approval.')
                   : registrationMode === 'closed'
                   ? (inviteMessage || 'Account registrations are temporarily paused. Existing accounts may sign in.')
@@ -791,9 +838,45 @@ export const AuthView: React.FC<AuthViewProps> = ({
               </button>
             </div>
           ) : (
-            /* Main Form (Spacious inputs, no small boxed border) */
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              {/* Full Name & Company Name (Sign Up only) */}
+              {verifyingInvite && (
+                <div
+                  style={{
+                    backgroundColor: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '8px',
+                    padding: '12px 14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                  }}
+                >
+                  <Loader2 size={16} className="animate-spin" color="#2563eb" />
+                  <span style={{ fontSize: '13px', color: '#1e40af' }}>
+                    Verifying developer invitation link...
+                  </span>
+                </div>
+              )}
+
+              {inviteVerified && (
+                <div
+                  style={{
+                    backgroundColor: '#ecfdf5',
+                    border: '1px solid #a7f3d0',
+                    borderRadius: '8px',
+                    padding: '12px 14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                  }}
+                >
+                  <CheckCircle2 size={18} color="#059669" style={{ flexShrink: 0 }} />
+                  <div style={{ fontSize: '13px', color: '#065f46', fontWeight: 600 }}>
+                    Invitation Approved &bull; Complete your password to access your developer console
+                  </div>
+                </div>
+              )}
+
               {mode === 'signup' && (
                 <>
                   <div>
@@ -918,20 +1001,22 @@ export const AuthView: React.FC<AuthViewProps> = ({
                     placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={inviteVerified}
                     style={{
                       border: 'none',
                       background: 'transparent',
                       outline: 'none',
                       fontSize: '14px',
                       width: '100%',
-                      color: 'var(--text-main)',
+                      color: inviteVerified ? 'var(--text-muted)' : 'var(--text-main)',
+                      cursor: inviteVerified ? 'not-allowed' : 'text',
                     }}
                   />
                 </div>
               </div>
 
               {/* Invite-Only: Expected Monthly Volume & Use Case */}
-              {mode === 'signup' && registrationMode === 'invite_only' && (
+              {mode === 'signup' && registrationMode === 'invite_only' && !inviteVerified && (
                 <div>
                   <label
                     style={{
@@ -975,8 +1060,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 </div>
               )}
 
-              {/* Password (Sign In & Open Sign Up only - NOT shown for invite requests) */}
-              {mode !== 'forgot' && !(mode === 'signup' && registrationMode === 'invite_only') && (
+              {/* Password */}
+              {mode !== 'forgot' && (!(mode === 'signup' && registrationMode === 'invite_only') || inviteVerified) && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                     <label
@@ -1086,7 +1171,9 @@ export const AuthView: React.FC<AuthViewProps> = ({
                       {mode === 'signin'
                         ? 'Sign In to Developer Console'
                         : mode === 'signup'
-                        ? registrationMode === 'invite_only'
+                        ? inviteVerified
+                          ? 'Complete Account Setup'
+                          : registrationMode === 'invite_only'
                           ? 'Submit Invite Request'
                           : 'Create Developer Account'
                         : 'Send Password Reset Link'}

@@ -47,6 +47,18 @@ async function run() {
       CREATE INDEX IF NOT EXISTS idx_invite_requests_status ON invite_requests(status);
     `);
 
+    await client.query(`
+      ALTER TABLE invite_requests 
+      ADD COLUMN IF NOT EXISTS invite_token TEXT,
+      ADD COLUMN IF NOT EXISTS token_expires_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ;
+    `);
+
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_invite_requests_token 
+      ON invite_requests(invite_token) WHERE invite_token IS NOT NULL;
+    `);
+
     await client.query('COMMIT');
     console.log('[MIGRATION] Platform controls migration completed successfully.');
   } catch (err: any) {

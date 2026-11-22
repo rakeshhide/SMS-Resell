@@ -66,15 +66,21 @@ export function App() {
     }).catch(() => {});
 
     const handleRoute = () => {
-      const isReset = window.location.pathname === '/reset-password' || new URLSearchParams(window.location.search).has('token');
+      const searchParams = new URLSearchParams(window.location.search);
+      const isReset = window.location.pathname === '/reset-password' || searchParams.has('token');
       setIsResetPasswordRoute(isReset);
 
       const p = window.location.pathname.toLowerCase();
       const hash = window.location.hash.replace('#', '').toLowerCase();
+      const hasInvite = searchParams.has('invite') || searchParams.has('invite_token');
 
       if (['terms', 'privacy', 'aup', 'refund'].includes(hash)) {
         setLegalViewTab(hash as LegalTab);
         setAuthRouteMode(null);
+      } else if (hasInvite) {
+        setLegalViewTab(null);
+        setAuthRouteMode('signup');
+        setViewingLanding(false);
       } else {
         setLegalViewTab(null);
         if (p === '/admin' || hash === 'admin') {
@@ -107,7 +113,6 @@ export function App() {
     window.addEventListener('hashchange', handleRoute);
     window.addEventListener('popstate', handleRoute);
 
-    // Check initial user session
     ApiClient.getMe().then((res) => {
       if (res?.user) {
         setUser(res.user);
@@ -117,10 +122,24 @@ export function App() {
           setCurrentTab('admin');
         }
       } else {
-        setViewingLanding(true);
+        const searchParams = new URLSearchParams(window.location.search);
+        const hasInvite = searchParams.has('invite') || searchParams.has('invite_token');
+        const p = window.location.pathname.toLowerCase();
+        if (hasInvite || p === '/login' || p === '/signup' || p === '/register' || p === '/admin') {
+          setViewingLanding(false);
+        } else {
+          setViewingLanding(true);
+        }
       }
     }).catch(() => {
-      setViewingLanding(true);
+      const searchParams = new URLSearchParams(window.location.search);
+      const hasInvite = searchParams.has('invite') || searchParams.has('invite_token');
+      const p = window.location.pathname.toLowerCase();
+      if (hasInvite || p === '/login' || p === '/signup' || p === '/register' || p === '/admin') {
+        setViewingLanding(false);
+      } else {
+        setViewingLanding(true);
+      }
     });
 
     return () => {

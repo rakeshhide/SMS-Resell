@@ -114,6 +114,18 @@ export class ApiClient {
     });
   }
 
+  public static verifyInviteToken(token: string) {
+    return this.request<{
+      success: boolean;
+      invite?: {
+        fullName: string;
+        email: string;
+        company?: string;
+      };
+      message?: string;
+    }>(`/auth/invite-verify?token=${encodeURIComponent(token)}`);
+  }
+
   public static getPlatformControls() {
     return this.request<{
       success: boolean;

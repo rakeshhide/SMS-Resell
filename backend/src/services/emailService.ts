@@ -502,4 +502,105 @@ export class EmailService {
       html: htmlBody,
     });
   }
+
+  public static async sendInviteApprovedEmail(params: {
+    userEmail: string;
+    userName: string;
+    inviteToken: string;
+    expiresAt: Date;
+  }): Promise<void> {
+    const { userEmail, userName, inviteToken, expiresAt } = params;
+    const activationUrl = `${process.env.FRONTEND_URL || 'https://turfsy.vercel.app'}/login?mode=signup&invite=${inviteToken}&email=${encodeURIComponent(userEmail)}`;
+    const expiryDateStr = expiresAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    const htmlBody = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background-color: #0b1329; padding: 28px 32px; text-align: left;">
+          <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">TurfsyOTPs Developer Access</h1>
+          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">Application Approval &amp; Account Activation</p>
+        </div>
+        
+        <div style="padding: 36px 32px;">
+          <div style="display: inline-block; background-color: #ecfdf5; color: #047857; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 6px; margin-bottom: 20px; letter-spacing: 0.05em;">
+            INVITATION APPROVED
+          </div>
+
+          <h2 style="font-size: 18px; color: #0f172a; margin: 0 0 12px 0;">Welcome, ${userName || 'Developer'}</h2>
+          <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0;">
+            Your application for developer access to TurfsyOTPs has been reviewed and approved by platform administrators.
+          </p>
+
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 20px; margin-bottom: 28px;">
+            <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b;">
+              Approved Email: <strong style="color: #0f172a;">${userEmail}</strong>
+            </p>
+            <p style="margin: 0; font-size: 13px; color: #64748b;">
+              Invitation Valid Until: <strong style="color: #0f172a;">${expiryDateStr}</strong>
+            </p>
+          </div>
+
+          <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 28px 0;">
+            Click below to complete your developer account setup, create your password, and access your API credentials.
+          </p>
+
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${activationUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; letter-spacing: 0.01em;">
+              Complete Account Setup
+            </a>
+          </div>
+
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 24px 0 0 0; word-break: break-all;">
+            If the button above does not work, copy and paste this link into your browser:<br/>
+            <a href="${activationUrl}" style="color: #2563eb; text-decoration: underline;">${activationUrl}</a>
+          </p>
+        </div>
+
+        <div style="background-color: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
+          TurfsyOTPs High-Throughput Developer Infrastructure. Security Verified.
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({
+      to: [userEmail],
+      subject: `[TurfsyOTPs] Developer Invitation Approved - Complete Your Account Setup`,
+      html: htmlBody,
+    });
+  }
+
+  public static async sendInviteRejectedEmail(params: {
+    userEmail: string;
+    userName: string;
+  }): Promise<void> {
+    const { userEmail, userName } = params;
+
+    const htmlBody = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+        <div style="background-color: #0b1329; padding: 28px 32px; text-align: left;">
+          <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -0.02em;">TurfsyOTPs Developer Access</h1>
+          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">Application Status Update</p>
+        </div>
+        
+        <div style="padding: 36px 32px;">
+          <h2 style="font-size: 18px; color: #0f172a; margin: 0 0 12px 0;">Hello ${userName || 'Developer'},</h2>
+          <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0;">
+            Thank you for your interest in TurfsyOTPs. Due to platform capacity and routing limits during our current onboarding phase, we are unable to approve your application at this time.
+          </p>
+          <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 20px 0;">
+            We will retain your request on our waitlist and notify you when broader developer registrations open.
+          </p>
+        </div>
+
+        <div style="background-color: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
+          TurfsyOTPs High-Throughput Developer Infrastructure.
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({
+      to: [userEmail],
+      subject: `[TurfsyOTPs] Developer Application Status Update`,
+      html: htmlBody,
+    });
+  }
 }
