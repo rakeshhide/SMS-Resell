@@ -29,6 +29,7 @@ router.put('/settings', AdminController.updateSettings);
 // Platform Controls
 router.get('/platform-controls', AdminController.getPlatformStatus);
 router.put('/platform-controls', AdminController.updatePlatformControls);
+router.post('/platform-controls', AdminController.updatePlatformControls);
 
 // Invite Requests
 router.get('/invite-requests', AdminController.listInviteRequests);
